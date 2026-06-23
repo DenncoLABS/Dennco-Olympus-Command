@@ -1,0 +1,24 @@
+[Unit]
+Description=Dennco Olympus Command
+Documentation=https://github.com/DenncoLABS/Dennco-Olympus-Command
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=olympus
+Group=olympus
+WorkingDirectory=/opt/dennco/olympus-command
+EnvironmentFile=-/etc/dennco/olympus-command/olympus-command.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node /opt/dennco/olympus-command/dist/index.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/etc/dennco/olympus-command /opt/dennco/olympus-command
+
+[Install]
+WantedBy=multi-user.target
