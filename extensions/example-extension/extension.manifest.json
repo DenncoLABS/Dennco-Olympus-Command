@@ -1,0 +1,17 @@
+{
+  "id": "example-extension",
+  "name": "Example Extension",
+  "version": "0.1.0",
+  "kind": "extension",
+  "description": "Starter extension manifest for Olympus Command modules.",
+  "entrypoints": {
+    "client": "client/index.ts",
+    "server": "server/index.ts"
+  },
+  "permissions": [
+    "read:platform",
+    "read:map",
+    "write:panel"
+  ],
+  "status": "draft"
+}
