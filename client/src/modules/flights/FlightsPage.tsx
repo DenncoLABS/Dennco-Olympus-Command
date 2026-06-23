@@ -9,9 +9,11 @@ import { FlightsStatusBar } from './components/FlightsStatusBar';
 import { MapLayerControl } from './components/MapLayerControl';
 import { VhfAudioPanel } from '../audio/VhfAudioPanel';
 import { NoaaWeatherRadarLayer } from '../weather/NoaaWeatherRadarLayer';
+import { useMilitaryBases } from '../monitor/hooks/useMilitaryBases';
 import { useThemeStore } from '../../ui/theme/theme.store';
 import { SATELLITE_STYLE, LIGHT_STYLE, DARK_STYLE, STREET_STYLE } from '../../lib/mapStyles';
 import {
+  activeRadarPulseGeoJSON,
   activeRadarSweepsGeoJSON,
   activeRadarZonesGeoJSON,
   airportPinsGeoJSON,
@@ -66,21 +68,34 @@ function valueOrDash(value: unknown, suffix = '') {
   return `${value}${suffix}`;
 }
 
+type MilitaryAirbasePin = {
+  name: string;
+  description: string;
+  country: string;
+  lat: number;
+  lon: number;
+};
+
 type InfrastructurePopup =
   | { type: 'airport'; item: AirportPin }
-  | { type: 'radar'; item: RadarRegionPin };
+  | { type: 'radar'; item: RadarRegionPin }
+  | { type: 'military'; item: MilitaryAirbasePin };
 
 function infrastructureTitle(popup: InfrastructurePopup): string {
-  return popup.type === 'radar' ? popup.item.label : popup.item.name;
+  if (popup.type === 'radar') return popup.item.label;
+  return popup.item.name;
 }
 
 function infrastructureSubtitle(popup: InfrastructurePopup): string {
-  return popup.type === 'radar' ? `${popup.item.scope} | ${popup.item.radiusNm} NM scan zone` : popup.item.code;
+  if (popup.type === 'radar') return `${popup.item.scope} | ${popup.item.radiusNm} NM scan zone`;
+  if (popup.type === 'military') return `${popup.item.country || 'Military'} | Monitor GPS base layer`;
+  return popup.item.code;
 }
 
 export const FlightsPage: React.FC = () => {
   const { mapProjection, mapLayer } = useThemeStore();
   const { data, isError } = useFlightsSnapshot();
+  const { data: militaryBasesGeoJSON } = useMilitaryBases();
   const states = useMemo(() => data?.states || [], [data?.states]);
   const timestamp = data?.timestamp || 0;
   const provider = data?.provider || 'adsblol';
@@ -121,10 +136,29 @@ export const FlightsPage: React.FC = () => {
 
   const pointsGeoJSON = useMemo(() => statesToPointGeoJSON(filteredStates), [filteredStates]);
   const airportGeoJSON = useMemo(() => airportPinsGeoJSON(), []);
-  const radarGeoJSON = useMemo(() => radarPinsGeoJSON(), []);
+  const militaryAirbasesGeoJSON = useMemo(() => {
+    if (!militaryBasesGeoJSON) return null;
+    return {
+      type: 'FeatureCollection' as const,
+      features: militaryBasesGeoJSON.features
+        .filter((feature) => feature.properties.category === 'air')
+        .map((feature, index) => ({
+          ...feature,
+          properties: { ...feature.properties, id: `monitor-airbase-${index}` },
+        })),
+    };
+  }, [militaryBasesGeoJSON]);
+  const radarGeoJSON = useMemo(
+    () => radarPinsGeoJSON(activeRadarRegionIds),
+    [activeRadarRegionIds],
+  );
   const activeRadarZones = useMemo(
     () => activeRadarZonesGeoJSON(activeRadarRegionIds),
     [activeRadarRegionIds],
+  );
+  const activeRadarPulse = useMemo(
+    () => activeRadarPulseGeoJSON(activeRadarRegionIds, sweepDeg),
+    [activeRadarRegionIds, sweepDeg],
   );
   const activeRadarSweeps = useMemo(
     () => activeRadarSweepsGeoJSON(activeRadarRegionIds, sweepDeg),
@@ -169,6 +203,24 @@ export const FlightsPage: React.FC = () => {
         return;
       }
 
+      if (layerId === 'flight-airbase-points') {
+        const p = feature?.properties as Record<string, unknown> | undefined;
+        const coords = feature?.geometry?.type === 'Point' ? (feature.geometry as GeoJSON.Point).coordinates : null;
+        if (p && coords) {
+          setInfrastructurePopup({
+            type: 'military',
+            item: {
+              name: String(p.name ?? ''),
+              description: String(p.description ?? ''),
+              country: String(p.country ?? ''),
+              lon: coords[0],
+              lat: coords[1],
+            },
+          });
+        }
+        return;
+      }
+
       if (feature?.properties?.icao24) {
         setSelectedIcao24(String(feature.properties.icao24));
         setInfrastructurePopup(null);
@@ -193,7 +245,7 @@ export const FlightsPage: React.FC = () => {
           initialViewState={{ latitude: 39.8283, longitude: -98.5795, zoom: 4 }}
           mapStyle={activeMapStyle}
           styleDiffing={false}
-          interactiveLayerIds={['aircraft-points', 'radar-region-points', 'airport-points']}
+          interactiveLayerIds={['aircraft-points', 'radar-region-points', 'airport-points', 'flight-airbase-points']}
           onClick={onClick}
           onLoad={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)}
           onStyleData={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)}
@@ -216,6 +268,9 @@ export const FlightsPage: React.FC = () => {
                 <Layer id="active-radar-zone-fill" type="fill" paint={{ 'fill-color': '#ffffff', 'fill-opacity': 0.035 }} />
                 <Layer id="active-radar-zone-ring" type="line" paint={{ 'line-color': '#ffffff', 'line-opacity': 0.85, 'line-width': 2 }} />
               </Source>
+              <Source id="active-radar-pulse" type="geojson" data={activeRadarPulse}>
+                <Layer id="active-radar-pulse-ring" type="line" paint={{ 'line-color': '#ffffff', 'line-opacity': 0.45, 'line-width': 1.5, 'line-blur': 1 }} />
+              </Source>
               <Source id="active-radar-sweeps" type="geojson" data={activeRadarSweeps}>
                 <Layer id="active-radar-sweep-line" type="line" paint={{ 'line-color': '#ffffff', 'line-opacity': 0.95, 'line-width': 2, 'line-blur': 1 }} />
               </Source>
@@ -224,11 +279,11 @@ export const FlightsPage: React.FC = () => {
                   id="radar-region-points"
                   type="circle"
                   paint={{
-                    'circle-radius': ['case', ['in', ['get', 'id'], ['literal', activeRadarRegionIds]], 8, 6],
-                    'circle-color': ['case', ['in', ['get', 'id'], ['literal', activeRadarRegionIds]], '#ffffff', '#0f172a'],
-                    'circle-stroke-color': '#ffffff',
-                    'circle-stroke-width': 1.5,
-                    'circle-opacity': 0.9,
+                    'circle-radius': ['case', ['boolean', ['get', 'active'], false], 8, 6],
+                    'circle-color': '#ffffff',
+                    'circle-stroke-color': ['case', ['boolean', ['get', 'active'], false], '#ffffff', '#94a3b8'],
+                    'circle-stroke-width': ['case', ['boolean', ['get', 'active'], false], 2, 1],
+                    'circle-opacity': ['case', ['boolean', ['get', 'active'], false], 1, 0.65],
                   }}
                 />
                 <Layer
@@ -242,25 +297,49 @@ export const FlightsPage: React.FC = () => {
           )}
 
           {showAirportPins && (
-            <Source id="airports" type="geojson" data={airportGeoJSON}>
-              <Layer
-                id="airport-points"
-                type="circle"
-                paint={{
-                  'circle-radius': ['case', ['==', ['get', 'kind'], 'airbase'], 5.5, 4.5],
-                  'circle-color': ['case', ['==', ['get', 'kind'], 'airbase'], '#f8fafc', '#38bdf8'],
-                  'circle-stroke-color': ['case', ['==', ['get', 'kind'], 'airbase'], '#ef4444', '#0f172a'],
-                  'circle-stroke-width': 1.5,
-                  'circle-opacity': 0.9,
-                }}
-              />
-              <Layer
-                id="airport-labels"
-                type="symbol"
-                layout={{ 'text-field': ['get', 'code'], 'text-size': 10, 'text-offset': [0, 1.1], 'text-allow-overlap': false }}
-                paint={{ 'text-color': '#e0f2fe', 'text-halo-color': '#020617', 'text-halo-width': 1 }}
-              />
-            </Source>
+            <>
+              <Source id="airports" type="geojson" data={airportGeoJSON}>
+                <Layer
+                  id="airport-points"
+                  type="circle"
+                  paint={{
+                    'circle-radius': 4.8,
+                    'circle-color': '#facc15',
+                    'circle-stroke-color': '#713f12',
+                    'circle-stroke-width': 1.5,
+                    'circle-opacity': 0.92,
+                  }}
+                />
+                <Layer
+                  id="airport-labels"
+                  type="symbol"
+                  layout={{ 'text-field': ['get', 'code'], 'text-size': 10, 'text-offset': [0, 1.1], 'text-allow-overlap': false }}
+                  paint={{ 'text-color': '#fde68a', 'text-halo-color': '#020617', 'text-halo-width': 1 }}
+                />
+              </Source>
+
+              {militaryAirbasesGeoJSON && (
+                <Source id="flight-airbases" type="geojson" data={militaryAirbasesGeoJSON as GeoJSON.FeatureCollection}>
+                  <Layer
+                    id="flight-airbase-points"
+                    type="circle"
+                    paint={{
+                      'circle-radius': 5.6,
+                      'circle-color': '#facc15',
+                      'circle-stroke-color': '#ef4444',
+                      'circle-stroke-width': 1.8,
+                      'circle-opacity': 0.94,
+                    }}
+                  />
+                  <Layer
+                    id="flight-airbase-labels"
+                    type="symbol"
+                    layout={{ 'text-field': ['slice', ['get', 'name'], 0, 12], 'text-size': 9, 'text-offset': [0, 1.25], 'text-allow-overlap': false }}
+                    paint={{ 'text-color': '#fef3c7', 'text-halo-color': '#020617', 'text-halo-width': 1 }}
+                  />
+                </Source>
+              )}
+            </>
           )}
 
           <Source id="aircraft" type="geojson" data={pointsGeoJSON}>
@@ -301,16 +380,15 @@ export const FlightsPage: React.FC = () => {
               <div className="bg-[#05070b] border border-white/20 text-white font-mono min-w-[260px]">
                 <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between">
                   <span className="text-cyan-300 text-[10px] uppercase tracking-[0.18em]">
-                    {infrastructurePopup.type === 'radar' ? 'Radar Region' : infrastructurePopup.item.kind === 'airbase' ? 'Air Base' : 'Airport'}
+                    {infrastructurePopup.type === 'radar' ? 'Radar Region' : infrastructurePopup.type === 'military' ? 'Air Force / Military Base' : 'Airport'}
                   </span>
                   <button onClick={() => setInfrastructurePopup(null)} className="text-white/40 hover:text-white">×</button>
                 </div>
                 <div className="p-3 space-y-1 text-[11px] text-white/65">
                   <div className="text-white text-sm font-bold">{infrastructureTitle(infrastructurePopup)}</div>
                   <div>{infrastructureSubtitle(infrastructurePopup)}</div>
-                  {infrastructurePopup.type === 'radar' && (
-                    <div className="text-white/45">Click radar pin to toggle this region feed.</div>
-                  )}
+                  {infrastructurePopup.type === 'radar' && <div className="text-white/45">Click radar pin to toggle this region feed.</div>}
+                  {infrastructurePopup.type === 'military' && infrastructurePopup.item.description && <div className="text-white/45">{infrastructurePopup.item.description}</div>}
                 </div>
               </div>
             </Popup>
