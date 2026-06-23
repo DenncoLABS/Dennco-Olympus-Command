@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRuntimeSettings } from './runtimeSettings';
 
 const providerLabels: Record<string, string> = {
@@ -9,8 +9,116 @@ const providerLabels: Record<string, string> = {
   dotCameras: 'DOT cameras',
 };
 
+type EditableSettings = {
+  branding: {
+    productName: string;
+    shortName: string;
+    footerText: string;
+    logoUrl: string;
+    logoDataUrl: string;
+    faviconUrl: string;
+    faviconDataUrl: string;
+  };
+  apiKeys: {
+    aisstream: string;
+    openskyUsername: string;
+    openskyPassword: string;
+    mapTilesUrl: string;
+  };
+  dotFeeds: {
+    nationalTrafficUrl: string;
+    trafficUrl: string;
+    camerasUrl: string;
+    roadClosuresUrl: string;
+    providerMode: string;
+    states: string[];
+  };
+};
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
 export const AdminSettingsPage: React.FC = () => {
   const { settings, reload } = useRuntimeSettings();
+  const [form, setForm] = useState<EditableSettings>({
+    branding: {
+      productName: settings.branding.productName,
+      shortName: settings.branding.shortName,
+      footerText: settings.branding.footerText,
+      logoUrl: settings.branding.logoUrl,
+      logoDataUrl: settings.branding.logoDataUrl,
+      faviconUrl: settings.branding.faviconUrl,
+      faviconDataUrl: settings.branding.faviconDataUrl,
+    },
+    apiKeys: {
+      aisstream: '',
+      openskyUsername: '',
+      openskyPassword: '',
+      mapTilesUrl: '',
+    },
+    dotFeeds: {
+      ...settings.dotFeeds,
+      states: settings.dotFeeds.states || [],
+    },
+  });
+  const [status, setStatus] = useState('');
+
+  useEffect(() => {
+    setForm((current) => ({
+      ...current,
+      branding: {
+        productName: settings.branding.productName,
+        shortName: settings.branding.shortName,
+        footerText: settings.branding.footerText,
+        logoUrl: settings.branding.logoUrl,
+        logoDataUrl: settings.branding.logoDataUrl,
+        faviconUrl: settings.branding.faviconUrl,
+        faviconDataUrl: settings.branding.faviconDataUrl,
+      },
+      dotFeeds: {
+        ...settings.dotFeeds,
+        states: settings.dotFeeds.states || [],
+      },
+    }));
+  }, [settings]);
+
+  const save = async () => {
+    setStatus('Saving...');
+    const response = await fetch('/api/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
+
+    if (!response.ok) {
+      setStatus('Save failed.');
+      return;
+    }
+
+    setStatus('Saved. Restart service if provider keys are used by server-side feeds.');
+    await reload();
+  };
+
+  const updateBranding = (key: keyof EditableSettings['branding'], value: string) => {
+    setForm((current) => ({ ...current, branding: { ...current.branding, [key]: value } }));
+  };
+
+  const updateApi = (key: keyof EditableSettings['apiKeys'], value: string) => {
+    setForm((current) => ({ ...current, apiKeys: { ...current.apiKeys, [key]: value } }));
+  };
+
+  const updateDot = (key: keyof EditableSettings['dotFeeds'], value: string | string[]) => {
+    setForm((current) => ({ ...current, dotFeeds: { ...current.dotFeeds, [key]: value } }));
+  };
+
+  const logoPreview = form.branding.logoDataUrl || form.branding.logoUrl;
+  const faviconPreview = form.branding.faviconDataUrl || form.branding.faviconUrl;
 
   return (
     <div className="absolute inset-0 overflow-auto bg-intel-bg p-8 text-intel-text-light">
@@ -20,13 +128,20 @@ export const AdminSettingsPage: React.FC = () => {
             <div className="text-xs uppercase tracking-[0.35em] text-intel-accent/70 mb-2">Admin Console</div>
             <h2 className="font-mono text-3xl font-bold tracking-[0.15em] uppercase">Settings</h2>
             <p className="mt-3 text-sm text-white/50 max-w-3xl">
-              Manage authentication, NethServer 8 directory settings, API providers, DOT traffic feeds, feature toggles, branding, and custom CSS themes.
+              Manage authentication, NethServer 8 directory settings, API providers, DOT traffic feeds, feature toggles, branding, uploaded splash logo, favicon, and custom CSS themes.
             </p>
           </div>
-          <button onClick={() => void reload()} className="border border-intel-accent/50 px-4 py-2 text-xs uppercase tracking-[0.2em] text-intel-accent hover:bg-intel-accent/10">
-            Reload
-          </button>
+          <div className="flex gap-3">
+            <button onClick={() => void reload()} className="border border-white/20 px-4 py-2 text-xs uppercase tracking-[0.2em] text-white/60 hover:bg-white/5">
+              Reload
+            </button>
+            <button onClick={() => void save()} className="border border-intel-accent/50 px-4 py-2 text-xs uppercase tracking-[0.2em] text-intel-accent hover:bg-intel-accent/10">
+              Save
+            </button>
+          </div>
         </div>
+
+        {status && <div className="border border-intel-accent/25 bg-intel-accent/10 px-4 py-3 text-sm text-intel-accent">{status}</div>}
 
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="border border-white/10 bg-black/30 p-5">
@@ -51,12 +166,44 @@ export const AdminSettingsPage: React.FC = () => {
           </div>
 
           <div className="border border-white/10 bg-black/30 p-5">
-            <h3 className="font-mono text-lg uppercase tracking-[0.18em] mb-4">Branding</h3>
+            <h3 className="font-mono text-lg uppercase tracking-[0.18em] mb-4">Branding Status</h3>
             <div className="space-y-3 text-sm">
               <div><div className="text-white/35">Product</div><div>{settings.branding.productName}</div></div>
               <div><div className="text-white/35">Short name</div><div>{settings.branding.shortName}</div></div>
               <div><div className="text-white/35">Footer</div><div>{settings.branding.footerText}</div></div>
             </div>
+          </div>
+        </section>
+
+        <section className="border border-cyan-300/20 bg-cyan-950/10 p-5">
+          <h3 className="font-mono text-lg uppercase tracking-[0.18em] mb-4">Editable Branding + Splash Assets</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <TextInput label="Product name" value={form.branding.productName} onChange={(value) => updateBranding('productName', value)} />
+            <TextInput label="Short name" value={form.branding.shortName} onChange={(value) => updateBranding('shortName', value)} />
+            <TextInput label="Footer text" value={form.branding.footerText} onChange={(value) => updateBranding('footerText', value)} />
+            <TextInput label="Logo URL" value={form.branding.logoUrl} onChange={(value) => updateBranding('logoUrl', value)} />
+            <AssetUpload
+              label="Upload splash/nav logo"
+              preview={logoPreview}
+              onUpload={(dataUrl) => updateBranding('logoDataUrl', dataUrl)}
+              onClear={() => updateBranding('logoDataUrl', '')}
+            />
+            <AssetUpload
+              label="Upload favicon"
+              preview={faviconPreview}
+              onUpload={(dataUrl) => updateBranding('faviconDataUrl', dataUrl)}
+              onClear={() => updateBranding('faviconDataUrl', '')}
+            />
+          </div>
+        </section>
+
+        <section className="border border-emerald-300/20 bg-emerald-950/10 p-5">
+          <h3 className="font-mono text-lg uppercase tracking-[0.18em] mb-4">Provider Keys</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <SecretInput label="AISStream key" value={form.apiKeys.aisstream} onChange={(value) => updateApi('aisstream', value)} placeholder="Paste AISStream key" />
+            <TextInput label="Map tiles URL" value={form.apiKeys.mapTilesUrl} onChange={(value) => updateApi('mapTilesUrl', value)} />
+            <TextInput label="OpenSky username" value={form.apiKeys.openskyUsername} onChange={(value) => updateApi('openskyUsername', value)} />
+            <SecretInput label="OpenSky password" value={form.apiKeys.openskyPassword} onChange={(value) => updateApi('openskyPassword', value)} />
           </div>
         </section>
 
@@ -69,30 +216,17 @@ export const AdminSettingsPage: React.FC = () => {
               </p>
             </div>
             <span className="border border-sky-300/30 text-sky-200 px-3 py-1 text-[10px] uppercase tracking-[0.2em]">
-              {settings.dotFeeds.providerMode || 'custom'}
+              {form.dotFeeds.providerMode || 'custom'}
             </span>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm">
-            <FeedRow label="National traffic feed" value={settings.dotFeeds.nationalTrafficUrl} />
-            <FeedRow label="Traffic incidents feed" value={settings.dotFeeds.trafficUrl} />
-            <FeedRow label="Traffic cameras feed" value={settings.dotFeeds.camerasUrl} />
-            <FeedRow label="Road closures feed" value={settings.dotFeeds.roadClosuresUrl} />
-          </div>
-
-          <div className="mt-5 border border-white/10 bg-black/30 p-4">
-            <div className="text-xs uppercase tracking-[0.22em] text-white/45 mb-2">Enabled state feeds</div>
-            <div className="flex flex-wrap gap-2">
-              {settings.dotFeeds.states.length > 0 ? (
-                settings.dotFeeds.states.map((state) => (
-                  <span key={state} className="border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/70">
-                    {state}
-                  </span>
-                ))
-              ) : (
-                <span className="text-white/35 text-sm">No state DOT feeds configured yet.</span>
-              )}
-            </div>
+            <TextInput label="National traffic feed" value={form.dotFeeds.nationalTrafficUrl} onChange={(value) => updateDot('nationalTrafficUrl', value)} />
+            <TextInput label="Traffic incidents feed" value={form.dotFeeds.trafficUrl} onChange={(value) => updateDot('trafficUrl', value)} />
+            <TextInput label="Traffic cameras feed" value={form.dotFeeds.camerasUrl} onChange={(value) => updateDot('camerasUrl', value)} />
+            <TextInput label="Road closures feed" value={form.dotFeeds.roadClosuresUrl} onChange={(value) => updateDot('roadClosuresUrl', value)} />
+            <TextInput label="Provider mode" value={form.dotFeeds.providerMode} onChange={(value) => updateDot('providerMode', value)} />
+            <TextInput label="State feeds CSV" value={form.dotFeeds.states.join(',')} onChange={(value) => updateDot('states', value.split(',').map((item) => item.trim().toUpperCase()).filter(Boolean))} />
           </div>
         </section>
 
@@ -119,21 +253,52 @@ export const AdminSettingsPage: React.FC = () => {
             </pre>
           </div>
         </section>
-
-        <section className="border border-amber-300/20 bg-amber-950/10 p-5 text-sm text-amber-100/75">
-          Editable forms will be wired to protected server-side settings storage in the next pass. This page currently reads runtime settings, provider status, DOT feed status, branding, toggles, and injected CSS safely without exposing secrets.
-        </section>
       </div>
     </div>
   );
 };
 
-function FeedRow({ label, value }: { label: string; value: string }) {
+function TextInput({ label, value, onChange, placeholder = '' }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string }) {
   return (
-    <div className="border border-white/10 bg-black/30 p-4 min-w-0">
+    <label className="block border border-white/10 bg-black/30 p-4">
       <div className="text-xs uppercase tracking-[0.2em] text-white/35 mb-2">{label}</div>
-      <div className={value ? 'text-sky-200 text-xs break-all' : 'text-white/30 text-sm'}>
-        {value || 'Not configured'}
+      <input value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} className="w-full bg-black border border-white/15 px-3 py-2 text-sm text-white outline-none focus:border-intel-accent/60" />
+    </label>
+  );
+}
+
+function SecretInput({ label, value, onChange, placeholder = '' }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string }) {
+  return (
+    <label className="block border border-white/10 bg-black/30 p-4">
+      <div className="text-xs uppercase tracking-[0.2em] text-white/35 mb-2">{label}</div>
+      <input type="password" value={value} placeholder={placeholder || 'Leave blank to keep existing'} onChange={(event) => onChange(event.target.value)} className="w-full bg-black border border-white/15 px-3 py-2 text-sm text-white outline-none focus:border-intel-accent/60" />
+    </label>
+  );
+}
+
+function AssetUpload({ label, preview, onUpload, onClear }: { label: string; preview: string; onUpload: (dataUrl: string) => void; onClear: () => void }) {
+  return (
+    <div className="border border-white/10 bg-black/30 p-4">
+      <div className="text-xs uppercase tracking-[0.2em] text-white/35 mb-2">{label}</div>
+      <div className="flex items-center gap-4">
+        <div className="w-16 h-16 border border-white/10 bg-black flex items-center justify-center overflow-hidden">
+          {preview ? <img src={preview} alt="Preview" className="w-full h-full object-contain" /> : <span className="text-white/20 text-xs">None</span>}
+        </div>
+        <div className="flex-1 space-y-2">
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/svg+xml,image/webp,image/x-icon,image/vnd.microsoft.icon"
+            onChange={async (event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              onUpload(await fileToDataUrl(file));
+            }}
+            className="block w-full text-xs text-white/60 file:mr-3 file:border file:border-intel-accent/40 file:bg-intel-accent/10 file:text-intel-accent file:px-3 file:py-1 file:uppercase file:tracking-wider"
+          />
+          <button onClick={onClear} className="border border-white/15 px-3 py-1 text-xs uppercase tracking-[0.18em] text-white/45 hover:text-white hover:border-white/35">
+            Clear Upload
+          </button>
+        </div>
       </div>
     </div>
   );
