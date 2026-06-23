@@ -1,0 +1,95 @@
+name: Publish Apt Package
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "client/**"
+      - "server/**"
+      - "package.json"
+      - "package-lock.json"
+      - "packaging/**"
+      - "install.sh"
+      - ".github/workflows/publish-apt.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    name: Build .deb and publish apt repo
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev rsync
+
+      - name: Build Debian package
+        run: |
+          chmod +x packaging/build-deb.sh
+          VERSION="$(node -p "require('./package.json').version")-${GITHUB_RUN_NUMBER}" ./packaging/build-deb.sh
+
+      - name: Prepare apt repository
+        run: |
+          set -euo pipefail
+          mkdir -p aptrepo/pool/main/d/dennco-olympus-command
+          cp dist/deb/*.deb aptrepo/pool/main/d/dennco-olympus-command/
+          mkdir -p aptrepo/dists/stable/main/binary-amd64
+          dpkg-scanpackages --arch amd64 aptrepo/pool > aptrepo/dists/stable/main/binary-amd64/Packages
+          gzip -k -f aptrepo/dists/stable/main/binary-amd64/Packages
+          cat > aptrepo/dists/stable/Release <<'EOF'
+          Origin: DenncoLABS
+          Label: Dennco Olympus Command
+          Suite: stable
+          Codename: stable
+          Architectures: amd64
+          Components: main
+          Description: Dennco Olympus Command apt repository
+          EOF
+
+      - name: Publish to GitHub Pages branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -rf /tmp/olympus-apt-pages
+          git clone --no-checkout "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" /tmp/olympus-apt-pages
+          cd /tmp/olympus-apt-pages
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            git checkout gh-pages
+          else
+            git checkout --orphan gh-pages
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          rsync -a --delete "$GITHUB_WORKSPACE/aptrepo/" ./
+          touch .nojekyll
+          cat > index.html <<'EOF'
+          <!doctype html>
+          <html>
+            <head><meta charset="utf-8"><title>Dennco Olympus Command Apt Repository</title></head>
+            <body>
+              <h1>Dennco Olympus Command Apt Repository</h1>
+              <p>Use the installer from the main branch:</p>
+              <pre>curl -fsSL https://raw.githubusercontent.com/DenncoLABS/Dennco-Olympus-Command/main/install.sh | bash</pre>
+            </body>
+          </html>
+          EOF
+          git add -A
+          git commit -m "Publish apt repository" || exit 0
+          git push origin gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
