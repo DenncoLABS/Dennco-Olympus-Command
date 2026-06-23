@@ -5,7 +5,7 @@ REPO_OWNER="DenncoLABS"
 REPO_NAME="Dennco-Olympus-Command"
 PACKAGE_NAME="dennco-olympus-command"
 APT_SOURCE="/etc/apt/sources.list.d/dennco-olympus-command.list"
-APT_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}"
+APT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/gh-pages"
 
 if [ "${EUID:-$(id -u)}" -ne 0 ]; then
   echo "This installer needs sudo/root. Re-running with sudo..."
