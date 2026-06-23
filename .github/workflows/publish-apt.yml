@@ -24,14 +24,14 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Install packaging tools
         run: |
@@ -61,22 +61,31 @@ jobs:
           Components: main
           Description: Dennco Olympus Command apt repository
           EOF
+          echo "APT repository contents:"
+          find . -maxdepth 5 -type f -print | sort
 
-      - name: Publish to GitHub Pages branch
+      - name: Publish to gh-pages branch
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           rm -rf /tmp/olympus-apt-pages
-          git clone --no-checkout "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" /tmp/olympus-apt-pages
+          mkdir -p /tmp/olympus-apt-pages
           cd /tmp/olympus-apt-pages
+
+          git init
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
           if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
-            git checkout gh-pages
+            git fetch origin gh-pages --depth=1
+            git checkout -B gh-pages FETCH_HEAD
           else
             git checkout --orphan gh-pages
-            git rm -rf . >/dev/null 2>&1 || true
           fi
-          rsync -a --delete "$GITHUB_WORKSPACE/aptrepo/" ./
+
+          rm -rf ./* ./.nojekyll || true
+          rsync -a "$GITHUB_WORKSPACE/aptrepo/" ./
           touch .nojekyll
           cat > index.html <<'EOF'
           <!doctype html>
@@ -89,8 +98,10 @@ jobs:
             </body>
           </html>
           EOF
+
           git add -A
-          git commit -m "Publish apt repository" || exit 0
-          git push origin gh-pages
+          git status --short
+          git commit -m "Publish apt repository" || echo "No gh-pages changes to commit."
+          git push --force origin gh-pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
