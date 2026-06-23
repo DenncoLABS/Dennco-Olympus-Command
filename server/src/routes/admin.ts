@@ -1,10 +1,15 @@
 import express from 'express';
 import { clearAccess, grantAccess, renderLogin, renderSetup } from '../core/accessGate';
 import { createFirstRunConfig, getRuntimeBranding, isAdminConfigured, verifyAdminLogin } from '../core/firstRunConfig';
+import { configured, mergeAdminRuntimeSettings, readAdminRuntimeSettings } from '../core/adminRuntimeSettings';
 
 const router = express.Router();
 
 function runtimeSettings() {
+  const saved = readAdminRuntimeSettings();
+  const savedBranding = saved.branding || {};
+  const savedKeys = saved.apiKeys || {};
+  const savedDot = saved.dotFeeds || {};
   const branding = getRuntimeBranding();
 
   return {
@@ -15,11 +20,12 @@ function runtimeSettings() {
       configured: isAdminConfigured(),
     },
     branding: {
-      productName: branding.productName,
-      shortName: branding.shortName,
-      logoUrl: process.env.OLYMPUS_LOGO_URL || '',
-      faviconUrl: process.env.OLYMPUS_FAVICON_URL || '',
-      footerText: branding.footerText,
+      productName: savedBranding.productName || branding.productName,
+      shortName: savedBranding.shortName || branding.shortName,
+      logoUrl: process.env.OLYMPUS_LOGO_URL || savedBranding.logoUrl || '',
+      logoDataUrl: savedBranding.logoDataUrl || '',
+      faviconUrl: process.env.OLYMPUS_FAVICON_URL || savedBranding.faviconUrl || '',
+      footerText: savedBranding.footerText || branding.footerText,
     },
     featureToggles: {
       flights: process.env.OLYMPUS_FEATURE_FLIGHTS !== 'false',
@@ -33,19 +39,19 @@ function runtimeSettings() {
       customCss: process.env.OLYMPUS_CUSTOM_CSS || '',
     },
     providers: {
-      aisstream: Boolean(process.env.AISSTREAM_API_KEY),
-      opensky: Boolean(process.env.OPENSKY_USERNAME || process.env.OPENSKY_PASSWORD),
-      mapTiles: Boolean(process.env.MAP_TILES_URL),
-      dotTraffic: Boolean(process.env.DOT_TRAFFIC_GEOJSON_URL || process.env.VITE_DOT_TRAFFIC_GEOJSON_URL),
-      dotCameras: Boolean(process.env.DOT_CAMERAS_GEOJSON_URL || process.env.VITE_DOT_CAMERAS_GEOJSON_URL),
+      aisstream: configured(process.env.AISSTREAM_API_KEY) || configured(savedKeys.aisstream),
+      opensky: configured(process.env.OPENSKY_USERNAME) || configured(process.env.OPENSKY_PASSWORD) || configured(savedKeys.openskyUsername) || configured(savedKeys.openskyPassword),
+      mapTiles: configured(process.env.MAP_TILES_URL) || configured(savedKeys.mapTilesUrl),
+      dotTraffic: configured(process.env.DOT_TRAFFIC_GEOJSON_URL) || configured(process.env.VITE_DOT_TRAFFIC_GEOJSON_URL) || configured(savedDot.trafficUrl),
+      dotCameras: configured(process.env.DOT_CAMERAS_GEOJSON_URL) || configured(process.env.VITE_DOT_CAMERAS_GEOJSON_URL) || configured(savedDot.camerasUrl),
     },
     dotFeeds: {
-      nationalTrafficUrl: process.env.DOT_NATIONAL_TRAFFIC_GEOJSON_URL || '',
-      trafficUrl: process.env.DOT_TRAFFIC_GEOJSON_URL || process.env.VITE_DOT_TRAFFIC_GEOJSON_URL || '',
-      camerasUrl: process.env.DOT_CAMERAS_GEOJSON_URL || process.env.VITE_DOT_CAMERAS_GEOJSON_URL || '',
-      roadClosuresUrl: process.env.DOT_ROAD_CLOSURES_GEOJSON_URL || '',
-      providerMode: process.env.DOT_PROVIDER_MODE || 'custom',
-      states: (process.env.DOT_STATE_FEEDS || '')
+      nationalTrafficUrl: savedDot.nationalTrafficUrl || process.env.DOT_NATIONAL_TRAFFIC_GEOJSON_URL || '',
+      trafficUrl: savedDot.trafficUrl || process.env.DOT_TRAFFIC_GEOJSON_URL || process.env.VITE_DOT_TRAFFIC_GEOJSON_URL || '',
+      camerasUrl: savedDot.camerasUrl || process.env.DOT_CAMERAS_GEOJSON_URL || process.env.VITE_DOT_CAMERAS_GEOJSON_URL || '',
+      roadClosuresUrl: savedDot.roadClosuresUrl || process.env.DOT_ROAD_CLOSURES_GEOJSON_URL || '',
+      providerMode: savedDot.providerMode || process.env.DOT_PROVIDER_MODE || 'custom',
+      states: savedDot.states || (process.env.DOT_STATE_FEEDS || '')
         .split(',')
         .map((state) => state.trim().toUpperCase())
         .filter(Boolean),
@@ -55,6 +61,26 @@ function runtimeSettings() {
 
 router.get('/runtime-settings', (_req, res) => {
   res.json(runtimeSettings());
+});
+
+router.get('/settings', (_req, res) => {
+  res.json(runtimeSettings());
+});
+
+router.post('/settings', (req, res) => {
+  const body = req.body || {};
+  const apiKeys = body.apiKeys || {};
+  mergeAdminRuntimeSettings({
+    branding: body.branding || {},
+    dotFeeds: body.dotFeeds || {},
+    apiKeys: {
+      ...(apiKeys.aisstream ? { aisstream: apiKeys.aisstream } : {}),
+      ...(apiKeys.openskyUsername ? { openskyUsername: apiKeys.openskyUsername } : {}),
+      ...(apiKeys.openskyPassword ? { openskyPassword: apiKeys.openskyPassword } : {}),
+      ...(apiKeys.mapTilesUrl ? { mapTilesUrl: apiKeys.mapTilesUrl } : {}),
+    },
+  });
+  res.json({ ok: true, settings: runtimeSettings() });
 });
 
 router.get('/setup/status', (_req, res) => {
