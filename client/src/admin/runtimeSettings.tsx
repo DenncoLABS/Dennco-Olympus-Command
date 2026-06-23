@@ -15,6 +15,14 @@ export interface RuntimeSettings {
     faviconDataUrl: string;
     footerText: string;
   };
+  apiKeys: {
+    openskyUsername: string;
+    openskyClientId: string;
+    mapTilesUrl: string;
+    aisstreamConfigured: boolean;
+    openskyPasswordConfigured: boolean;
+    openskyClientSecretConfigured: boolean;
+  };
   featureToggles: Record<string, boolean>;
   theme: {
     customCss: string;
@@ -56,6 +64,14 @@ const fallbackSettings: RuntimeSettings = {
     faviconUrl: '',
     faviconDataUrl: '',
     footerText: 'Dennco Olympus Command',
+  },
+  apiKeys: {
+    openskyUsername: '',
+    openskyClientId: '',
+    mapTilesUrl: '',
+    aisstreamConfigured: false,
+    openskyPasswordConfigured: false,
+    openskyClientSecretConfigured: false,
   },
   featureToggles: {
     flights: true,
@@ -129,6 +145,7 @@ export const RuntimeSettingsProvider: React.FC<{ children: ReactNode }> = ({ chi
           ...fallbackSettings,
           ...next,
           branding: { ...fallbackSettings.branding, ...(next.branding || {}) },
+          apiKeys: { ...fallbackSettings.apiKeys, ...(next.apiKeys || {}) },
           dotFeeds: { ...fallbackSettings.dotFeeds, ...(next.dotFeeds || {}) },
           vhfAudio: { ...fallbackSettings.vhfAudio, ...(next.vhfAudio || {}) },
         };
