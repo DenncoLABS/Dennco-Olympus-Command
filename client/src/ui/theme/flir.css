@@ -1,0 +1,242 @@
+.theme-flir {
+  /* ═══════════════════════════════════════════════════════════════════════
+       FLIR — Forward-Looking Infrared Thermal Imaging Theme
+       Transforms the tactical UI into a realistic thermal color palette:
+
+       Cold (Background)  → Dark purple/black  (#0a0014, #150a20)
+       Cool (Panels)      → Dark purple        (#1f0f2e, #2a1540)
+       Warm (Text)        → Orange/amber       (#ff8800, #ffaa33)
+       Hot (Accents)      → Yellow/white       (#ffcc00, #ffffdd)
+       Critical           → Bright yellow      (#ffff66)
+
+       Maintains UI readability while providing authentic thermal aesthetics.
+    ═══════════════════════════════════════════════════════════════════════ */
+
+  /* Override color variables with thermal palette */
+  --color-intel-bg: #0a0014; /* Cold: Deep purple-black */
+  --color-intel-panel: rgba(31, 15, 46, 0.75); /* Cool: Dark purple with transparency */
+  --color-intel-accent: #ffcc00; /* Hot: Bright yellow */
+  --color-intel-text: #ff8833; /* Warm: Orange */
+  --color-intel-text-light: #ffffdd; /* Hot: Light yellow-white */
+  --color-intel-success: #ffaa00; /* Warm-Hot: Orange-yellow */
+  --color-intel-danger: #ff6600; /* Hot: Orange-red */
+  --color-intel-warn: #ffcc00; /* Hot: Yellow */
+
+  /* Background gradient for subtle thermal effect */
+  background: radial-gradient(ellipse at center, rgba(42, 21, 64, 0.15) 0%, #0a0014 70%);
+
+  /* Global thermal glow effect */
+  filter: brightness(1.05) saturate(1.2);
+}
+
+/* ─── Thermal enhancements ─────────────────────────────────────────────── */
+
+/* Add thermal bloom to bright elements */
+.theme-flir .tech-panel::after {
+  opacity: 1;
+  filter: drop-shadow(0 0 8px rgba(255, 204, 0, 0.4));
+}
+
+/* Enhance glow on active/hot elements */
+.theme-flir [class*='shadow-'][class*='intel-accent'],
+.theme-flir [class*='glow'] {
+  filter: drop-shadow(0 0 12px rgba(255, 204, 0, 0.6));
+}
+
+/* Thermal heat signature on animated pulses */
+.theme-flir .animate-pulse {
+  animation: thermal-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes thermal-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px rgba(255, 204, 0, 0.8));
+  }
+  50% {
+    opacity: 0.7;
+    filter: drop-shadow(0 0 16px rgba(255, 204, 0, 0.4));
+  }
+}
+
+/* Thermal gradient for borders */
+.theme-flir .border-intel-accent {
+  border-color: #ffcc00 !important;
+}
+
+.theme-flir .border-intel-accent\/40,
+.theme-flir .border-intel-accent\/30,
+.theme-flir .border-intel-accent\/20 {
+  border-color: rgba(255, 204, 0, 0.4) !important;
+}
+
+/* Text color overrides for thermal palette */
+.theme-flir .text-intel-accent {
+  color: #ffcc00 !important;
+}
+
+.theme-flir .text-intel-text-light {
+  color: #ffffdd !important;
+}
+
+.theme-flir .text-intel-text {
+  color: #ff8833 !important;
+}
+
+/* Background overrides */
+.theme-flir .bg-intel-accent {
+  background-color: #ffcc00 !important;
+}
+
+.theme-flir .bg-intel-accent\/10 {
+  background-color: rgba(255, 204, 0, 0.1) !important;
+}
+
+.theme-flir .bg-intel-bg {
+  background-color: #0a0014 !important;
+}
+
+.theme-flir .bg-intel-panel {
+  background-color: rgba(31, 15, 46, 0.75) !important;
+}
+
+/* Thermal signature for the tech-panel base */
+.theme-flir .tech-panel {
+  background: rgba(31, 15, 46, 0.7) !important;
+  border-color: rgba(255, 204, 0, 0.15) !important;
+  box-shadow:
+    inset 0 0 20px rgba(255, 204, 0, 0.05),
+    0 0 15px rgba(255, 204, 0, 0.1);
+}
+
+/* ─── Inline style overrides for thermal palette ─────────────────────────── */
+
+/* Critical/danger elements: #ff3366 → Orange-red thermal */
+.theme-flir .bg-\\[\\#ff3366\\],
+.theme-flir [style*='color: #ff3366'],
+.theme-flir [style*='color:#ff3366'] {
+  color: #ff6600 !important;
+  text-shadow: 0 0 10px rgba(255, 102, 0, 0.6);
+}
+
+.theme-flir [style*='background: #ff3366'],
+.theme-flir [style*='background:#ff3366'],
+.theme-flir .shadow-\\[0_0_8px_\\#ff3366\\] {
+  background: #ff6600 !important;
+  box-shadow: 0 0 12px rgba(255, 102, 0, 0.6) !important;
+}
+
+/* Accent elements: #00e5ff → Yellow thermal */
+.theme-flir [style*='color: #00e5ff'],
+.theme-flir [style*='color:#00e5ff'] {
+  color: #ffcc00 !important;
+  text-shadow: 0 0 8px rgba(255, 204, 0, 0.5);
+}
+
+.theme-flir [style*='background: #00e5ff'],
+.theme-flir [style*='background:#00e5ff'] {
+  background: #ffcc00 !important;
+}
+
+/* ─── Category-specific thermal color mapping ────────────────────────────── */
+
+/* DNS: #7b61ff → Orange-yellow */
+.theme-flir [style*='color: #7b61ff'],
+.theme-flir [style*='color:#7b61ff'] {
+  color: #ffaa00 !important;
+  text-shadow: 0 0 8px rgba(255, 170, 0, 0.5);
+}
+
+/* BGP: #00ff9d → Yellow-white */
+.theme-flir [style*='color: #00ff9d'],
+.theme-flir [style*='color:#00ff9d'] {
+  color: #ffdd66 !important;
+  text-shadow: 0 0 8px rgba(255, 221, 102, 0.5);
+}
+
+/* Domain Ranking: #f59e0b → Keep warm, slightly hotter */
+.theme-flir [style*='color: #f59e0b'],
+.theme-flir [style*='color:#f59e0b'] {
+  color: #ffaa00 !important;
+  text-shadow: 0 0 8px rgba(255, 170, 0, 0.5);
+}
+
+/* Internet Quality: #e879f9 → Hot yellow */
+.theme-flir [style*='color: #e879f9'],
+.theme-flir [style*='color:#e879f9'] {
+  color: #ffcc33 !important;
+  text-shadow: 0 0 8px rgba(255, 204, 51, 0.5);
+}
+
+/* Anomalies: #ef4444 → Hot orange */
+.theme-flir [style*='color: #ef4444'],
+.theme-flir [style*='color:#ef4444'] {
+  color: #ff6600 !important;
+  text-shadow: 0 0 10px rgba(255, 102, 0, 0.6);
+}
+
+/* NetFlows: #22d3ee → Bright yellow */
+.theme-flir [style*='color: #22d3ee'],
+.theme-flir [style*='color:#22d3ee'] {
+  color: #ffcc00 !important;
+  text-shadow: 0 0 8px rgba(255, 204, 0, 0.5);
+}
+
+/* Generic RGB colors - apply thermal transformation */
+.theme-flir [style*='color: rgb'],
+.theme-flir [style*='color:rgb'] {
+  filter: hue-rotate(-180deg) saturate(1.5) brightness(1.1);
+}
+
+/* Background color transformations for all category colors */
+.theme-flir [style*='background: #7b61ff'],
+.theme-flir [style*='background:#7b61ff'] {
+  background: linear-gradient(135deg, #ffaa00 0%, #ff8800 100%) !important;
+}
+
+.theme-flir [style*='background: #00ff9d'],
+.theme-flir [style*='background:#00ff9d'] {
+  background: linear-gradient(135deg, #ffdd66 0%, #ffcc33 100%) !important;
+}
+
+.theme-flir [style*='background: #f59e0b'],
+.theme-flir [style*='background:#f59e0b'] {
+  background: linear-gradient(135deg, #ffaa00 0%, #ff9900 100%) !important;
+}
+
+.theme-flir [style*='background: #e879f9'],
+.theme-flir [style*='background:#e879f9'] {
+  background: linear-gradient(135deg, #ffcc33 0%, #ffaa00 100%) !important;
+}
+
+.theme-flir [style*='background: #ef4444'],
+.theme-flir [style*='background:#ef4444'] {
+  background: linear-gradient(135deg, #ff6600 0%, #ff4400 100%) !important;
+}
+
+.theme-flir [style*='background: #22d3ee'],
+.theme-flir [style*='background:#22d3ee'] {
+  background: linear-gradient(135deg, #ffcc00 0%, #ffaa00 100%) !important;
+}
+
+/* Map markers and hot spots get extra thermal glow */
+.theme-flir circle[fill],
+.theme-flir path[fill] {
+  filter: drop-shadow(0 0 6px rgba(255, 204, 0, 0.5));
+}
+
+/* Subtle thermal noise/grain overlay */
+.theme-flir::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: overlay;
+  opacity: 0.4;
+}

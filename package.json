@@ -1,0 +1,76 @@
+{
+  "name": "radar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Radar - A real-time geospatial intelligence dashboard for live flight and maritime vessel tracking",
+  "keywords": [
+    "adsb",
+    "ais",
+    "flight-tracking",
+    "maritime-tracking",
+    "geospatial",
+    "intelligence",
+    "dashboard",
+    "real-time",
+    "maplibre",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Syntax-Error-1337/radar.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Syntax-Error-1337/radar/issues"
+  },
+  "homepage": "https://radar.army",
+  "license": "MIT",
+  "author": "Himanshu Tiwari <nomails1337@gmail.com>",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=client\" \"npm run dev --workspace=server\"",
+    "install:all": "npm install",
+    "build": "npm run build --workspace=client && npm run build --workspace=server",
+    "build:client": "npm run build --workspace=client",
+    "build:server": "npm run build --workspace=server",
+    "start": "npm run start --workspace=server",
+    "test": "npm run test --workspace=client",
+    "test:client": "npm run test --workspace=client",
+    "lint": "npm run lint --workspace=client",
+    "lint:fix": "npm run lint --workspace=client -- --fix",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+    "type-check": "tsc --noEmit --project client/tsconfig.json && tsc --noEmit --project server/tsconfig.json",
+    "clean": "rm -rf node_modules client/node_modules server/node_modules client/dist server/dist",
+    "clean:cache": "rm -rf client/.vite server/.cache",
+    "docker:build": "docker build -t radar:latest .",
+    "docker:run": "docker run -p 3001:3001 --env-file server/.env radar:latest",
+    "docker:compose": "docker-compose up",
+    "docker:compose:build": "docker-compose up --build",
+    "docker:down": "docker-compose down",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.2",
+    "prettier": "^3.8.1"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
+  "lint-staged": {
+    "client/**/*.{js,jsx,ts,tsx}": [
+      "prettier --write"
+    ],
+    "server/**/*.{js,ts}": [
+      "prettier --write"
+    ],
+    "*.{json,css,scss,md}": [
+      "prettier --write"
+    ]
+  }
+}
