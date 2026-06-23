@@ -7,20 +7,29 @@ import {
 
 const router = Router();
 
-let snapshotCache: { data: object; ts: number; provider: string } | null = null;
-let lastGoodCombined: { states: AircraftState[]; ts: number; provider: string } | null = null;
+let snapshotCache: { data: object; ts: number; provider: string; regionKey: string } | null = null;
+let lastGoodCombined: { states: AircraftState[]; ts: number; provider: string; regionKey: string } | null = null;
 const SNAPSHOT_TTL_MS = 5_000;
 const LAST_GOOD_TTL_MS = 120_000;
 const MIN_GOOD_COUNT = 50;
 const SHRINK_RATIO = 0.8;
 const PROVIDER_LABEL = 'dennco-flightmesh';
 
-async function fetchDenncoFlightMeshStates(): Promise<AircraftState[]> {
-  return fetchAdsbLolStates();
+function parseRegionIds(value: unknown): string[] {
+  if (typeof value !== 'string') return [];
+  return value
+    .split(',')
+    .map((region) => region.trim())
+    .filter((region) => /^[a-z0-9-]{2,40}$/i.test(region));
 }
 
-function shouldUseLastGood(nextCount: number, now: number): boolean {
+async function fetchDenncoFlightMeshStates(regionIds: string[]): Promise<AircraftState[]> {
+  return fetchAdsbLolStates(regionIds);
+}
+
+function shouldUseLastGood(nextCount: number, now: number, regionKey: string): boolean {
   if (!lastGoodCombined) return false;
+  if (lastGoodCombined.regionKey !== regionKey) return false;
   if (now - lastGoodCombined.ts > LAST_GOOD_TTL_MS) return false;
   const goodCount = lastGoodCombined.states.length;
   if (goodCount < MIN_GOOD_COUNT) return false;
@@ -28,36 +37,39 @@ function shouldUseLastGood(nextCount: number, now: number): boolean {
   return nextCount < Math.floor(goodCount * SHRINK_RATIO);
 }
 
-router.get('/snapshot', async (_req, res) => {
+router.get('/snapshot', async (req, res) => {
   const now = Date.now();
-  const providerLabel = PROVIDER_LABEL;
+  const regionIds = parseRegionIds(req.query.regions);
+  const regionKey = regionIds.slice().sort().join(',') || 'default';
+  const providerLabel = regionIds.length ? `${PROVIDER_LABEL}-regional` : PROVIDER_LABEL;
 
-  if (snapshotCache && snapshotCache.provider === providerLabel && now - snapshotCache.ts < SNAPSHOT_TTL_MS) {
+  if (snapshotCache && snapshotCache.provider === providerLabel && snapshotCache.regionKey === regionKey && now - snapshotCache.ts < SNAPSHOT_TTL_MS) {
     res.setHeader('X-Cache', 'HIT');
     return res.json(snapshotCache.data);
   }
 
   try {
-    const states = await fetchDenncoFlightMeshStates();
+    const states = await fetchDenncoFlightMeshStates(regionIds);
 
-    if (shouldUseLastGood(states.length, now)) {
+    if (shouldUseLastGood(states.length, now, regionKey)) {
       const payload = {
         states: lastGoodCombined!.states,
         timestamp: now,
         provider: `${providerLabel}-last-good`,
         live: true,
+        radarRegions: regionIds,
         staleGuard: true,
         rejectedCount: states.length,
       };
-      snapshotCache = { data: payload, ts: now, provider: providerLabel };
+      snapshotCache = { data: payload, ts: now, provider: providerLabel, regionKey };
       res.setHeader('X-Cache', 'LAST-GOOD');
       return res.json(payload);
     }
 
-    const payload = { states, timestamp: now, provider: providerLabel, live: true };
-    snapshotCache = { data: payload, ts: now, provider: providerLabel };
+    const payload = { states, timestamp: now, provider: providerLabel, live: true, radarRegions: regionIds };
+    snapshotCache = { data: payload, ts: now, provider: providerLabel, regionKey };
     if (states.length >= MIN_GOOD_COUNT) {
-      lastGoodCombined = { states, ts: now, provider: providerLabel };
+      lastGoodCombined = { states, ts: now, provider: providerLabel, regionKey };
     }
     res.setHeader('X-Cache', 'MISS');
     res.json(payload);
@@ -65,16 +77,17 @@ router.get('/snapshot', async (_req, res) => {
     const message = error?.message || 'Unknown flight provider error';
     console.warn(`[Flights] ${providerLabel} provider failed: ${message}`);
 
-    if (lastGoodCombined && now - lastGoodCombined.ts < LAST_GOOD_TTL_MS) {
+    if (lastGoodCombined && lastGoodCombined.regionKey === regionKey && now - lastGoodCombined.ts < LAST_GOOD_TTL_MS) {
       const payload = {
         states: lastGoodCombined.states,
         timestamp: now,
         provider: `${lastGoodCombined.provider}-last-good`,
         live: false,
+        radarRegions: regionIds,
         staleGuard: true,
         details: message,
       };
-      snapshotCache = { data: payload, ts: now, provider: providerLabel };
+      snapshotCache = { data: payload, ts: now, provider: providerLabel, regionKey };
       res.setHeader('X-Cache', 'LAST-GOOD-ERROR');
       return res.json(payload);
     }
@@ -83,6 +96,7 @@ router.get('/snapshot', async (_req, res) => {
       error: 'Live flight provider unavailable',
       provider: providerLabel,
       live: false,
+      radarRegions: regionIds,
       states: [],
       timestamp: now,
       details: message,
