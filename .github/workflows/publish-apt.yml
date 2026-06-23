@@ -89,17 +89,12 @@ jobs:
           <!doctype html>
           <html>
             <head><meta charset="utf-8"><title>Dennco Olympus Command Apt Repository</title></head>
-            <body>
-              <h1>Dennco Olympus Command Apt Repository</h1>
-              <p>Use the installer from the main branch:</p>
-              <pre>curl -fsSL https://raw.githubusercontent.com/DenncoLABS/Dennco-Olympus-Command/main/install.sh | bash</pre>
-            </body>
+            <body><h1>Dennco Olympus Command Apt Repository</h1></body>
           </html>
           EOF
 
-          git add -A
-          git status --short
+          git add .
           git commit -m "Publish apt repository"
-          git push --force origin HEAD:gh-pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git push --force origin gh-pages
+
+# rebuild trigger: flight snapshot guard package
