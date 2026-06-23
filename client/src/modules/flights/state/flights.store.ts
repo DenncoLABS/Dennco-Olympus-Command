@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import { DEFAULT_ACTIVE_RADAR_REGION_IDS } from '../data/aviationInfrastructure';
+import { RADAR_REGIONS } from '../data/aviationInfrastructure';
+
+const ALL_RADAR_REGION_IDS = RADAR_REGIONS.map((region) => region.id);
 
 export interface FlightsFilters {
   altitudeMin: number;
@@ -26,6 +28,8 @@ interface FlightsState {
   activeRadarRegionIds: string[];
   toggleRadarRegion: (regionId: string) => void;
   setActiveRadarRegionIds: (regionIds: string[]) => void;
+  activateAllRadarRegions: () => void;
+  clearRadarRegions: () => void;
 }
 
 export const useFlightsStore = create<FlightsState>((set) => ({
@@ -48,12 +52,15 @@ export const useFlightsStore = create<FlightsState>((set) => ({
   setShowAirportPins: (show) => set({ showAirportPins: show }),
   showRadarPins: true,
   setShowRadarPins: (show) => set({ showRadarPins: show }),
-  activeRadarRegionIds: DEFAULT_ACTIVE_RADAR_REGION_IDS,
+  activeRadarRegionIds: [],
   toggleRadarRegion: (regionId) =>
     set((state) => ({
       activeRadarRegionIds: state.activeRadarRegionIds.includes(regionId)
         ? state.activeRadarRegionIds.filter((id) => id !== regionId)
         : [...state.activeRadarRegionIds, regionId],
     })),
-  setActiveRadarRegionIds: (regionIds) => set({ activeRadarRegionIds: regionIds }),
+  setActiveRadarRegionIds: (regionIds) =>
+    set({ activeRadarRegionIds: regionIds.filter((id) => ALL_RADAR_REGION_IDS.includes(id)) }),
+  activateAllRadarRegions: () => set({ activeRadarRegionIds: ALL_RADAR_REGION_IDS }),
+  clearRadarRegions: () => set({ activeRadarRegionIds: [] }),
 }));
