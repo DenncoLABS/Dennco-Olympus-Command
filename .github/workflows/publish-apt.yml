@@ -49,9 +49,10 @@ jobs:
           mkdir -p aptrepo/pool/main/d/dennco-olympus-command
           cp dist/deb/*.deb aptrepo/pool/main/d/dennco-olympus-command/
           mkdir -p aptrepo/dists/stable/main/binary-amd64
-          dpkg-scanpackages --arch amd64 aptrepo/pool > aptrepo/dists/stable/main/binary-amd64/Packages
-          gzip -k -f aptrepo/dists/stable/main/binary-amd64/Packages
-          cat > aptrepo/dists/stable/Release <<'EOF'
+          cd aptrepo
+          dpkg-scanpackages --arch amd64 pool > dists/stable/main/binary-amd64/Packages
+          gzip -k -f dists/stable/main/binary-amd64/Packages
+          cat > dists/stable/Release <<'EOF'
           Origin: DenncoLABS
           Label: Dennco Olympus Command
           Suite: stable
