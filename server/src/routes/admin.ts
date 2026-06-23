@@ -1,55 +1,84 @@
 import express from 'express';
-import { clearAccess, grantAccess, renderLogin } from '../core/accessGate';
+import { clearAccess, grantAccess, renderLogin, renderSetup } from '../core/accessGate';
+import { createFirstRunConfig, getRuntimeBranding, isAdminConfigured, verifyAdminLogin } from '../core/firstRunConfig';
 
 const router = express.Router();
 
-const runtimeSettings = {
-  auth: {
-    provider: process.env.OLYMPUS_AUTH_PROVIDER || 'local',
-    directoryProvider: process.env.OLYMPUS_DIRECTORY_PROVIDER || 'none',
-    nethserver8Enabled: process.env.OLYMPUS_NETHSERVER8_DIRECTORY === 'true',
-  },
-  branding: {
-    productName: process.env.OLYMPUS_PRODUCT_NAME || 'Dennco Olympus Command',
-    shortName: process.env.OLYMPUS_SHORT_NAME || 'OLYMPUS',
-    logoUrl: process.env.OLYMPUS_LOGO_URL || '',
-    faviconUrl: process.env.OLYMPUS_FAVICON_URL || '',
-    footerText: process.env.OLYMPUS_FOOTER_TEXT || 'Dennco Olympus Command',
-  },
-  featureToggles: {
-    flights: process.env.OLYMPUS_FEATURE_FLIGHTS !== 'false',
-    maritime: process.env.OLYMPUS_FEATURE_MARITIME !== 'false',
-    monitor: process.env.OLYMPUS_FEATURE_MONITOR !== 'false',
-    cyber: process.env.OLYMPUS_FEATURE_CYBER !== 'false',
-    cssInjector: process.env.OLYMPUS_FEATURE_CSS_INJECTOR !== 'false',
-  },
-  theme: {
-    customCss: process.env.OLYMPUS_CUSTOM_CSS || '',
-  },
-  providers: {
-    aisstream: Boolean(process.env.AISSTREAM_API_KEY),
-    opensky: Boolean(process.env.OPENSKY_USERNAME || process.env.OPENSKY_PASSWORD),
-    mapTiles: Boolean(process.env.MAP_TILES_URL),
-  },
-};
+function runtimeSettings() {
+  const branding = getRuntimeBranding();
+
+  return {
+    auth: {
+      provider: process.env.OLYMPUS_AUTH_PROVIDER || 'local',
+      directoryProvider: process.env.OLYMPUS_DIRECTORY_PROVIDER || 'none',
+      nethserver8Enabled: process.env.OLYMPUS_NETHSERVER8_DIRECTORY === 'true',
+      configured: isAdminConfigured(),
+    },
+    branding: {
+      productName: branding.productName,
+      shortName: branding.shortName,
+      logoUrl: process.env.OLYMPUS_LOGO_URL || '',
+      faviconUrl: process.env.OLYMPUS_FAVICON_URL || '',
+      footerText: branding.footerText,
+    },
+    featureToggles: {
+      flights: process.env.OLYMPUS_FEATURE_FLIGHTS !== 'false',
+      maritime: process.env.OLYMPUS_FEATURE_MARITIME !== 'false',
+      monitor: process.env.OLYMPUS_FEATURE_MONITOR !== 'false',
+      cyber: process.env.OLYMPUS_FEATURE_CYBER !== 'false',
+      cssInjector: process.env.OLYMPUS_FEATURE_CSS_INJECTOR !== 'false',
+    },
+    theme: {
+      customCss: process.env.OLYMPUS_CUSTOM_CSS || '',
+    },
+    providers: {
+      aisstream: Boolean(process.env.AISSTREAM_API_KEY),
+      opensky: Boolean(process.env.OPENSKY_USERNAME || process.env.OPENSKY_PASSWORD),
+      mapTiles: Boolean(process.env.MAP_TILES_URL),
+    },
+  };
+}
 
 router.get('/runtime-settings', (_req, res) => {
-  res.json(runtimeSettings);
+  res.json(runtimeSettings());
+});
+
+router.get('/setup/status', (_req, res) => {
+  res.json({ configured: isAdminConfigured() });
+});
+
+router.post('/setup', (req, res) => {
+  if (isAdminConfigured()) {
+    grantAccess(res);
+    return res.redirect('/');
+  }
+
+  try {
+    createFirstRunConfig({
+      adminUser: req.body?.adminUser,
+      accessCode: req.body?.accessCode,
+      productName: req.body?.productName,
+      shortName: req.body?.shortName,
+      footerText: req.body?.footerText,
+    });
+    grantAccess(res);
+    return res.redirect('/');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to complete setup.';
+    return renderSetup(res, message);
+  }
 });
 
 router.post('/login', (req, res) => {
   const { username, accessCode } = req.body || {};
-  const expectedUser = process.env.OLYMPUS_ADMIN_USER || 'admin';
-  const expectedCode = process.env.OLYMPUS_ADMIN_ACCESS_CODE;
   const wantsHtml = String(req.headers.accept || '').includes('text/html') || req.is('application/x-www-form-urlencoded');
 
-  if (!expectedCode) {
-    const message = 'Admin login is not configured. Set OLYMPUS_ADMIN_ACCESS_CODE in the server environment.';
-    if (wantsHtml) return renderLogin(res, message);
-    return res.status(503).json({ error: message });
+  if (!isAdminConfigured()) {
+    if (wantsHtml) return renderSetup(res);
+    return res.status(428).json({ error: 'First-time setup required.' });
   }
 
-  if (username === expectedUser && accessCode === expectedCode) {
+  if (verifyAdminLogin(username, accessCode)) {
     grantAccess(res);
     if (wantsHtml) return res.redirect('/');
     return res.json({ ok: true, user: { username, role: 'admin' } });
