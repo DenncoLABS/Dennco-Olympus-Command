@@ -4,6 +4,10 @@ import { aircraftDb } from '../aircraft_db';
 
 const CACHE_TTL = 3000;
 const adsblolCache = new Cache<AircraftState[]>(CACHE_TTL);
+let lastGoodStates: AircraftState[] = [];
+let lastGoodAt = 0;
+const LAST_GOOD_MAX_AGE_MS = 120000;
+const MIN_GOOD_COUNT = 50;
 
 const DEFAULT_POINTS = [
   '40.6413,-73.7781,250',
@@ -43,9 +47,22 @@ function getAircraftArray(data: any): any[] {
 }
 
 function getNowSeconds(data: any): number {
-  if (typeof data.now === 'number') return data.now > 9_999_999_999 ? Math.floor(data.now / 1000) : Math.floor(data.now);
-  if (typeof data.ctime === 'number') return data.ctime > 9_999_999_999 ? Math.floor(data.ctime / 1000) : Math.floor(data.ctime);
+  if (typeof data.now === 'number') return data.now > 9999999999 ? Math.floor(data.now / 1000) : Math.floor(data.now);
+  if (typeof data.ctime === 'number') return data.ctime > 9999999999 ? Math.floor(data.ctime / 1000) : Math.floor(data.ctime);
   return Math.floor(Date.now() / 1000);
+}
+
+function useLastGoodIfNeeded(next: AircraftState[]): AircraftState[] {
+  const now = Date.now();
+  if (next.length >= MIN_GOOD_COUNT) {
+    lastGoodStates = next;
+    lastGoodAt = now;
+    return next;
+  }
+  if (lastGoodStates.length >= MIN_GOOD_COUNT && now - lastGoodAt < LAST_GOOD_MAX_AGE_MS) {
+    return lastGoodStates;
+  }
+  return next;
 }
 
 async function fetchAircraftBatches(): Promise<{ aircraft: any[]; nowSec: number }> {
@@ -80,6 +97,7 @@ export async function fetchStates(): Promise<AircraftState[]> {
 
   const { aircraft, nowSec } = await fetchAircraftBatches();
   if (aircraft.length === 0) {
+    if (lastGoodStates.length > 0 && Date.now() - lastGoodAt < LAST_GOOD_MAX_AGE_MS) return lastGoodStates;
     const staleCached = adsblolCache.get();
     if (staleCached && staleCached.length > 0) return staleCached;
     throw new Error('ADSB.lol returned no aircraft from configured regions');
@@ -151,8 +169,9 @@ export async function fetchStates(): Promise<AircraftState[]> {
     })
     .filter((a: AircraftState) => a.lat !== 0 && a.lon !== 0 && a.lat != null && a.lon != null && !Number.isNaN(a.lat) && !Number.isNaN(a.lon));
 
-  adsblolCache.set(parsed);
-  return parsed;
+  const guarded = useLastGoodIfNeeded(parsed);
+  adsblolCache.set(guarded);
+  return guarded;
 }
 
 export async function fetchTrack(icao24: string): Promise<any> {
