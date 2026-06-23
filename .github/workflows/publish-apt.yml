@@ -40,14 +40,17 @@ jobs:
       - name: Install packaging tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y dpkg-dev rsync
+          sudo apt-get install -y dpkg-dev rsync gnupg
 
       - name: Build Debian package
         run: |
           chmod +x packaging/build-deb.sh
           VERSION="$(node -p "require('./package.json').version")-${GITHUB_RUN_NUMBER}" ./packaging/build-deb.sh
 
-      - name: Prepare apt repository
+      - name: Prepare signed apt repository
+        env:
+          APT_SIGNING_PRIVATE_KEY: ${{ secrets.APT_SIGNING_PRIVATE_KEY }}
+          APT_SIGNING_PASSPHRASE: ${{ secrets.APT_SIGNING_PASSPHRASE }}
         run: |
           set -euo pipefail
           mkdir -p aptrepo/pool/main/d/dennco-olympus-command
@@ -65,6 +68,28 @@ jobs:
           Components: main
           Description: Dennco Olympus Command apt repository
           EOF
+
+          export GNUPGHOME="$(mktemp -d)"
+          chmod 700 "$GNUPGHOME"
+          if [ -n "${APT_SIGNING_PRIVATE_KEY:-}" ]; then
+            printf '%s' "$APT_SIGNING_PRIVATE_KEY" | gpg --batch --import
+          else
+            gpg --batch --pinentry-mode loopback --passphrase '' --quick-generate-key \
+              "Dennco Olympus Command Apt Repository <support@dennco.org>" rsa3072 sign 1y
+          fi
+
+          KEY_FPR="$(gpg --batch --list-secret-keys --with-colons | awk -F: '/^fpr:/ {print $10; exit}')"
+          if [ -z "$KEY_FPR" ]; then
+            echo "No apt signing key available." >&2
+            exit 1
+          fi
+
+          gpg --batch --yes --pinentry-mode loopback --passphrase "${APT_SIGNING_PASSPHRASE:-}" \
+            --local-user "$KEY_FPR" --clearsign -o dists/stable/InRelease dists/stable/Release
+          gpg --batch --yes --pinentry-mode loopback --passphrase "${APT_SIGNING_PASSPHRASE:-}" \
+            --local-user "$KEY_FPR" -abs -o dists/stable/Release.gpg dists/stable/Release
+          gpg --batch --yes --export "$KEY_FPR" > dennco-olympus-command-archive-keyring.gpg
+
           echo "APT repository contents:"
           find . -maxdepth 5 -type f -print | sort
 
@@ -99,4 +124,4 @@ jobs:
           git commit -m "Publish apt repository"
           git push --force origin gh-pages
 
-# rebuild trigger: token fix and flight snapshot guard package
+# rebuild trigger: signed apt repository and stable flight feed
