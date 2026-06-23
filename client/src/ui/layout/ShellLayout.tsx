@@ -27,6 +27,10 @@ export const ShellLayout: React.FC<ShellLayoutProps> = ({ children }) => {
         <span className="text-white/15">|</span>
         <span>{settings.branding.footerText}</span>
         <span className="text-white/15">|</span>
+        <span className="text-blue-300/75 uppercase tracking-[0.14em]">US-Friendly Platform</span>
+        <span className="text-white/15">|</span>
+        <span className="text-white/45">Dennco Information Systems service</span>
+        <span className="text-white/15">|</span>
         <span className="group flex items-center gap-1 text-emerald-300/70">
           <Shield size={11} className="opacity-70" />
           <span>{settings.auth.nethserver8Enabled ? 'NethServer 8 Directory Ready' : 'Local Admin Mode'}</span>
