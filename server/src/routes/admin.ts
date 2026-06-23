@@ -25,6 +25,7 @@ function runtimeSettings() {
       flights: process.env.OLYMPUS_FEATURE_FLIGHTS !== 'false',
       maritime: process.env.OLYMPUS_FEATURE_MARITIME !== 'false',
       monitor: process.env.OLYMPUS_FEATURE_MONITOR !== 'false',
+      dot: process.env.OLYMPUS_FEATURE_DOT !== 'false',
       cyber: process.env.OLYMPUS_FEATURE_CYBER !== 'false',
       cssInjector: process.env.OLYMPUS_FEATURE_CSS_INJECTOR !== 'false',
     },
@@ -35,6 +36,19 @@ function runtimeSettings() {
       aisstream: Boolean(process.env.AISSTREAM_API_KEY),
       opensky: Boolean(process.env.OPENSKY_USERNAME || process.env.OPENSKY_PASSWORD),
       mapTiles: Boolean(process.env.MAP_TILES_URL),
+      dotTraffic: Boolean(process.env.DOT_TRAFFIC_GEOJSON_URL || process.env.VITE_DOT_TRAFFIC_GEOJSON_URL),
+      dotCameras: Boolean(process.env.DOT_CAMERAS_GEOJSON_URL || process.env.VITE_DOT_CAMERAS_GEOJSON_URL),
+    },
+    dotFeeds: {
+      nationalTrafficUrl: process.env.DOT_NATIONAL_TRAFFIC_GEOJSON_URL || '',
+      trafficUrl: process.env.DOT_TRAFFIC_GEOJSON_URL || process.env.VITE_DOT_TRAFFIC_GEOJSON_URL || '',
+      camerasUrl: process.env.DOT_CAMERAS_GEOJSON_URL || process.env.VITE_DOT_CAMERAS_GEOJSON_URL || '',
+      roadClosuresUrl: process.env.DOT_ROAD_CLOSURES_GEOJSON_URL || '',
+      providerMode: process.env.DOT_PROVIDER_MODE || 'custom',
+      states: (process.env.DOT_STATE_FEEDS || '')
+        .split(',')
+        .map((state) => state.trim().toUpperCase())
+        .filter(Boolean),
     },
   };
 }
