@@ -13,6 +13,9 @@ const MaritimePage = lazy(() =>
 const MonitorPage = lazy(() =>
   import('../modules/monitor/MonitorPage').then((m) => ({ default: m.MonitorPage })),
 );
+const DotPage = lazy(() =>
+  import('../modules/dot/DotPage').then((m) => ({ default: m.DotPage })),
+);
 const CyberPage = lazy(() =>
   import('../modules/cyber/CyberPage').then((m) => ({ default: m.CyberPage })),
 );
@@ -39,6 +42,8 @@ export const AppRoutes: React.FC = () => {
         <MonitorPage />
       ) : activeModule === 'maritime' ? (
         <MaritimePage />
+      ) : activeModule === 'dot' ? (
+        <DotPage />
       ) : activeModule === 'cyber' ? (
         <CyberPage />
       ) : (
