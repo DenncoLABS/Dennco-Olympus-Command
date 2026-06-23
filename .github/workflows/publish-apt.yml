@@ -40,7 +40,7 @@ jobs:
       - name: Install packaging tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y dpkg-dev rsync gnupg
+          sudo apt-get install -y apt-utils dpkg-dev rsync gnupg
 
       - name: Build Debian package
         run: |
@@ -59,15 +59,17 @@ jobs:
           cd aptrepo
           dpkg-scanpackages --arch amd64 pool > dists/stable/main/binary-amd64/Packages
           gzip -k -f dists/stable/main/binary-amd64/Packages
-          cat > dists/stable/Release <<'EOF'
-          Origin: DenncoLABS
-          Label: Dennco Olympus Command
-          Suite: stable
-          Codename: stable
-          Architectures: amd64
-          Components: main
-          Description: Dennco Olympus Command apt repository
+
+          cat > apt-ftparchive.conf <<'EOF'
+          APT::FTPArchive::Release::Origin "DenncoLABS";
+          APT::FTPArchive::Release::Label "Dennco Olympus Command";
+          APT::FTPArchive::Release::Suite "stable";
+          APT::FTPArchive::Release::Codename "stable";
+          APT::FTPArchive::Release::Architectures "amd64";
+          APT::FTPArchive::Release::Components "main";
+          APT::FTPArchive::Release::Description "Dennco Olympus Command apt repository";
           EOF
+          apt-ftparchive -c apt-ftparchive.conf release dists/stable > dists/stable/Release
 
           export GNUPGHOME="$(mktemp -d)"
           chmod 700 "$GNUPGHOME"
@@ -124,4 +126,4 @@ jobs:
           git commit -m "Publish apt repository"
           git push --force origin gh-pages
 
-# rebuild trigger: signed apt repository and stable flight feed
+# rebuild trigger: complete apt release metadata
