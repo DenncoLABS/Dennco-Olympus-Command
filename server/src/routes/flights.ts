@@ -16,7 +16,7 @@ let lastGoodCombined: { states: AircraftState[]; ts: number; provider: string } 
 const SNAPSHOT_TTL_MS = 5_000;
 const LAST_GOOD_TTL_MS = 120_000;
 const MIN_GOOD_COUNT = 50;
-const SHRINK_RATIO = 0.35;
+const SHRINK_RATIO = 0.8;
 
 function selectedProvider(): 'adsblol' | 'opensky' {
   return process.env.FLIGHT_DATA_SOURCE === 'opensky' ? 'opensky' : 'adsblol';
