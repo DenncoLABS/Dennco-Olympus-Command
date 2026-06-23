@@ -58,7 +58,8 @@ type MaritimePopup =
   | { type: 'node'; item: MaritimeNode };
 
 function popupTitle(popup: MaritimePopup): string {
-  return popup.item.name || popup.item.label;
+  if (popup.type === 'node') return popup.item.label;
+  return popup.item.name;
 }
 
 function popupSubtitle(popup: MaritimePopup): string {
@@ -311,38 +312,12 @@ export const MaritimePage: React.FC = () => {
               )}
 
               <Source id="points-halo" type="geojson" data={EMPTY_FC}>
-                <Layer
-                  id="vessel-points-halo"
-                  type="circle"
-                  paint={{
-                    'circle-radius': ['case', ['==', ['get', 'mmsi'], selectedMmsi || 0], 12, 0],
-                    'circle-color': 'transparent',
-                    'circle-stroke-width': ['case', ['==', ['get', 'mmsi'], selectedMmsi || 0], 2, 0],
-                    'circle-stroke-color': '#3b82f6',
-                  }}
-                />
+                <Layer id="vessel-points-halo" type="circle" paint={{ 'circle-radius': ['case', ['==', ['get', 'mmsi'], selectedMmsi || 0], 12, 0], 'circle-color': 'transparent', 'circle-stroke-width': ['case', ['==', ['get', 'mmsi'], selectedMmsi || 0], 2, 0], 'circle-stroke-color': '#3b82f6' }} />
               </Source>
 
               {imagesReady && (
                 <Source id="points" type="geojson" data={EMPTY_FC}>
-                  <Layer
-                    id="vessel-points"
-                    type="symbol"
-                    layout={{
-                      'icon-image': [
-                        'case',
-                        ['==', ['get', 'mmsi'], selectedMmsi || 0],
-                        'ship-white',
-                        ['in', ['get', 'navigationalStatus'], ['literal', [1, 5]]],
-                        'ship-orange',
-                        'ship-green',
-                      ],
-                      'icon-size': 0.7,
-                      'icon-rotate': ['coalesce', ['get', 'heading'], ['get', 'cog'], 0],
-                      'icon-rotation-alignment': 'map',
-                      'icon-allow-overlap': true,
-                    }}
-                  />
+                  <Layer id="vessel-points" type="symbol" layout={{ 'icon-image': ['case', ['==', ['get', 'mmsi'], selectedMmsi || 0], 'ship-white', ['in', ['get', 'navigationalStatus'], ['literal', [1, 5]]], 'ship-orange', 'ship-green'], 'icon-size': 0.7, 'icon-rotate': ['coalesce', ['get', 'heading'], ['get', 'cog'], 0], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true }} />
                 </Source>
               )}
             </>
