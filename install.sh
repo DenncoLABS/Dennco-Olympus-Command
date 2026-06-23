@@ -5,7 +5,9 @@ REPO_OWNER="DenncoLABS"
 REPO_NAME="Dennco-Olympus-Command"
 PACKAGE_NAME="dennco-olympus-command"
 APT_SOURCE="/etc/apt/sources.list.d/dennco-olympus-command.list"
+APT_KEYRING="/usr/share/keyrings/dennco-olympus-command-archive-keyring.gpg"
 APT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/gh-pages"
+APT_KEY_URL="${APT_URL}/dennco-olympus-command-archive-keyring.gpg"
 
 if [ "${EUID:-$(id -u)}" -ne 0 ]; then
   echo "This installer needs sudo/root. Re-running with sudo..."
@@ -33,8 +35,12 @@ if [ -z "$NODE_MAJOR" ] || [ "$NODE_MAJOR" -lt 20 ]; then
   apt-get install -y nodejs
 fi
 
+echo "Adding Dennco Olympus Command apt signing key..."
+curl -fsSL "$APT_KEY_URL" -o "$APT_KEYRING"
+chmod 644 "$APT_KEYRING"
+
 echo "Adding Dennco Olympus Command apt source..."
-echo "deb [trusted=yes arch=amd64] ${APT_URL} stable main" > "$APT_SOURCE"
+echo "deb [signed-by=${APT_KEYRING} arch=amd64] ${APT_URL} stable main" > "$APT_SOURCE"
 
 apt-get update
 apt-get install -y "$PACKAGE_NAME"
