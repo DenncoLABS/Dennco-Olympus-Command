@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Map, { Layer, NavigationControl, Popup, Source } from 'react-map-gl/maplibre';
 import { useFlightsSnapshot } from './hooks/useFlightsSnapshot';
 import { useFlightSelection } from './hooks/useFlightSelection';
@@ -11,6 +11,15 @@ import { VhfAudioPanel } from '../audio/VhfAudioPanel';
 import { NoaaWeatherRadarLayer } from '../weather/NoaaWeatherRadarLayer';
 import { useThemeStore } from '../../ui/theme/theme.store';
 import { SATELLITE_STYLE, LIGHT_STYLE, DARK_STYLE, STREET_STYLE } from '../../lib/mapStyles';
+import {
+  activeRadarSweepsGeoJSON,
+  activeRadarZonesGeoJSON,
+  airportPinsGeoJSON,
+  radarPinsGeoJSON,
+  RADAR_REGIONS,
+  type AirportPin,
+  type RadarRegionPin,
+} from './data/aviationInfrastructure';
 
 const aircraftPath =
   'M9.123 30.464l-1.33-6.268-6.318-1.397 1.291-2.475 5.785-0.316c0.297-0.386 0.96-1.234 1.374-1.648l5.271-5.271-10.989-5.388 2.782-2.782 13.932 2.444 4.933-4.933c0.585-0.585 1.496-0.894 2.634-0.894 0.776 0 1.395 0.143 1.421 0.149l0.3 0.070 0.089 0.295c0.469 1.55 0.187 3.298-0.67 4.155l-4.956 4.956 2.434 13.875-2.782 2.782-5.367-10.945-4.923 4.924c-0.518 0.517-1.623 1.536-2.033 1.912l-0.431 5.425-2.449 1.329z';
@@ -57,14 +66,31 @@ function valueOrDash(value: unknown, suffix = '') {
   return `${value}${suffix}`;
 }
 
+type InfrastructurePopup =
+  | { type: 'airport'; item: AirportPin }
+  | { type: 'radar'; item: RadarRegionPin };
+
 export const FlightsPage: React.FC = () => {
   const { mapProjection, mapLayer } = useThemeStore();
   const { data, isError } = useFlightsSnapshot();
   const states = useMemo(() => data?.states || [], [data?.states]);
   const timestamp = data?.timestamp || 0;
   const provider = data?.provider || 'adsblol';
-  const { filters } = useFlightsStore();
+  const {
+    filters,
+    showAirportPins,
+    showRadarPins,
+    activeRadarRegionIds,
+    toggleRadarRegion,
+  } = useFlightsStore();
   const { selectedIcao24, setSelectedIcao24, selectedFlight } = useFlightSelection(states);
+  const [sweepDeg, setSweepDeg] = useState(0);
+  const [infrastructurePopup, setInfrastructurePopup] = useState<InfrastructurePopup | null>(null);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setSweepDeg((current) => (current + 6) % 360), 100);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const filteredStates = useMemo(() => {
     return states.filter((state) => {
@@ -86,6 +112,16 @@ export const FlightsPage: React.FC = () => {
   );
 
   const pointsGeoJSON = useMemo(() => statesToPointGeoJSON(filteredStates), [filteredStates]);
+  const airportGeoJSON = useMemo(() => airportPinsGeoJSON(), []);
+  const radarGeoJSON = useMemo(() => radarPinsGeoJSON(), []);
+  const activeRadarZones = useMemo(
+    () => activeRadarZonesGeoJSON(activeRadarRegionIds),
+    [activeRadarRegionIds],
+  );
+  const activeRadarSweeps = useMemo(
+    () => activeRadarSweepsGeoJSON(activeRadarRegionIds, sweepDeg),
+    [activeRadarRegionIds, sweepDeg],
+  );
 
   const activeMapStyle = useMemo(() => {
     switch (mapLayer) {
@@ -108,13 +144,31 @@ export const FlightsPage: React.FC = () => {
       },
     ) => {
       const feature = event.features?.[0];
+      const layerId = feature?.layer?.id;
+
+      if (layerId === 'radar-region-points' && feature?.properties?.id) {
+        const region = RADAR_REGIONS.find((item) => item.id === String(feature.properties?.id));
+        if (region) {
+          toggleRadarRegion(region.id);
+          setInfrastructurePopup({ type: 'radar', item: region });
+        }
+        return;
+      }
+
+      if (layerId === 'airport-points' && feature?.properties?.id) {
+        const item = airportGeoJSON.features.find((pin) => pin.properties.id === String(feature.properties?.id));
+        if (item) setInfrastructurePopup({ type: 'airport', item: item.properties as AirportPin });
+        return;
+      }
+
       if (feature?.properties?.icao24) {
         setSelectedIcao24(String(feature.properties.icao24));
+        setInfrastructurePopup(null);
         return;
       }
       setSelectedIcao24(null);
     },
-    [setSelectedIcao24],
+    [airportGeoJSON.features, setSelectedIcao24, toggleRadarRegion],
   );
 
   return (
@@ -131,7 +185,7 @@ export const FlightsPage: React.FC = () => {
           initialViewState={{ latitude: 39.8283, longitude: -98.5795, zoom: 4 }}
           mapStyle={activeMapStyle}
           styleDiffing={false}
-          interactiveLayerIds={['aircraft-points']}
+          interactiveLayerIds={['aircraft-points', 'radar-region-points', 'airport-points']}
           onClick={onClick}
           onLoad={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)}
           onStyleData={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)}
@@ -148,24 +202,94 @@ export const FlightsPage: React.FC = () => {
           <NavigationControl position="top-right" showCompass={true} visualizePitch={true} />
           <NoaaWeatherRadarLayer />
 
+          {showRadarPins && (
+            <>
+              <Source id="active-radar-zones" type="geojson" data={activeRadarZones}>
+                <Layer
+                  id="active-radar-zone-fill"
+                  type="fill"
+                  paint={{ 'fill-color': '#ffffff', 'fill-opacity': 0.035 }}
+                />
+                <Layer
+                  id="active-radar-zone-ring"
+                  type="line"
+                  paint={{ 'line-color': '#ffffff', 'line-opacity': 0.85, 'line-width': 2 }}
+                />
+              </Source>
+              <Source id="active-radar-sweeps" type="geojson" data={activeRadarSweeps}>
+                <Layer
+                  id="active-radar-sweep-line"
+                  type="line"
+                  paint={{
+                    'line-color': '#ffffff',
+                    'line-opacity': 0.95,
+                    'line-width': 2,
+                    'line-blur': 1,
+                  }}
+                />
+              </Source>
+              <Source id="radar-regions" type="geojson" data={radarGeoJSON}>
+                <Layer
+                  id="radar-region-points"
+                  type="circle"
+                  paint={{
+                    'circle-radius': ['case', ['in', ['get', 'id'], ['literal', activeRadarRegionIds]], 8, 6],
+                    'circle-color': ['case', ['in', ['get', 'id'], ['literal', activeRadarRegionIds]], '#ffffff', '#0f172a'],
+                    'circle-stroke-color': '#ffffff',
+                    'circle-stroke-width': 1.5,
+                    'circle-opacity': 0.9,
+                  }}
+                />
+                <Layer
+                  id="radar-region-labels"
+                  type="symbol"
+                  layout={{
+                    'text-field': ['get', 'shortLabel'],
+                    'text-size': 10,
+                    'text-offset': [0, 1.2],
+                    'text-allow-overlap': true,
+                  }}
+                  paint={{ 'text-color': '#ffffff', 'text-halo-color': '#020617', 'text-halo-width': 1 }}
+                />
+              </Source>
+            </>
+          )}
+
+          {showAirportPins && (
+            <Source id="airports" type="geojson" data={airportGeoJSON}>
+              <Layer
+                id="airport-points"
+                type="circle"
+                paint={{
+                  'circle-radius': ['case', ['==', ['get', 'kind'], 'airbase'], 5.5, 4.5],
+                  'circle-color': ['case', ['==', ['get', 'kind'], 'airbase'], '#f8fafc', '#38bdf8'],
+                  'circle-stroke-color': ['case', ['==', ['get', 'kind'], 'airbase'], '#ef4444', '#0f172a'],
+                  'circle-stroke-width': 1.5,
+                  'circle-opacity': 0.9,
+                }}
+              />
+              <Layer
+                id="airport-labels"
+                type="symbol"
+                layout={{
+                  'text-field': ['get', 'code'],
+                  'text-size': 10,
+                  'text-offset': [0, 1.1],
+                  'text-allow-overlap': false,
+                }}
+                paint={{ 'text-color': '#e0f2fe', 'text-halo-color': '#020617', 'text-halo-width': 1 }}
+              />
+            </Source>
+          )}
+
           <Source id="aircraft" type="geojson" data={pointsGeoJSON}>
             <Layer
               id="aircraft-halo"
               type="circle"
               paint={{
-                'circle-radius': [
-                  'case',
-                  ['==', ['get', 'icao24'], selectedIcao24 || ''],
-                  12,
-                  0,
-                ],
+                'circle-radius': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 12, 0],
                 'circle-color': 'transparent',
-                'circle-stroke-width': [
-                  'case',
-                  ['==', ['get', 'icao24'], selectedIcao24 || ''],
-                  2,
-                  0,
-                ],
+                'circle-stroke-width': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 2, 0],
                 'circle-stroke-color': '#38bdf8',
               }}
             />
@@ -187,20 +311,38 @@ export const FlightsPage: React.FC = () => {
                 'icon-allow-overlap': true,
                 'icon-ignore-placement': true,
               }}
-              paint={{
-                'icon-opacity': 0.98,
-              }}
+              paint={{ 'icon-opacity': 0.98 }}
             />
           </Source>
 
-          {selectedFlight?.lat != null && selectedFlight?.lon != null && (
+          {infrastructurePopup && (
             <Popup
-              longitude={selectedFlight.lon}
-              latitude={selectedFlight.lat}
+              longitude={infrastructurePopup.item.lon}
+              latitude={infrastructurePopup.item.lat}
               anchor="bottom"
               closeButton={false}
-              onClose={() => setSelectedIcao24(null)}
+              onClose={() => setInfrastructurePopup(null)}
             >
+              <div className="bg-[#05070b] border border-white/20 text-white font-mono min-w-[260px]">
+                <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between">
+                  <span className="text-cyan-300 text-[10px] uppercase tracking-[0.18em]">
+                    {infrastructurePopup.type === 'radar' ? 'Radar Region' : infrastructurePopup.item.kind === 'airbase' ? 'Air Base' : 'Airport'}
+                  </span>
+                  <button onClick={() => setInfrastructurePopup(null)} className="text-white/40 hover:text-white">×</button>
+                </div>
+                <div className="p-3 space-y-1 text-[11px] text-white/65">
+                  <div className="text-white text-sm font-bold">{infrastructurePopup.item.name || infrastructurePopup.item.label}</div>
+                  <div>{infrastructurePopup.type === 'radar' ? infrastructurePopup.item.label : infrastructurePopup.item.code}</div>
+                  {infrastructurePopup.type === 'radar' && (
+                    <div className="text-white/45">Click radar pin to toggle this region feed. Radius: {infrastructurePopup.item.radiusNm} NM.</div>
+                  )}
+                </div>
+              </div>
+            </Popup>
+          )}
+
+          {selectedFlight?.lat != null && selectedFlight?.lon != null && (
+            <Popup longitude={selectedFlight.lon} latitude={selectedFlight.lat} anchor="bottom" closeButton={false} onClose={() => setSelectedIcao24(null)}>
               <div className="bg-[#05070b] border border-cyan-400/30 text-white font-mono min-w-[320px] max-w-[380px]">
                 <div className="px-3 py-2 border-b border-cyan-400/20 flex items-center justify-between">
                   <span className="text-cyan-300 text-[10px] uppercase tracking-[0.18em]">Aircraft Detail</span>
@@ -231,12 +373,6 @@ export const FlightsPage: React.FC = () => {
                     <Detail label="Mach" value={selectedFlight.mach} />
                     <Detail label="Emergency" value={selectedFlight.emergency || 'none'} />
                   </div>
-                  {selectedFlight.nav_modes?.length ? (
-                    <div className="border-t border-white/10 pt-2">
-                      <div className="text-white/35 uppercase tracking-[0.16em] mb-1">NAV Modes</div>
-                      <div className="text-white/70">{selectedFlight.nav_modes.join(', ')}</div>
-                    </div>
-                  ) : null}
                 </div>
               </div>
             </Popup>
@@ -247,11 +383,7 @@ export const FlightsPage: React.FC = () => {
         <VhfAudioPanel />
       </div>
 
-      <FlightsStatusBar
-        lastUpdated={timestamp}
-        isError={isError}
-        provider={provider}
-      />
+      <FlightsStatusBar lastUpdated={timestamp} isError={isError} provider={provider} />
     </div>
   );
 };
@@ -259,8 +391,8 @@ export const FlightsPage: React.FC = () => {
 function Detail({ label, value }: { label: string; value: unknown }) {
   return (
     <div>
-      <div className="text-white/35 uppercase tracking-[0.14em]">{label}</div>
-      <div className="text-white/75 truncate">{valueOrDash(value)}</div>
+      <div className="text-white/35 uppercase tracking-[0.16em]">{label}</div>
+      <div className="text-white/75">{valueOrDash(value)}</div>
     </div>
   );
 }
