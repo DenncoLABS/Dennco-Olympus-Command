@@ -32,6 +32,8 @@ export const FlightsToolbar: React.FC<FlightsToolbarProps> = ({
     showRadarPins,
     setShowRadarPins,
     activeRadarRegionIds,
+    activateAllRadarRegions,
+    clearRadarRegions,
   } = useFlightsStore();
   const resolvedTotal = totalCount ?? total ?? 0;
   const resolvedFiltered = filteredCount ?? shown ?? 0;
@@ -77,8 +79,24 @@ export const FlightsToolbar: React.FC<FlightsToolbarProps> = ({
       <ToggleControl label="AIRPORTS" checked={showAirportPins} onChange={setShowAirportPins} />
       <ToggleControl label="RADARS" checked={showRadarPins} onChange={setShowRadarPins} />
 
-      <div className="border border-cyan-400/20 bg-cyan-400/5 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.12em] text-cyan-200/80">
-        ACTIVE RADARS: <span className="text-white">{activeRadarRegionIds.length}</span>
+      <div className="flex items-center gap-1 border border-cyan-400/20 bg-cyan-400/5 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.12em] text-cyan-200/80">
+        <span>
+          ACTIVE RADARS: <span className="text-white">{activeRadarRegionIds.length}</span>
+        </span>
+        <button
+          type="button"
+          onClick={activateAllRadarRegions}
+          className="ml-2 border border-white/15 px-1.5 py-0.5 text-[9px] text-white/70 hover:border-white/45 hover:text-white transition-colors"
+        >
+          ALL
+        </button>
+        <button
+          type="button"
+          onClick={clearRadarRegions}
+          className="border border-white/15 px-1.5 py-0.5 text-[9px] text-white/70 hover:border-white/45 hover:text-white transition-colors"
+        >
+          NONE
+        </button>
       </div>
 
       <div className="w-px h-4 bg-white/10" />
