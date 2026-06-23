@@ -1,15 +1,14 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useThemeStore, type ActiveModule } from '../theme/theme.store';
 import { useRuntimeSettings } from '../../admin/runtimeSettings';
 import { logoutAdmin } from '../../admin/LoginGate';
 
-const modules: Array<{ id: ActiveModule; label: string }> = [
+const intelModules: Array<{ id: ActiveModule; label: string }> = [
   { id: 'flights', label: 'Flights' },
   { id: 'maritime', label: 'Maritime' },
   { id: 'monitor', label: 'Monitor' },
   { id: 'dot', label: 'DOT' },
   { id: 'cyber', label: 'Cyber' },
-  { id: 'admin', label: 'Admin' },
 ];
 
 export const TopNav: React.FC = () => {
@@ -22,6 +21,19 @@ export const TopNav: React.FC = () => {
   const setActiveModule = useThemeStore((s) => s.setActiveModule);
   const { settings } = useRuntimeSettings();
   const logoSrc = settings.branding.logoDataUrl || settings.branding.logoUrl;
+  const [intelOpen, setIntelOpen] = useState(false);
+
+  const enabledIntelModules = useMemo(
+    () => intelModules.filter((module) => settings.featureToggles[module.id] !== false),
+    [settings.featureToggles],
+  );
+  const activeIntelModule = enabledIntelModules.find((module) => module.id === activeModule);
+  const intelActive = Boolean(activeIntelModule);
+
+  const openIntelModule = (module: ActiveModule) => {
+    setActiveModule(module);
+    setIntelOpen(false);
+  };
 
   return (
     <header className="h-14 bg-intel-bg border-b border-intel-accent/40 shadow-[0_4px_20px_rgba(0,229,255,0.1)] flex items-center px-6 justify-between z-10 relative box-border">
@@ -44,21 +56,55 @@ export const TopNav: React.FC = () => {
         </div>
 
         <nav className="flex gap-4 h-full pt-4">
-          {modules
-            .filter((module) => module.id === 'admin' || settings.featureToggles[module.id] !== false)
-            .map((module) => (
-              <button
-                key={module.id}
-                onClick={() => setActiveModule(module.id)}
-                className={`px-4 h-full border-b-2 font-mono text-sm tracking-widest uppercase transition-all ${
-                  activeModule === module.id
-                    ? 'border-intel-accent text-intel-accent drop-shadow-[0_0_8px_var(--color-intel-accent)] bg-gradient-to-t from-intel-accent/10 to-transparent'
-                    : 'border-transparent text-intel-text hover:text-intel-text-light hover:border-intel-text/50 opacity-70 hover:opacity-100'
-                }`}
-              >
-                {module.label}
-              </button>
-            ))}
+          <div className="relative h-full" onMouseLeave={() => setIntelOpen(false)}>
+            <button
+              onClick={() => setIntelOpen((open) => !open)}
+              onMouseEnter={() => setIntelOpen(true)}
+              className={`px-4 h-full border-b-2 font-mono text-sm tracking-widest uppercase transition-all ${
+                intelActive
+                  ? 'border-intel-accent text-intel-accent drop-shadow-[0_0_8px_var(--color-intel-accent)] bg-gradient-to-t from-intel-accent/10 to-transparent'
+                  : 'border-transparent text-intel-text hover:text-intel-text-light hover:border-intel-text/50 opacity-70 hover:opacity-100'
+              }`}
+              aria-haspopup="menu"
+              aria-expanded={intelOpen}
+            >
+              INTEL
+              <span className="ml-2 text-[10px] opacity-60">{activeIntelModule ? activeIntelModule.label : 'Screens'} ▾</span>
+            </button>
+
+            {intelOpen && (
+              <div className="absolute left-0 top-full mt-0 min-w-[220px] border border-intel-accent/30 bg-[#05070b]/95 shadow-[0_18px_35px_rgba(0,0,0,0.75)] backdrop-blur z-50 py-2" role="menu">
+                <div className="px-3 pb-2 text-[9px] uppercase tracking-[0.18em] text-white/35 font-mono">
+                  Intel Screens
+                </div>
+                {enabledIntelModules.map((module) => (
+                  <button
+                    key={module.id}
+                    onClick={() => openIntelModule(module.id)}
+                    className={`w-full text-left px-4 py-2 font-mono text-xs uppercase tracking-[0.14em] border-l-2 transition-all ${
+                      activeModule === module.id
+                        ? 'border-intel-accent bg-intel-accent/10 text-intel-accent'
+                        : 'border-transparent text-intel-text-light/65 hover:text-intel-text-light hover:bg-white/5 hover:border-white/20'
+                    }`}
+                    role="menuitem"
+                  >
+                    {module.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => setActiveModule('admin')}
+            className={`px-4 h-full border-b-2 font-mono text-sm tracking-widest uppercase transition-all ${
+              activeModule === 'admin'
+                ? 'border-intel-accent text-intel-accent drop-shadow-[0_0_8px_var(--color-intel-accent)] bg-gradient-to-t from-intel-accent/10 to-transparent'
+                : 'border-transparent text-intel-text hover:text-intel-text-light hover:border-intel-text/50 opacity-70 hover:opacity-100'
+            }`}
+          >
+            Admin
+          </button>
         </nav>
       </div>
 
