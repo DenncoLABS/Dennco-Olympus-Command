@@ -22,6 +22,10 @@ function selectedProvider(): 'adsblol' | 'opensky' {
   return process.env.FLIGHT_DATA_SOURCE === 'opensky' ? 'opensky' : 'adsblol';
 }
 
+function shouldMergeOpenSky(): boolean {
+  return process.env.FLIGHT_MERGE_OPENSKY === 'true';
+}
+
 function mergeStates(...groups: AircraftState[][]): AircraftState[] {
   const merged = new Map<string, AircraftState>();
   for (const group of groups) {
@@ -35,20 +39,19 @@ function mergeStates(...groups: AircraftState[][]): AircraftState[] {
 }
 
 async function fetchCombinedStates(): Promise<AircraftState[]> {
-  const results = await Promise.allSettled([fetchAdsbLolStates(), fetchOpenSkyStates()]);
-  const successful = results
-    .filter((result): result is PromiseFulfilledResult<AircraftState[]> => result.status === 'fulfilled')
-    .map((result) => result.value);
+  const adsbStates = await fetchAdsbLolStates();
 
-  if (successful.length === 0) {
-    const errors = results
-      .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
-      .map((result) => result.reason?.message || String(result.reason))
-      .join('; ');
-    throw new Error(errors || 'No live aircraft providers returned data');
+  if (!shouldMergeOpenSky()) {
+    return adsbStates;
   }
 
-  return mergeStates(...successful);
+  try {
+    const openSkyStates = await fetchOpenSkyStates();
+    return mergeStates(adsbStates, openSkyStates);
+  } catch (error: any) {
+    console.warn(`[Flights] OpenSky merge skipped: ${error?.message || error}`);
+    return adsbStates;
+  }
 }
 
 function shouldUseLastGood(nextCount: number, now: number): boolean {
@@ -63,7 +66,8 @@ function shouldUseLastGood(nextCount: number, now: number): boolean {
 router.get('/snapshot', async (_req, res) => {
   const now = Date.now();
   const provider = selectedProvider();
-  const providerLabel = provider === 'adsblol' ? 'adsblol+opensky' : 'opensky';
+  const providerLabel =
+    provider === 'adsblol' ? (shouldMergeOpenSky() ? 'adsblol+opensky' : 'adsblol') : 'opensky';
 
   if (snapshotCache && snapshotCache.provider === providerLabel && now - snapshotCache.ts < SNAPSHOT_TTL_MS) {
     res.setHeader('X-Cache', 'HIT');
