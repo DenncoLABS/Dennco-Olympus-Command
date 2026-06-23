@@ -17,6 +17,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: publish-apt-${{ github.repository }}
+  cancel-in-progress: false
+
 jobs:
   build-and-publish:
     name: Build .deb and publish apt repo
@@ -64,27 +68,21 @@ jobs:
           echo "APT repository contents:"
           find . -maxdepth 5 -type f -print | sort
 
-      - name: Publish to gh-pages branch
+      - name: Publish clean gh-pages branch
         run: |
           set -euo pipefail
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global init.defaultBranch gh-pages
 
           rm -rf /tmp/olympus-apt-pages
           mkdir -p /tmp/olympus-apt-pages
           cd /tmp/olympus-apt-pages
 
           git init
+          git checkout --orphan gh-pages
           git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
 
-          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
-            git fetch origin gh-pages --depth=1
-            git checkout -B gh-pages FETCH_HEAD
-          else
-            git checkout --orphan gh-pages
-          fi
-
-          rm -rf ./* ./.nojekyll || true
           rsync -a "$GITHUB_WORKSPACE/aptrepo/" ./
           touch .nojekyll
           cat > index.html <<'EOF'
@@ -101,7 +99,7 @@ jobs:
 
           git add -A
           git status --short
-          git commit -m "Publish apt repository" || echo "No gh-pages changes to commit."
-          git push --force origin gh-pages
+          git commit -m "Publish apt repository"
+          git push --force origin HEAD:gh-pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
