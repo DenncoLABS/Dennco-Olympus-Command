@@ -2,6 +2,8 @@ name: Import RADAR Source
 
 on:
   push:
+    branches:
+      - main
     paths:
       - ".github/workflows/import-radar.yml"
   workflow_dispatch:
@@ -13,7 +15,6 @@ jobs:
   import-radar:
     name: Import Syntax-Error-1337/radar
     runs-on: ubuntu-latest
-    if: github.repository == 'DenncoLABS/Dennco-Olympus-Command'
 
     steps:
       - name: Checkout destination repository
@@ -24,15 +25,12 @@ jobs:
 
       - name: Clone source repository
         run: |
-          set -euo pipefail
           rm -rf /tmp/radar-source
           git clone --depth 1 https://github.com/Syntax-Error-1337/radar.git /tmp/radar-source
           rm -rf /tmp/radar-source/.git
 
       - name: Import files
         run: |
-          set -euo pipefail
-
           IMPORT_WORKFLOW="$(mktemp)"
           mkdir -p .github/workflows
           cp .github/workflows/import-radar.yml "$IMPORT_WORKFLOW"
@@ -46,16 +44,12 @@ jobs:
 
       - name: Commit imported source
         run: |
-          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
           git add -A
-
           if git diff --cached --quiet; then
             echo "No changes to commit."
             exit 0
           fi
-
           git commit -m "Import RADAR source into Olympus Command"
           git push
