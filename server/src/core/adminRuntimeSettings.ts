@@ -9,12 +9,15 @@ export interface AdminRuntimeSettings {
     logoDataUrl?: string;
     logoUrl?: string;
     faviconUrl?: string;
+    faviconDataUrl?: string;
   };
   apiKeys?: {
     aisstream?: string;
     openskyUsername?: string;
     openskyPassword?: string;
     mapTilesUrl?: string;
+    openskyClientId?: string;
+    openskyClientSecret?: string;
   };
   dotFeeds?: {
     nationalTrafficUrl?: string;
@@ -23,6 +26,18 @@ export interface AdminRuntimeSettings {
     roadClosuresUrl?: string;
     providerMode?: string;
     states?: string[];
+  };
+  vhfAudio?: {
+    enabled?: boolean;
+    defaultChannelId?: string;
+    channels?: Array<{
+      id: string;
+      label: string;
+      type: string;
+      streamUrl: string;
+      region?: string;
+      frequency?: string;
+    }>;
   };
 }
 
@@ -52,6 +67,7 @@ export function mergeAdminRuntimeSettings(patch: AdminRuntimeSettings): AdminRun
     branding: { ...(current.branding || {}), ...(patch.branding || {}) },
     apiKeys: { ...(current.apiKeys || {}), ...(patch.apiKeys || {}) },
     dotFeeds: { ...(current.dotFeeds || {}), ...(patch.dotFeeds || {}) },
+    vhfAudio: { ...(current.vhfAudio || {}), ...(patch.vhfAudio || {}) },
   });
 }
 
