@@ -8,23 +8,46 @@ let lastGoodStates: AircraftState[] = [];
 let lastGoodAt = 0;
 const LAST_GOOD_MAX_AGE_MS = 120000;
 const MIN_GOOD_COUNT = 50;
+const BATCH_SIZE = 8;
+const BATCH_DELAY_MS = 350;
 
 const DEFAULT_POINTS = [
   '40.6413,-73.7781,250',
+  '38.9531,-77.4565,250',
   '33.6407,-84.4277,250',
   '41.9742,-87.9073,250',
   '32.8998,-97.0403,250',
+  '29.9902,-95.3368,250',
+  '39.8561,-104.6737,250',
   '34.0522,-118.2437,250',
   '37.6213,-122.3790,250',
   '47.4502,-122.3088,250',
   '25.7959,-80.2870,250',
+  '28.4312,-81.3081,250',
+  '27.9755,-82.5332,250',
+  '26.5587,-78.6956,250',
+  '25.0389,-77.4662,250',
+  '35.2140,-80.9431,250',
+  '36.1245,-86.6782,250',
+  '35.3931,-97.6007,250',
+  '37.6499,-97.4331,250',
+  '39.2976,-94.7139,250',
+  '41.3032,-95.8941,250',
+  '44.8848,-93.2223,250',
   '42.2162,-83.3554,250',
+  '43.6777,-79.6248,250',
   '51.4700,-0.4543,250',
   '48.8566,2.3522,250',
+  '50.0379,8.5622,250',
   '52.5200,13.4050,250',
+  '52.3105,4.7683,250',
   '35.6762,139.6503,250',
   '-33.8688,151.2093,250',
 ];
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function getAdsbLolUrls(): string[] {
   if (process.env.ADSB_LOL_URL) return [process.env.ADSB_LOL_URL];
@@ -65,27 +88,32 @@ function useLastGoodIfNeeded(next: AircraftState[]): AircraftState[] {
   return next;
 }
 
-async function fetchAircraftBatches(): Promise<{ aircraft: any[]; nowSec: number }> {
-  const headers = { 'User-Agent': 'Dennco-Olympus-Command/1.0' };
-  const results = await Promise.allSettled(
-    getAdsbLolUrls().map(async (url) => {
-      const response = await fetch(url, { headers });
-      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-      const data = await response.json();
-      return { aircraft: getAircraftArray(data), nowSec: getNowSeconds(data) };
-    }),
-  );
+async function fetchOneRegion(url: string): Promise<{ aircraft: any[]; nowSec: number }> {
+  const response = await fetch(url, { headers: { 'User-Agent': 'Dennco-Olympus-Command/1.0' } });
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+  const data = await response.json();
+  return { aircraft: getAircraftArray(data), nowSec: getNowSeconds(data) };
+}
 
+async function fetchAircraftBatches(): Promise<{ aircraft: any[]; nowSec: number }> {
+  const urls = getAdsbLolUrls();
   const merged = new Map<string, any>();
   let nowSec = Math.floor(Date.now() / 1000);
 
-  for (const result of results) {
-    if (result.status !== 'fulfilled') continue;
-    nowSec = result.value.nowSec;
-    for (const aircraft of result.value.aircraft) {
-      const id = String(aircraft.hex || aircraft.icao || '').toLowerCase();
-      if (id) merged.set(id, aircraft);
+  for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+    const batch = urls.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(batch.map((url) => fetchOneRegion(url)));
+
+    for (const result of results) {
+      if (result.status !== 'fulfilled') continue;
+      nowSec = result.value.nowSec;
+      for (const aircraft of result.value.aircraft) {
+        const id = String(aircraft.hex || aircraft.icao || '').toLowerCase();
+        if (id) merged.set(id, aircraft);
+      }
     }
+
+    if (i + BATCH_SIZE < urls.length) await sleep(BATCH_DELAY_MS);
   }
 
   return { aircraft: [...merged.values()], nowSec };
