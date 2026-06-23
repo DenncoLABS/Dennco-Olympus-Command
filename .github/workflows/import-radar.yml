@@ -37,10 +37,15 @@ jobs:
 
           rsync -a --delete \
             --exclude='.git' \
+            --exclude='.github/workflows/***' \
             /tmp/radar-source/ ./
 
           mkdir -p .github/workflows
           cp "$IMPORT_WORKFLOW" .github/workflows/import-radar.yml
+
+      - name: Show pending changes
+        run: |
+          git status --short
 
       - name: Commit imported source
         run: |
