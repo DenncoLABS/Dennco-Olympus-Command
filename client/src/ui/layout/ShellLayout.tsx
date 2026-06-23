@@ -2,7 +2,7 @@ import React, { type ReactNode } from 'react';
 import { TopNav } from './TopNav';
 import { useThemeStore } from '../theme/theme.store';
 import { clsx } from 'clsx';
-import { Github, Shield } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { useRuntimeSettings } from '../../admin/runtimeSettings';
 import '../theme/crt.css';
 import '../theme/flir.css';
@@ -31,19 +31,6 @@ export const ShellLayout: React.FC<ShellLayoutProps> = ({ children }) => {
           <Shield size={11} className="opacity-70" />
           <span>{settings.auth.nethserver8Enabled ? 'NethServer 8 Directory Ready' : 'Local Admin Mode'}</span>
         </span>
-        <span className="text-white/15">|</span>
-        <a
-          href="https://github.com/DenncoLABS/Dennco-Olympus-Command"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group flex items-center gap-1 transition-all duration-200 hover:text-white"
-          style={{ textShadow: 'none' }}
-          onMouseEnter={(e) => (e.currentTarget.style.textShadow = '0 0 8px rgba(255,255,255,0.8)')}
-          onMouseLeave={(e) => (e.currentTarget.style.textShadow = 'none')}
-        >
-          <Github size={11} className="opacity-60 group-hover:opacity-100 transition-opacity" />
-          <span>GitHub</span>
-        </a>
       </footer>
     </div>
   );
