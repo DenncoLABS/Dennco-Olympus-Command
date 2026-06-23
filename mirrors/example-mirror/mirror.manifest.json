@@ -1,0 +1,13 @@
+{
+  "id": "example-mirror",
+  "name": "Example Mirror",
+  "version": "0.1.0",
+  "kind": "mirror",
+  "description": "Starter mirror profile for branded or regional Olympus Command deployments.",
+  "source": "DenncoLABS/Dennco-Olympus-Command",
+  "mode": "read-only",
+  "domains": [],
+  "enabledExtensions": [],
+  "environment": "development",
+  "status": "draft"
+}
