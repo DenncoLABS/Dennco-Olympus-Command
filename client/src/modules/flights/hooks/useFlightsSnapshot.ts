@@ -2,17 +2,19 @@ import { useQuery } from '@tanstack/react-query';
 import { OpenSkyClient } from '../../../core/providers/opensky.client';
 import { MockClient } from '../../../core/providers/mock.client';
 import type { FlightProvider } from '../../../core/providers/provider.types';
+import { useFlightsStore } from '../state/flights.store';
 
-// Memoize provider at module level — avoid a new class instance on every 5s refetch
 const provider: FlightProvider =
   import.meta.env.VITE_FLIGHT_PROVIDER === 'mock' ? new MockClient() : new OpenSkyClient();
 
 export function useFlightsSnapshot() {
+  const activeRadarRegionIds = useFlightsStore((state) => state.activeRadarRegionIds);
+
   return useQuery({
-    queryKey: ['flights-snapshot'],
+    queryKey: ['flights-snapshot', activeRadarRegionIds.join(',')],
     queryFn: async () => {
       try {
-        return await provider.snapshot();
+        return await provider.snapshot(activeRadarRegionIds);
       } catch {
         console.warn('Primary provider failed, falling back to mock');
         return await new MockClient().snapshot();
