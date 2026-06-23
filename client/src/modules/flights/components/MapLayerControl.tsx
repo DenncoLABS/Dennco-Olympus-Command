@@ -1,10 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useThemeStore } from '../../../ui/theme/theme.store';
-import type { MapLayer } from '../../../ui/theme/theme.store';
-import { Layers, X, HelpCircle } from 'lucide-react';
+import type { MapLayer, WeatherRadarProduct } from '../../../ui/theme/theme.store';
+import { Layers, X, HelpCircle, CloudRain } from 'lucide-react';
 
 export const MapLayerControl: React.FC = () => {
-  const { mapLayer, setMapLayer, mapProjection, setMapProjection } = useThemeStore();
+  const {
+    mapLayer,
+    setMapLayer,
+    mapProjection,
+    setMapProjection,
+    weatherRadar,
+    setWeatherRadarEnabled,
+    setWeatherRadarProduct,
+    setWeatherRadarOpacity,
+    setWeatherRadarContrast,
+    setWeatherRadarBrightness,
+    setWeatherRadarCustomTileUrl,
+  } = useThemeStore();
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -24,26 +36,15 @@ export const MapLayerControl: React.FC = () => {
   }, [isOpen]);
 
   const mapTypes: { id: MapLayer; label: string; bgClass: string }[] = [
-    {
-      id: 'street',
-      label: 'Default',
-      bgClass: 'bg-[#CBE4EE]',
-    },
-    {
-      id: 'satellite',
-      label: 'Satellite',
-      bgClass: 'bg-[#5B6D55]',
-    },
-    {
-      id: 'light',
-      label: 'Light',
-      bgClass: 'bg-[#EDEDED]',
-    },
-    {
-      id: 'dark',
-      label: 'Dark',
-      bgClass: 'bg-[#2E3136]',
-    },
+    { id: 'street', label: 'Default', bgClass: 'bg-[#CBE4EE]' },
+    { id: 'satellite', label: 'Satellite', bgClass: 'bg-[#5B6D55]' },
+    { id: 'light', label: 'Light', bgClass: 'bg-[#EDEDED]' },
+    { id: 'dark', label: 'Dark', bgClass: 'bg-[#2E3136]' },
+  ];
+
+  const radarProducts: { id: WeatherRadarProduct; label: string }[] = [
+    { id: 'base-reflectivity', label: 'NOAA Base Reflectivity' },
+    { id: 'custom', label: 'Custom NOAA/WMS Tile URL' },
   ];
 
   return (
@@ -53,7 +54,7 @@ export const MapLayerControl: React.FC = () => {
     >
       {/* Popover Menu */}
       {isOpen && (
-        <div className="bg-white rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.15)] w-[320px] overflow-hidden text-[#3C4043] animate-in fade-in zoom-in-95 duration-100 mb-2">
+        <div className="bg-white rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.15)] w-[360px] overflow-hidden text-[#3C4043] animate-in fade-in zoom-in-95 duration-100 mb-2">
           {/* Header */}
           <div className="flex justify-between items-center px-4 py-3 pb-2 border-b border-gray-100">
             <h2 className="font-semibold text-[15px]">Map details</h2>
@@ -84,7 +85,6 @@ export const MapLayerControl: React.FC = () => {
                           isSelected ? 'border-[#1A73E8]' : 'border-transparent hover:brightness-95'
                         }`}
                       >
-                        {/* Abstract representation of map types since we don't have actual thumbnails */}
                         <div className={`absolute inset-0 ${type.bgClass}`}>
                           {type.id === 'street' && (
                             <>
@@ -126,11 +126,99 @@ export const MapLayerControl: React.FC = () => {
                 })}
               </div>
             </div>
+
+            <div className="border-t border-gray-100 pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <CloudRain size={16} className="text-[#1A73E8]" />
+                  <h3 className="text-sm font-semibold">NOAA Doppler weather</h3>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer text-[12px] font-medium">
+                  <input
+                    type="checkbox"
+                    checked={weatherRadar.enabled}
+                    onChange={(e) => setWeatherRadarEnabled(e.target.checked)}
+                  />
+                  Live radar
+                </label>
+              </div>
+
+              <label className="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Product</label>
+              <select
+                value={weatherRadar.product}
+                onChange={(e) => setWeatherRadarProduct(e.target.value as WeatherRadarProduct)}
+                className="w-full border border-gray-200 rounded px-2 py-1.5 text-[12px] mb-3"
+              >
+                {radarProducts.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.label}
+                  </option>
+                ))}
+              </select>
+
+              {weatherRadar.product === 'custom' && (
+                <textarea
+                  value={weatherRadar.customTileUrl}
+                  onChange={(e) => setWeatherRadarCustomTileUrl(e.target.value)}
+                  placeholder="Paste NOAA/ArcGIS/WMS tile URL with {bbox-epsg-3857}"
+                  className="w-full h-16 border border-gray-200 rounded px-2 py-1.5 text-[11px] mb-3 font-mono"
+                />
+              )}
+
+              <label className="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">
+                Opacity {Math.round(weatherRadar.opacity * 100)}%
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={weatherRadar.opacity}
+                onChange={(e) => setWeatherRadarOpacity(Number(e.target.value))}
+                className="w-full mb-3"
+              />
+
+              <label className="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">
+                Contrast {weatherRadar.contrast.toFixed(2)}
+              </label>
+              <input
+                type="range"
+                min="-1"
+                max="1"
+                step="0.05"
+                value={weatherRadar.contrast}
+                onChange={(e) => setWeatherRadarContrast(Number(e.target.value))}
+                className="w-full mb-3"
+              />
+
+              <label className="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Intensity filter</label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={weatherRadar.brightnessMin}
+                  onChange={(e) =>
+                    setWeatherRadarBrightness(Number(e.target.value), weatherRadar.brightnessMax)
+                  }
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={weatherRadar.brightnessMax}
+                  onChange={(e) =>
+                    setWeatherRadarBrightness(weatherRadar.brightnessMin, Number(e.target.value))
+                  }
+                />
+              </div>
+            </div>
           </div>
 
           {/* Footer Options */}
           <div className="border-t border-gray-100 bg-[#F8F9FA] px-4 py-3 flex items-center gap-4 text-[13px] text-[#3C4043] font-medium">
-            {/* Globe Toggle */}
             <label className="flex items-center gap-2 cursor-pointer select-none group">
               <div className="relative flex items-center justify-center">
                 <input
@@ -140,20 +228,8 @@ export const MapLayerControl: React.FC = () => {
                   onChange={(e) => setMapProjection(e.target.checked ? 'globe' : 'mercator')}
                 />
                 <div className="absolute pointer-events-none opacity-0 peer-checked:opacity-100 text-white">
-                  <svg
-                    width="10"
-                    height="8"
-                    viewBox="0 0 10 8"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M1 4L3.5 6.5L9 1"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 4L3.5 6.5L9 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
               </div>
