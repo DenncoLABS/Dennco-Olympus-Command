@@ -35,6 +35,7 @@ function makePlaneSvg(fill: string) {
 const aircraftImages = {
   'olympus-plane-airborne': makePlaneSvg('#10b981'),
   'olympus-plane-ground': makePlaneSvg('#f59e0b'),
+  'olympus-plane-emergency': makePlaneSvg('#ef4444'),
   'olympus-plane-selected': makePlaneSvg('#ffffff'),
 };
 
@@ -99,13 +100,7 @@ export const FlightsPage: React.FC = () => {
   const states = useMemo(() => data?.states || [], [data?.states]);
   const timestamp = data?.timestamp || 0;
   const provider = data?.provider || 'adsblol';
-  const {
-    filters,
-    showAirportPins,
-    showRadarPins,
-    activeRadarRegionIds,
-    toggleRadarRegion,
-  } = useFlightsStore();
+  const { filters, showAirportPins, showRadarPins, activeRadarRegionIds, toggleRadarRegion } = useFlightsStore();
   const { selectedIcao24, setSelectedIcao24, selectedFlight } = useFlightSelection(states);
   const [sweepDeg, setSweepDeg] = useState(0);
   const [infrastructurePopup, setInfrastructurePopup] = useState<InfrastructurePopup | null>(null);
@@ -125,12 +120,10 @@ export const FlightsPage: React.FC = () => {
     });
   }, [states, filters]);
 
-  const airborneCount = useMemo(
-    () => filteredStates.filter((state) => !state.onGround).length,
-    [filteredStates],
-  );
-  const onGroundCount = useMemo(
-    () => filteredStates.filter((state) => state.onGround).length,
+  const airborneCount = useMemo(() => filteredStates.filter((state) => !state.onGround).length, [filteredStates]);
+  const onGroundCount = useMemo(() => filteredStates.filter((state) => state.onGround).length, [filteredStates]);
+  const emergencyCount = useMemo(
+    () => filteredStates.filter((state) => state.emergency && state.emergency !== 'none').length,
     [filteredStates],
   );
 
@@ -142,20 +135,11 @@ export const FlightsPage: React.FC = () => {
       type: 'FeatureCollection' as const,
       features: militaryBasesGeoJSON.features
         .filter((feature) => feature.properties.category === 'air')
-        .map((feature, index) => ({
-          ...feature,
-          properties: { ...feature.properties, id: `monitor-airbase-${index}` },
-        })),
+        .map((feature, index) => ({ ...feature, properties: { ...feature.properties, id: `monitor-airbase-${index}` } })),
     };
   }, [militaryBasesGeoJSON]);
-  const radarGeoJSON = useMemo(
-    () => radarPinsGeoJSON(activeRadarRegionIds),
-    [activeRadarRegionIds],
-  );
-  const activeRadarZones = useMemo(
-    () => activeRadarZonesGeoJSON(activeRadarRegionIds),
-    [activeRadarRegionIds],
-  );
+  const radarGeoJSON = useMemo(() => radarPinsGeoJSON(activeRadarRegionIds), [activeRadarRegionIds]);
+  const activeRadarZones = useMemo(() => activeRadarZonesGeoJSON(activeRadarRegionIds), [activeRadarRegionIds]);
   const activeRadarPulse = useMemo(
     () => activeRadarPulseGeoJSON(activeRadarRegionIds, sweepDeg),
     [activeRadarRegionIds, sweepDeg],
@@ -181,9 +165,7 @@ export const FlightsPage: React.FC = () => {
 
   const onClick = useCallback(
     (
-      event: import('maplibre-gl').MapMouseEvent & {
-        features?: import('maplibre-gl').MapGeoJSONFeature[];
-      },
+      event: import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] },
     ) => {
       const feature = event.features?.[0];
       const layerId = feature?.layer?.id;
@@ -238,6 +220,7 @@ export const FlightsPage: React.FC = () => {
         filteredCount={filteredStates.length}
         airborneCount={airborneCount}
         onGroundCount={onGroundCount}
+        emergencyCount={emergencyCount}
       />
 
       <div className="relative flex-1 min-h-0">
@@ -347,10 +330,10 @@ export const FlightsPage: React.FC = () => {
               id="aircraft-halo"
               type="circle"
               paint={{
-                'circle-radius': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 12, 0],
+                'circle-radius': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 12, ['boolean', ['get', 'isEmergency'], false], 10, 0],
                 'circle-color': 'transparent',
-                'circle-stroke-width': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 2, 0],
-                'circle-stroke-color': '#38bdf8',
+                'circle-stroke-width': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 2, ['boolean', ['get', 'isEmergency'], false], 2, 0],
+                'circle-stroke-color': ['case', ['boolean', ['get', 'isEmergency'], false], '#ef4444', '#38bdf8'],
               }}
             />
             <Layer
@@ -361,6 +344,8 @@ export const FlightsPage: React.FC = () => {
                   'case',
                   ['==', ['get', 'icao24'], selectedIcao24 || ''],
                   'olympus-plane-selected',
+                  ['boolean', ['get', 'isEmergency'], false],
+                  'olympus-plane-emergency',
                   ['boolean', ['get', 'onGround'], false],
                   'olympus-plane-ground',
                   'olympus-plane-airborne',
