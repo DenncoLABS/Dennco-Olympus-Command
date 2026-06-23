@@ -70,6 +70,14 @@ type InfrastructurePopup =
   | { type: 'airport'; item: AirportPin }
   | { type: 'radar'; item: RadarRegionPin };
 
+function infrastructureTitle(popup: InfrastructurePopup): string {
+  return popup.type === 'radar' ? popup.item.label : popup.item.name;
+}
+
+function infrastructureSubtitle(popup: InfrastructurePopup): string {
+  return popup.type === 'radar' ? `${popup.item.scope} | ${popup.item.radiusNm} NM scan zone` : popup.item.code;
+}
+
 export const FlightsPage: React.FC = () => {
   const { mapProjection, mapLayer } = useThemeStore();
   const { data, isError } = useFlightsSnapshot();
@@ -205,28 +213,11 @@ export const FlightsPage: React.FC = () => {
           {showRadarPins && (
             <>
               <Source id="active-radar-zones" type="geojson" data={activeRadarZones}>
-                <Layer
-                  id="active-radar-zone-fill"
-                  type="fill"
-                  paint={{ 'fill-color': '#ffffff', 'fill-opacity': 0.035 }}
-                />
-                <Layer
-                  id="active-radar-zone-ring"
-                  type="line"
-                  paint={{ 'line-color': '#ffffff', 'line-opacity': 0.85, 'line-width': 2 }}
-                />
+                <Layer id="active-radar-zone-fill" type="fill" paint={{ 'fill-color': '#ffffff', 'fill-opacity': 0.035 }} />
+                <Layer id="active-radar-zone-ring" type="line" paint={{ 'line-color': '#ffffff', 'line-opacity': 0.85, 'line-width': 2 }} />
               </Source>
               <Source id="active-radar-sweeps" type="geojson" data={activeRadarSweeps}>
-                <Layer
-                  id="active-radar-sweep-line"
-                  type="line"
-                  paint={{
-                    'line-color': '#ffffff',
-                    'line-opacity': 0.95,
-                    'line-width': 2,
-                    'line-blur': 1,
-                  }}
-                />
+                <Layer id="active-radar-sweep-line" type="line" paint={{ 'line-color': '#ffffff', 'line-opacity': 0.95, 'line-width': 2, 'line-blur': 1 }} />
               </Source>
               <Source id="radar-regions" type="geojson" data={radarGeoJSON}>
                 <Layer
@@ -243,12 +234,7 @@ export const FlightsPage: React.FC = () => {
                 <Layer
                   id="radar-region-labels"
                   type="symbol"
-                  layout={{
-                    'text-field': ['get', 'shortLabel'],
-                    'text-size': 10,
-                    'text-offset': [0, 1.2],
-                    'text-allow-overlap': true,
-                  }}
+                  layout={{ 'text-field': ['get', 'shortLabel'], 'text-size': 10, 'text-offset': [0, 1.2], 'text-allow-overlap': true }}
                   paint={{ 'text-color': '#ffffff', 'text-halo-color': '#020617', 'text-halo-width': 1 }}
                 />
               </Source>
@@ -271,12 +257,7 @@ export const FlightsPage: React.FC = () => {
               <Layer
                 id="airport-labels"
                 type="symbol"
-                layout={{
-                  'text-field': ['get', 'code'],
-                  'text-size': 10,
-                  'text-offset': [0, 1.1],
-                  'text-allow-overlap': false,
-                }}
+                layout={{ 'text-field': ['get', 'code'], 'text-size': 10, 'text-offset': [0, 1.1], 'text-allow-overlap': false }}
                 paint={{ 'text-color': '#e0f2fe', 'text-halo-color': '#020617', 'text-halo-width': 1 }}
               />
             </Source>
@@ -316,13 +297,7 @@ export const FlightsPage: React.FC = () => {
           </Source>
 
           {infrastructurePopup && (
-            <Popup
-              longitude={infrastructurePopup.item.lon}
-              latitude={infrastructurePopup.item.lat}
-              anchor="bottom"
-              closeButton={false}
-              onClose={() => setInfrastructurePopup(null)}
-            >
+            <Popup longitude={infrastructurePopup.item.lon} latitude={infrastructurePopup.item.lat} anchor="bottom" closeButton={false} onClose={() => setInfrastructurePopup(null)}>
               <div className="bg-[#05070b] border border-white/20 text-white font-mono min-w-[260px]">
                 <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between">
                   <span className="text-cyan-300 text-[10px] uppercase tracking-[0.18em]">
@@ -331,10 +306,10 @@ export const FlightsPage: React.FC = () => {
                   <button onClick={() => setInfrastructurePopup(null)} className="text-white/40 hover:text-white">×</button>
                 </div>
                 <div className="p-3 space-y-1 text-[11px] text-white/65">
-                  <div className="text-white text-sm font-bold">{infrastructurePopup.item.name || infrastructurePopup.item.label}</div>
-                  <div>{infrastructurePopup.type === 'radar' ? infrastructurePopup.item.label : infrastructurePopup.item.code}</div>
+                  <div className="text-white text-sm font-bold">{infrastructureTitle(infrastructurePopup)}</div>
+                  <div>{infrastructureSubtitle(infrastructurePopup)}</div>
                   {infrastructurePopup.type === 'radar' && (
-                    <div className="text-white/45">Click radar pin to toggle this region feed. Radius: {infrastructurePopup.item.radiusNm} NM.</div>
+                    <div className="text-white/45">Click radar pin to toggle this region feed.</div>
                   )}
                 </div>
               </div>
