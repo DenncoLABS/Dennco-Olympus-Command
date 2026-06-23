@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Map, { Layer, NavigationControl, Popup, Source } from 'react-map-gl/maplibre';
+import type { MapLayerMouseEvent } from 'maplibre-gl';
 import { Camera, CarFront, RefreshCcw, TriangleAlert } from 'lucide-react';
 import { useThemeStore } from '../../ui/theme/theme.store';
 import { SATELLITE_STYLE, LIGHT_STYLE, DARK_STYLE, STREET_STYLE } from '../../lib/mapStyles';
@@ -29,7 +30,7 @@ type TrafficUpdate = {
   updatedAt?: string;
 };
 
-const DEFAULT_VIEW = { longitude: -84.5555, latitude: 44.3148, zoom: 6 };
+const DEFAULT_VIEW = { longitude: -98.5795, latitude: 39.8283, zoom: 4 };
 
 function normalizeCameraFeature(feature: GeoJSON.Feature, index: number): TrafficCamera | null {
   if (feature.geometry?.type !== 'Point') return null;
@@ -154,6 +155,24 @@ export const DotPage: React.FC = () => {
   const cameraGeoJson = useMemo(() => camerasToGeoJson(cameras), [cameras]);
   const updatesGeoJson = useMemo(() => updatesToGeoJson(updates), [updates]);
 
+  const handleMapClick = (event: MapLayerMouseEvent) => {
+    const feature = event.features?.[0];
+    if (!feature) {
+      setSelectedCamera(null);
+      setSelectedUpdate(null);
+      return;
+    }
+    const id = String(feature.properties?.id || '');
+    if (feature.layer.id === 'dot-camera-points') {
+      setSelectedUpdate(null);
+      setSelectedCamera(cameras.find((camera) => camera.id === id) || null);
+    }
+    if (feature.layer.id === 'dot-traffic-update-points') {
+      setSelectedCamera(null);
+      setSelectedUpdate(updates.find((update) => update.id === id) || null);
+    }
+  };
+
   return (
     <div className="absolute inset-0 bg-intel-bg overflow-hidden flex flex-col">
       <div className="h-10 border-b border-intel-accent/25 bg-black/70 flex items-center justify-between px-4 font-mono z-20">
@@ -175,23 +194,7 @@ export const DotPage: React.FC = () => {
           mapStyle={activeMapStyle}
           styleDiffing={false}
           interactiveLayerIds={['dot-camera-points', 'dot-traffic-update-points']}
-          onClick={(event) => {
-            const feature = event.features?.[0];
-            if (!feature) {
-              setSelectedCamera(null);
-              setSelectedUpdate(null);
-              return;
-            }
-            const id = String(feature.properties?.id || '');
-            if (feature.layer.id === 'dot-camera-points') {
-              setSelectedUpdate(null);
-              setSelectedCamera(cameras.find((camera) => camera.id === id) || null);
-            }
-            if (feature.layer.id === 'dot-traffic-update-points') {
-              setSelectedCamera(null);
-              setSelectedUpdate(updates.find((update) => update.id === id) || null);
-            }
-          }}
+          onClick={handleMapClick}
           projection={
             mapProjection === 'globe'
               ? ({ type: 'globe' } as import('maplibre-gl').ProjectionSpecification)
