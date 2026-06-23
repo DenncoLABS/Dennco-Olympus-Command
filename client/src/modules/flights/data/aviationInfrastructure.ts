@@ -2,7 +2,7 @@ export type AirportPin = {
   id: string;
   code: string;
   name: string;
-  kind: 'airport' | 'airbase';
+  kind: 'airport';
   lat: number;
   lon: number;
 };
@@ -42,30 +42,6 @@ export const AIRPORT_PINS: AirportPin[] = [
   { id: 'eddf', code: 'FRA', name: 'Frankfurt Airport', kind: 'airport', lat: 50.0379, lon: 8.5622 },
   { id: 'rjtt', code: 'HND', name: 'Tokyo Haneda', kind: 'airport', lat: 35.5494, lon: 139.7798 },
   { id: 'yssy', code: 'SYD', name: 'Sydney Kingsford Smith', kind: 'airport', lat: -33.9399, lon: 151.1753 },
-  { id: 'kand', code: 'ADW', name: 'Joint Base Andrews', kind: 'airbase', lat: 38.8108, lon: -76.867 },
-  { id: 'kdov', code: 'DOV', name: 'Dover Air Force Base', kind: 'airbase', lat: 39.1295, lon: -75.466 },
-  { id: 'kwri', code: 'WRI', name: 'Joint Base McGuire-Dix-Lakehurst', kind: 'airbase', lat: 40.0156, lon: -74.5917 },
-  { id: 'kffo', code: 'FFO', name: 'Wright-Patterson Air Force Base', kind: 'airbase', lat: 39.8261, lon: -84.0483 },
-  { id: 'kngr', code: 'NGA', name: 'Selfridge Air National Guard Base', kind: 'airbase', lat: 42.6083, lon: -82.8355 },
-  { id: 'koff', code: 'OFF', name: 'Offutt Air Force Base', kind: 'airbase', lat: 41.1183, lon: -95.9125 },
-  { id: 'ktik', code: 'TIK', name: 'Tinker Air Force Base', kind: 'airbase', lat: 35.4147, lon: -97.3866 },
-  { id: 'ksuu', code: 'SUU', name: 'Travis Air Force Base', kind: 'airbase', lat: 38.2627, lon: -121.9275 },
-  { id: 'klsv', code: 'LSV', name: 'Nellis Air Force Base', kind: 'airbase', lat: 36.2362, lon: -115.0343 },
-  { id: 'klfi', code: 'LFI', name: 'Joint Base Langley-Eustis', kind: 'airbase', lat: 37.0829, lon: -76.3605 },
-  { id: 'kchs', code: 'CHS', name: 'Joint Base Charleston', kind: 'airbase', lat: 32.8986, lon: -80.0405 },
-  { id: 'khst', code: 'HST', name: 'Homestead Air Reserve Base', kind: 'airbase', lat: 25.4886, lon: -80.3836 },
-  { id: 'kpam', code: 'PAM', name: 'Tyndall Air Force Base', kind: 'airbase', lat: 30.0696, lon: -85.5754 },
-  { id: 'kdnk', code: 'DNA', name: 'Cannon Air Force Base', kind: 'airbase', lat: 34.3828, lon: -103.3221 },
-  { id: 'kbab', code: 'BAB', name: 'Beale Air Force Base', kind: 'airbase', lat: 39.1361, lon: -121.4366 },
-  { id: 'kedt', code: 'EDW', name: 'Edwards Air Force Base', kind: 'airbase', lat: 34.9054, lon: -117.8837 },
-  { id: 'kdlh', code: 'DLF', name: 'Laughlin Air Force Base', kind: 'airbase', lat: 29.3595, lon: -100.7779 },
-  { id: 'kffb', code: 'FBG', name: 'Fort Bragg / Simmons Army Airfield', kind: 'airbase', lat: 35.1318, lon: -78.9367 },
-  { id: 'phik', code: 'HIK', name: 'Joint Base Pearl Harbor-Hickam', kind: 'airbase', lat: 21.3187, lon: -157.9225 },
-  { id: 'pafb', code: 'EDF', name: 'Joint Base Elmendorf-Richardson', kind: 'airbase', lat: 61.251, lon: -149.8065 },
-  { id: 'egun', code: 'MHZ', name: 'RAF Mildenhall', kind: 'airbase', lat: 52.3619, lon: 0.4864 },
-  { id: 'egul', code: 'LKZ', name: 'RAF Lakenheath', kind: 'airbase', lat: 52.4093, lon: 0.561 },
-  { id: 'rjty', code: 'OKO', name: 'Yokota Air Base', kind: 'airbase', lat: 35.7485, lon: 139.3485 },
-  { id: 'rjoa', code: 'DNA', name: 'Kadena Air Base', kind: 'airbase', lat: 26.3556, lon: 127.7676 },
 ];
 
 export const RADAR_REGIONS: RadarRegionPin[] = [
@@ -132,20 +108,31 @@ function destinationPoint(lon: number, lat: number, bearingDeg: number, distance
   return [((lon2 * 180) / Math.PI + 540) % 360 - 180, (lat2 * 180) / Math.PI];
 }
 
+function circleFeature(region: RadarRegionPin, radiusNm: number) {
+  const coordinates = Array.from({ length: 97 }, (_, index) =>
+    destinationPoint(region.lon, region.lat, (index / 96) * 360, Math.max(1, radiusNm)),
+  );
+  return {
+    type: 'Feature' as const,
+    geometry: { type: 'Polygon' as const, coordinates: [[...coordinates, coordinates[0]]] },
+    properties: region,
+  };
+}
+
 export function activeRadarZonesGeoJSON(activeIds: string[]) {
   const active = RADAR_REGIONS.filter((region) => activeIds.includes(region.id));
   return {
     type: 'FeatureCollection' as const,
-    features: active.map((region) => {
-      const coordinates = Array.from({ length: 97 }, (_, index) =>
-        destinationPoint(region.lon, region.lat, (index / 96) * 360, region.radiusNm),
-      );
-      return {
-        type: 'Feature' as const,
-        geometry: { type: 'Polygon' as const, coordinates: [[...coordinates, coordinates[0]]] },
-        properties: region,
-      };
-    }),
+    features: active.map((region) => circleFeature(region, region.radiusNm)),
+  };
+}
+
+export function activeRadarPulseGeoJSON(activeIds: string[], sweepDeg: number) {
+  const active = RADAR_REGIONS.filter((region) => activeIds.includes(region.id));
+  const radiusFactor = 0.15 + 0.85 * ((sweepDeg % 360) / 360);
+  return {
+    type: 'FeatureCollection' as const,
+    features: active.map((region) => circleFeature(region, region.radiusNm * radiusFactor)),
   };
 }
 
