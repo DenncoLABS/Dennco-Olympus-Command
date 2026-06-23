@@ -1,6 +1,6 @@
 {
   "name": "dennco-olympus-command",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "Dennco Olympus Command - an extensible geospatial intelligence command platform for live situational awareness, mirrors, and deployable apps",
   "keywords": [
