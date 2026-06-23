@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { isAdminConfigured } from './firstRunConfig';
+import { readAdminRuntimeSettings } from './adminRuntimeSettings';
 
 const COOKIE_NAME = 'olympus_access';
 const COOKIE_VALUE = 'granted';
@@ -12,11 +13,21 @@ function hasAccessCookie(req: Request): boolean {
     .some((part) => part === `${COOKIE_NAME}=${COOKIE_VALUE}`);
 }
 
+function logoMarkup(): string {
+  const saved = readAdminRuntimeSettings().branding || {};
+  const src = saved.logoDataUrl || saved.logoUrl || process.env.OLYMPUS_LOGO_URL || '';
+  if (!src) return '<div class="logo-dot"></div>';
+  return `<img class="logo-img" src="${src}" alt="Olympus logo" />`;
+}
+
 function baseStyles(): string {
   return `<style>
     :root { color-scheme: dark; }
     body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: radial-gradient(circle at top, #082f49, #020617 48%, #000); color: #e0f2fe; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
     form { width: min(520px, calc(100vw - 40px)); border: 1px solid rgba(34, 211, 238, .35); background: rgba(2, 6, 23, .92); padding: 32px; box-shadow: 0 0 50px rgba(34, 211, 238, .14); }
+    .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .logo-dot { width: 14px; height: 14px; border-radius: 999px; background: #22d3ee; box-shadow: 0 0 18px rgba(34,211,238,.9); }
+    .logo-img { width: 54px; height: 54px; object-fit: contain; filter: drop-shadow(0 0 12px rgba(34,211,238,.45)); }
     .eyebrow { font-size: 11px; letter-spacing: .35em; color: rgba(103, 232, 249, .75); text-transform: uppercase; margin-bottom: 10px; }
     h1 { margin: 0 0 12px; font-size: 30px; letter-spacing: .18em; text-transform: uppercase; }
     p { color: rgba(255,255,255,.55); font-size: 13px; line-height: 1.55; margin: 0 0 24px; }
@@ -42,8 +53,7 @@ function loginPage(message = ''): string {
 </head>
 <body>
   <form method="post" action="/api/admin/login">
-    <div class="eyebrow">Secure Console</div>
-    <h1>OLYMPUS</h1>
+    <div class="brand">${logoMarkup()}<div><div class="eyebrow">Secure Console</div><h1>OLYMPUS</h1></div></div>
     <p>Dennco Olympus Command requires administrator access before the command interface is loaded.</p>
     ${message ? `<div class="msg">${message}</div>` : ''}
     <label for="username">Admin user</label>
@@ -67,8 +77,7 @@ function setupPage(message = ''): string {
 </head>
 <body>
   <form method="post" action="/api/admin/setup">
-    <div class="eyebrow">First-Time Setup</div>
-    <h1>CREATE ADMIN</h1>
+    <div class="brand">${logoMarkup()}<div><div class="eyebrow">First-Time Setup</div><h1>CREATE ADMIN</h1></div></div>
     <p>Create the first Olympus administrator and initial branding before the command interface is made available.</p>
     ${message ? `<div class="msg">${message}</div>` : ''}
     <div class="grid">
