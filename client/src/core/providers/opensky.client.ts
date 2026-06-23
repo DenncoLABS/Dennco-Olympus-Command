@@ -1,8 +1,11 @@
 import type { FlightProvider, ProviderSnapshot } from './provider.types';
 
 export class OpenSkyClient implements FlightProvider {
-  async snapshot(): Promise<ProviderSnapshot> {
-    const res = await fetch('/api/flights/snapshot');
+  async snapshot(regionIds: string[] = []): Promise<ProviderSnapshot> {
+    const params = new URLSearchParams();
+    if (regionIds.length) params.set('regions', regionIds.join(','));
+    const query = params.toString();
+    const res = await fetch(`/api/flights/snapshot${query ? `?${query}` : ''}`);
     if (!res.ok) {
       throw new Error(`OpenSky proxy error: ${res.status}`);
     }
@@ -13,7 +16,7 @@ export class OpenSkyClient implements FlightProvider {
   async track(icao24: string): Promise<unknown> {
     const res = await fetch(`/api/flights/track/${icao24}`);
     if (!res.ok) {
-      if (res.status === 404) return null; // No track found
+      if (res.status === 404) return null;
       throw new Error(`OpenSky track error: ${res.status}`);
     }
     return await res.json();
