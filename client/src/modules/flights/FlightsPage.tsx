@@ -12,8 +12,11 @@ import { NoaaWeatherRadarLayer } from '../weather/NoaaWeatherRadarLayer';
 import { useThemeStore } from '../../ui/theme/theme.store';
 import { SATELLITE_STYLE, LIGHT_STYLE, DARK_STYLE, STREET_STYLE } from '../../lib/mapStyles';
 
+const aircraftPath =
+  'M9.123 30.464l-1.33-6.268-6.318-1.397 1.291-2.475 5.785-0.316c0.297-0.386 0.96-1.234 1.374-1.648l5.271-5.271-10.989-5.388 2.782-2.782 13.932 2.444 4.933-4.933c0.585-0.585 1.496-0.894 2.634-0.894 0.776 0 1.395 0.143 1.421 0.149l0.3 0.070 0.089 0.295c0.469 1.55 0.187 3.298-0.67 4.155l-4.956 4.956 2.434 13.875-2.782 2.782-5.367-10.945-4.923 4.924c-0.518 0.517-1.623 1.536-2.033 1.912l-0.431 5.425-2.449 1.329zM3.065 22.059l5.63 1.244 1.176 5.544 0.685-0.372 0.418-5.268 0.155-0.142c0.016-0.014 1.542-1.409 2.153-2.020l5.978-5.979 5.367 10.945 1.334-1.335-2.434-13.876 5.349-5.348c0.464-0.464 0.745-1.598 0.484-2.783-0.216-0.032-0.526-0.066-0.87-0.066-0.593 0-1.399 0.101-1.881 0.582l-5.325 5.325-13.933-2.444-1.335 1.334 10.989 5.388-6.326 6.326c-0.483 0.482-1.418 1.722-1.428 1.734l-0.149 0.198-5.672 0.31-0.366 0.702z';
+
 const planeSvg = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><path fill="#ffffff" d="M32 3 20 29 4 36v6l18-3 5 22h10l5-22 18 3v-6l-16-7L32 3z"/></svg>',
+  `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32"><path fill="#ffffff" d="${aircraftPath}"/></svg>`,
 )}`;
 let planeImage: HTMLImageElement | null = null;
 const planeImagePromise = new Promise<HTMLImageElement>((resolve) => {
@@ -35,6 +38,11 @@ function addPlaneImage(map: import('maplibre-gl').Map) {
       if (!map.hasImage('olympus-plane')) map.addImage('olympus-plane', image, { sdf: true });
     });
   }
+}
+
+function valueOrDash(value: unknown, suffix = '') {
+  if (value === null || value === undefined || value === '') return '—';
+  return `${value}${suffix}`;
 }
 
 export const FlightsPage: React.FC = () => {
@@ -154,8 +162,8 @@ export const FlightsPage: React.FC = () => {
               type="symbol"
               layout={{
                 'icon-image': 'olympus-plane',
-                'icon-size': 0.34,
-                'icon-rotate': ['coalesce', ['get', 'heading'], 0],
+                'icon-size': 0.42,
+                'icon-rotate': ['-', ['coalesce', ['get', 'heading'], 0], 45],
                 'icon-rotation-alignment': 'map',
                 'icon-allow-overlap': true,
                 'icon-ignore-placement': true,
@@ -184,17 +192,42 @@ export const FlightsPage: React.FC = () => {
               closeButton={false}
               onClose={() => setSelectedIcao24(null)}
             >
-              <div className="bg-[#05070b] border border-cyan-400/30 text-white font-mono min-w-[220px]">
+              <div className="bg-[#05070b] border border-cyan-400/30 text-white font-mono min-w-[320px] max-w-[380px]">
                 <div className="px-3 py-2 border-b border-cyan-400/20 flex items-center justify-between">
-                  <span className="text-cyan-300 text-[10px] uppercase tracking-[0.18em]">Aircraft</span>
+                  <span className="text-cyan-300 text-[10px] uppercase tracking-[0.18em]">Aircraft Detail</span>
                   <button onClick={() => setSelectedIcao24(null)} className="text-white/40 hover:text-white">×</button>
                 </div>
-                <div className="p-3 space-y-1 text-[11px] text-white/60">
-                  <div className="text-sm text-white font-bold">{selectedFlight.callsign || selectedFlight.icao24}</div>
-                  <div>Country: {selectedFlight.originCountry || 'Unknown'}</div>
-                  <div>Altitude: {selectedFlight.baroAltitude ?? '—'} m</div>
-                  <div>Speed: {selectedFlight.velocity ?? '—'} m/s</div>
-                  <div>Heading: {selectedFlight.heading ?? '—'}°</div>
+                <div className="p-3 space-y-3 text-[11px] text-white/60">
+                  <div>
+                    <div className="text-lg text-white font-bold leading-none">{selectedFlight.callsign || selectedFlight.registration || selectedFlight.icao24}</div>
+                    <div className="text-cyan-300/70 mt-1 uppercase tracking-[0.16em]">{selectedFlight.icao24}</div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    <Detail label="Registration" value={selectedFlight.registration} />
+                    <Detail label="Country" value={selectedFlight.originCountry} />
+                    <Detail label="Manufacturer" value={selectedFlight.manufacturerName} />
+                    <Detail label="Model" value={selectedFlight.model} />
+                    <Detail label="Operator" value={selectedFlight.operator} />
+                    <Detail label="Type" value={selectedFlight.typecode} />
+                    <Detail label="Built" value={selectedFlight.built} />
+                    <Detail label="Squawk" value={selectedFlight.squawk} />
+                    <Detail label="Baro Alt" value={valueOrDash(selectedFlight.baroAltitude, ' m')} />
+                    <Detail label="Geo Alt" value={valueOrDash(selectedFlight.geoAltitude, ' m')} />
+                    <Detail label="Speed" value={valueOrDash(selectedFlight.velocity, ' m/s')} />
+                    <Detail label="Heading" value={valueOrDash(selectedFlight.heading, '°')} />
+                    <Detail label="Vertical" value={valueOrDash(selectedFlight.verticalRate, ' m/s')} />
+                    <Detail label="RSSI" value={selectedFlight.rssi} />
+                    <Detail label="IAS" value={selectedFlight.ias} />
+                    <Detail label="TAS" value={selectedFlight.tas} />
+                    <Detail label="Mach" value={selectedFlight.mach} />
+                    <Detail label="Emergency" value={selectedFlight.emergency || 'none'} />
+                  </div>
+                  {selectedFlight.nav_modes?.length ? (
+                    <div className="border-t border-white/10 pt-2">
+                      <div className="text-white/35 uppercase tracking-[0.16em] mb-1">NAV Modes</div>
+                      <div className="text-white/70">{selectedFlight.nav_modes.join(', ')}</div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </Popup>
@@ -213,3 +246,12 @@ export const FlightsPage: React.FC = () => {
     </div>
   );
 };
+
+function Detail({ label, value }: { label: string; value: unknown }) {
+  return (
+    <div>
+      <div className="text-white/35 uppercase tracking-[0.14em]">{label}</div>
+      <div className="text-white/75 truncate">{valueOrDash(value)}</div>
+    </div>
+  );
+}
