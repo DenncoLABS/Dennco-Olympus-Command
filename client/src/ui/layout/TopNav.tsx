@@ -37,7 +37,7 @@ export const TopNav: React.FC = () => {
             {settings.branding.shortName}
           </h1>
           <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 border border-blue-400/30 bg-blue-950/30 text-[10px] font-mono uppercase tracking-[0.16em] text-blue-100/85 shadow-[0_0_12px_rgba(59,130,246,0.18)]">
-            <span>US-Friendly</span>
+            <span>U.S. Company</span>
             <span className="text-white/25">|</span>
             <span>Dennco Information Systems</span>
           </div>
