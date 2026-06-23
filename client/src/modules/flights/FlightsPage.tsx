@@ -97,18 +97,6 @@ export const FlightsPage: React.FC = () => {
     [setSelectedIcao24],
   );
 
-  const onMapLoad = useCallback((event: { target: import('maplibre-gl').Map }) => {
-    addPlaneImage(event.target);
-  }, []);
-
-  const onStyleData = useCallback((event: { target: import('maplibre-gl').Map }) => {
-    addPlaneImage(event.target);
-  }, []);
-
-  const onStyleImageMissing = useCallback((event: { id: string; target: import('maplibre-gl').Map }) => {
-    if (event.id === 'olympus-plane') addPlaneImage(event.target);
-  }, []);
-
   return (
     <div className="absolute inset-0 bg-intel-bg overflow-hidden flex flex-col">
       <FlightsToolbar
@@ -125,9 +113,11 @@ export const FlightsPage: React.FC = () => {
           styleDiffing={false}
           interactiveLayerIds={['aircraft-points']}
           onClick={onClick}
-          onLoad={onMapLoad}
-          onStyleData={onStyleData}
-          onStyleImageMissing={onStyleImageMissing}
+          onLoad={(event: { target: import('maplibre-gl').Map }) => addPlaneImage(event.target)}
+          onStyleData={(event: { target: import('maplibre-gl').Map }) => addPlaneImage(event.target)}
+          onStyleImageMissing={(event: { id: string; target: import('maplibre-gl').Map }) => {
+            if (event.id === 'olympus-plane') addPlaneImage(event.target);
+          }}
           projection={
             mapProjection === 'globe'
               ? ({ type: 'globe' } as import('maplibre-gl').ProjectionSpecification)
