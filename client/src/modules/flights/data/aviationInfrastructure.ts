@@ -100,13 +100,13 @@ export function airportPinsGeoJSON() {
   };
 }
 
-export function radarPinsGeoJSON() {
+export function radarPinsGeoJSON(activeIds: string[] = []) {
   return {
     type: 'FeatureCollection' as const,
     features: RADAR_REGIONS.map((region) => ({
       type: 'Feature' as const,
       geometry: { type: 'Point' as const, coordinates: [region.lon, region.lat] },
-      properties: region,
+      properties: { ...region, active: activeIds.includes(region.id) },
     })),
   };
 }
