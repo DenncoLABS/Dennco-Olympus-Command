@@ -28,6 +28,18 @@ export interface RuntimeSettings {
     providerMode: string;
     states: string[];
   };
+  vhfAudio: {
+    enabled: boolean;
+    defaultChannelId: string;
+    channels: Array<{
+      id: string;
+      label: string;
+      type: string;
+      streamUrl: string;
+      region?: string;
+      frequency?: string;
+    }>;
+  };
 }
 
 const fallbackSettings: RuntimeSettings = {
@@ -64,6 +76,11 @@ const fallbackSettings: RuntimeSettings = {
     roadClosuresUrl: '',
     providerMode: 'custom',
     states: [],
+  },
+  vhfAudio: {
+    enabled: true,
+    defaultChannelId: '',
+    channels: [],
   },
 };
 
@@ -113,6 +130,7 @@ export const RuntimeSettingsProvider: React.FC<{ children: ReactNode }> = ({ chi
           ...next,
           branding: { ...fallbackSettings.branding, ...(next.branding || {}) },
           dotFeeds: { ...fallbackSettings.dotFeeds, ...(next.dotFeeds || {}) },
+          vhfAudio: { ...fallbackSettings.vhfAudio, ...(next.vhfAudio || {}) },
         };
         setSettings(merged);
         applyDocumentBranding(merged);
