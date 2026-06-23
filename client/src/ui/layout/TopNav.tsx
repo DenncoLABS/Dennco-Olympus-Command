@@ -36,6 +36,11 @@ export const TopNav: React.FC = () => {
           <h1 className="text-intel-text-light font-mono font-bold text-2xl tracking-[0.2em] shrink-0 drop-shadow-[0_0_8px_rgba(224,242,254,0.5)]">
             {settings.branding.shortName}
           </h1>
+          <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 border border-blue-400/30 bg-blue-950/30 text-[10px] font-mono uppercase tracking-[0.16em] text-blue-100/85 shadow-[0_0_12px_rgba(59,130,246,0.18)]">
+            <span>US-Friendly</span>
+            <span className="text-white/25">|</span>
+            <span>Dennco Information Systems</span>
+          </div>
         </div>
 
         <nav className="flex gap-4 h-full pt-4">
@@ -59,6 +64,10 @@ export const TopNav: React.FC = () => {
 
       {/* Right side: View toggles */}
       <div className="flex gap-4 items-center h-full text-intel-text font-mono text-xs tracking-wider">
+        <div className="hidden 2xl:flex items-center gap-2 border-r border-intel-accent/30 pr-4 h-8 text-[10px] uppercase tracking-[0.14em] text-white/45">
+          <span>Purpose:</span>
+          <span className="text-white/70">Operational Awareness Support</span>
+        </div>
         <div className="flex items-center gap-2 border-r border-intel-accent/30 pr-4 h-8">
           <span className="opacity-50">PROJECTION:</span>
           <button
