@@ -1,0 +1,30 @@
+#!/bin/sh
+set -e
+
+APP_USER="olympus"
+APP_GROUP="olympus"
+APP_DIR="/opt/dennco/olympus-command"
+ENV_DIR="/etc/dennco/olympus-command"
+
+if ! getent group "$APP_GROUP" >/dev/null 2>&1; then
+  addgroup --system "$APP_GROUP" >/dev/null
+fi
+
+if ! id "$APP_USER" >/dev/null 2>&1; then
+  adduser --system --ingroup "$APP_GROUP" --home "$APP_DIR" --no-create-home --disabled-login "$APP_USER" >/dev/null
+fi
+
+mkdir -p "$ENV_DIR"
+
+if [ ! -f "$ENV_DIR/olympus-command.env" ]; then
+  cp /usr/share/dennco-olympus-command/olympus-command.env.example "$ENV_DIR/olympus-command.env"
+  chmod 640 "$ENV_DIR/olympus-command.env"
+fi
+
+chown -R "$APP_USER:$APP_GROUP" "$APP_DIR" "$ENV_DIR"
+
+systemctl daemon-reload || true
+systemctl enable dennco-olympus-command.service >/dev/null 2>&1 || true
+systemctl restart dennco-olympus-command.service >/dev/null 2>&1 || true
+
+exit 0
