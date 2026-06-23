@@ -12,11 +12,37 @@ import { NoaaWeatherRadarLayer } from '../weather/NoaaWeatherRadarLayer';
 import { useThemeStore } from '../../ui/theme/theme.store';
 import { SATELLITE_STYLE, LIGHT_STYLE, DARK_STYLE, STREET_STYLE } from '../../lib/mapStyles';
 
+const planeSvg = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><path fill="#ffffff" d="M32 3 20 29 4 36v6l18-3 5 22h10l5-22 18 3v-6l-16-7L32 3z"/></svg>',
+)}`;
+let planeImage: HTMLImageElement | null = null;
+const planeImagePromise = new Promise<HTMLImageElement>((resolve) => {
+  const image = new Image(64, 64);
+  image.onload = () => {
+    planeImage = image;
+    resolve(image);
+  };
+  image.src = planeSvg;
+});
+
+function addPlaneImage(map: import('maplibre-gl').Map) {
+  if (planeImage && !map.hasImage('olympus-plane')) {
+    map.addImage('olympus-plane', planeImage, { sdf: true });
+    return;
+  }
+  if (!planeImage) {
+    void planeImagePromise.then((image) => {
+      if (!map.hasImage('olympus-plane')) map.addImage('olympus-plane', image, { sdf: true });
+    });
+  }
+}
+
 export const FlightsPage: React.FC = () => {
   const { mapProjection, mapLayer } = useThemeStore();
   const { data, isError } = useFlightsSnapshot();
   const states = useMemo(() => data?.states || [], [data?.states]);
   const timestamp = data?.timestamp || 0;
+  const provider = data?.provider || 'adsblol';
   const { filters } = useFlightsStore();
   const { selectedIcao24, setSelectedIcao24, selectedFlight } = useFlightSelection(states);
 
@@ -87,6 +113,11 @@ export const FlightsPage: React.FC = () => {
           styleDiffing={false}
           interactiveLayerIds={['aircraft-points']}
           onClick={onClick}
+          onLoad={(event) => addPlaneImage(event.target)}
+          onStyleData={(event) => addPlaneImage(event.target)}
+          onStyleImageMissing={(event) => {
+            if (event.id === 'olympus-plane') addPlaneImage(event.target);
+          }}
           projection={
             mapProjection === 'globe'
               ? ({ type: 'globe' } as import('maplibre-gl').ProjectionSpecification)
@@ -105,7 +136,7 @@ export const FlightsPage: React.FC = () => {
                 'circle-radius': [
                   'case',
                   ['==', ['get', 'icao24'], selectedIcao24 || ''],
-                  10,
+                  12,
                   0,
                 ],
                 'circle-color': 'transparent',
@@ -120,10 +151,17 @@ export const FlightsPage: React.FC = () => {
             />
             <Layer
               id="aircraft-points"
-              type="circle"
+              type="symbol"
+              layout={{
+                'icon-image': 'olympus-plane',
+                'icon-size': 0.34,
+                'icon-rotate': ['coalesce', ['get', 'heading'], 0],
+                'icon-rotation-alignment': 'map',
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true,
+              }}
               paint={{
-                'circle-radius': 5,
-                'circle-color': [
+                'icon-color': [
                   'case',
                   ['==', ['get', 'icao24'], selectedIcao24 || ''],
                   '#ffffff',
@@ -131,9 +169,9 @@ export const FlightsPage: React.FC = () => {
                   '#f59e0b',
                   '#10b981',
                 ],
-                'circle-stroke-width': 1,
-                'circle-stroke-color': '#020617',
-                'circle-opacity': 0.95,
+                'icon-halo-color': '#020617',
+                'icon-halo-width': 1.25,
+                'icon-opacity': 0.95,
               }}
             />
           </Source>
@@ -170,7 +208,7 @@ export const FlightsPage: React.FC = () => {
       <FlightsStatusBar
         lastUpdated={timestamp}
         isError={isError}
-        provider={import.meta.env.VITE_FLIGHT_PROVIDER || 'opensky'}
+        provider={provider}
       />
     </div>
   );
