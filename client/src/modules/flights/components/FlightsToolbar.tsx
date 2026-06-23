@@ -24,14 +24,20 @@ export const FlightsToolbar: React.FC<FlightsToolbarProps> = ({
   airborne,
   onGround,
 }) => {
-  const { filters, setFilter } = useFlightsStore();
+  const {
+    filters,
+    setFilter,
+    showAirportPins,
+    setShowAirportPins,
+    showRadarPins,
+    setShowRadarPins,
+    activeRadarRegionIds,
+  } = useFlightsStore();
   const resolvedTotal = totalCount ?? total ?? 0;
   const resolvedFiltered = filteredCount ?? shown ?? 0;
   const resolvedAirborne = airborneCount ?? airborne ?? 0;
   const resolvedOnGround = onGroundCount ?? onGround ?? 0;
 
-  // Debounce slider updates so rapid drags don't re-filter thousands of
-  // states on every pixel movement.
   const sliderTimer = useRef<ReturnType<typeof setTimeout>>(null);
   const debouncedSetFilter = useCallback(
     <K extends keyof FlightsFilters>(key: K, value: FlightsFilters[K]) => {
@@ -43,11 +49,8 @@ export const FlightsToolbar: React.FC<FlightsToolbarProps> = ({
 
   return (
     <div className="absolute top-0 left-0 right-0 p-2 tech-panel z-10 flex items-center gap-4 pointer-events-auto flex-wrap !border-t-0 !border-l-0 !border-r-0 shadow-[0_15px_30px_rgba(0,0,0,0.8)]">
-      {/* ── Global Stats ──────────────────────────────── */}
       <div className="flex items-center gap-3">
-        <span className="text-[9px] font-bold tracking-widest text-intel-text-light/50 uppercase">
-          Stats
-        </span>
+        <span className="text-[9px] font-bold tracking-widest text-intel-text-light/50 uppercase">Stats</span>
         <StatPill label="TOTAL" value={resolvedTotal} color="text-intel-text-light" />
         <StatPill label="SHOWN" value={resolvedFiltered} color="text-intel-accent" />
         <StatPill label="AIRBORNE" value={resolvedAirborne} color="text-green-400" />
@@ -56,12 +59,8 @@ export const FlightsToolbar: React.FC<FlightsToolbarProps> = ({
 
       <div className="w-px h-4 bg-white/10" />
 
-      {/* ── Callsign filter ───────────────────────────── */}
       <div className="flex items-center gap-2">
-        <label
-          htmlFor="callsign-filter"
-          className="text-[10px] font-bold tracking-widest text-intel-text-light"
-        >
+        <label htmlFor="callsign-filter" className="text-[10px] font-bold tracking-widest text-intel-text-light">
           CALLSIGN
         </label>
         <input
@@ -74,31 +73,18 @@ export const FlightsToolbar: React.FC<FlightsToolbarProps> = ({
         />
       </div>
 
-      {/* ── On Ground toggle ──────────────────────────── */}
-      <div className="flex items-center gap-2">
-        <label
-          htmlFor="on-ground-toggle"
-          className="text-[10px] font-bold tracking-widest text-intel-text-light"
-        >
-          ON GROUND
-        </label>
-        <input
-          id="on-ground-toggle"
-          type="checkbox"
-          checked={filters.showOnGround}
-          onChange={(e) => setFilter('showOnGround', e.target.checked)}
-          className="accent-intel-accent"
-        />
+      <ToggleControl label="ON GROUND" checked={filters.showOnGround} onChange={(value) => setFilter('showOnGround', value)} />
+      <ToggleControl label="AIRPORTS" checked={showAirportPins} onChange={setShowAirportPins} />
+      <ToggleControl label="RADARS" checked={showRadarPins} onChange={setShowRadarPins} />
+
+      <div className="border border-cyan-400/20 bg-cyan-400/5 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.12em] text-cyan-200/80">
+        ACTIVE RADARS: <span className="text-white">{activeRadarRegionIds.length}</span>
       </div>
 
       <div className="w-px h-4 bg-white/10" />
 
-      {/* ── Altitude slider ───────────────────────────── */}
       <div className="flex items-center gap-2">
-        <label
-          htmlFor="alt-slider"
-          className="text-[10px] font-bold tracking-widest text-intel-text-light whitespace-nowrap"
-        >
+        <label htmlFor="alt-slider" className="text-[10px] font-bold tracking-widest text-intel-text-light whitespace-nowrap">
           MAX ALT (m)
         </label>
         <input
@@ -112,17 +98,11 @@ export const FlightsToolbar: React.FC<FlightsToolbarProps> = ({
           onChange={(e) => debouncedSetFilter('altitudeMax', Number(e.target.value))}
           aria-label="Maximum altitude filter"
         />
-        <span className="text-[10px] font-mono text-intel-accent w-12 text-right">
-          {filters.altitudeMax.toLocaleString()}
-        </span>
+        <span className="text-[10px] font-mono text-intel-accent w-12 text-right">{filters.altitudeMax.toLocaleString()}</span>
       </div>
 
-      {/* ── Speed slider ──────────────────────────────── */}
       <div className="flex items-center gap-2">
-        <label
-          htmlFor="spd-slider"
-          className="text-[10px] font-bold tracking-widest text-intel-text-light whitespace-nowrap"
-        >
+        <label htmlFor="spd-slider" className="text-[10px] font-bold tracking-widest text-intel-text-light whitespace-nowrap">
           MAX SPD (m/s)
         </label>
         <input
@@ -136,25 +116,22 @@ export const FlightsToolbar: React.FC<FlightsToolbarProps> = ({
           onChange={(e) => debouncedSetFilter('speedMax', Number(e.target.value))}
           aria-label="Maximum speed filter"
         />
-        <span className="text-[10px] font-mono text-intel-accent w-8 text-right">
-          {filters.speedMax}
-        </span>
+        <span className="text-[10px] font-mono text-intel-accent w-8 text-right">{filters.speedMax}</span>
       </div>
     </div>
   );
 };
 
-const StatPill: React.FC<{ label: string; value: number; color: string }> = ({
-  label,
-  value,
-  color,
-}) => (
+const ToggleControl: React.FC<{ label: string; checked: boolean; onChange: (checked: boolean) => void }> = ({ label, checked, onChange }) => (
+  <label className="flex items-center gap-2 text-[10px] font-bold tracking-widest text-intel-text-light">
+    {label}
+    <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="accent-intel-accent" />
+  </label>
+);
+
+const StatPill: React.FC<{ label: string; value: number; color: string }> = ({ label, value, color }) => (
   <div className="flex items-center gap-1.5 bg-black/40 px-2.5 py-1 border border-white/5 shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]">
     <span className="text-[9px] font-bold tracking-[0.1em] text-intel-text uppercase">{label}</span>
-    <span
-      className={`text-xs font-mono font-bold tabular-nums drop-shadow-[0_0_5px_currentColor] ${color}`}
-    >
-      {value.toLocaleString()}
-    </span>
+    <span className={`text-xs font-mono font-bold tabular-nums drop-shadow-[0_0_5px_currentColor] ${color}`}>{value.toLocaleString()}</span>
   </div>
 );
