@@ -5,13 +5,37 @@ import { aircraftDb } from '../aircraft_db';
 const CACHE_TTL = 3000;
 const adsblolCache = new Cache<AircraftState[]>(CACHE_TTL);
 
-function getAdsbLolUrl(): string {
-  if (process.env.ADSB_LOL_URL) return process.env.ADSB_LOL_URL;
+const DEFAULT_POINTS = [
+  '40.6413,-73.7781,250',
+  '33.6407,-84.4277,250',
+  '41.9742,-87.9073,250',
+  '32.8998,-97.0403,250',
+  '34.0522,-118.2437,250',
+  '37.6213,-122.3790,250',
+  '47.4502,-122.3088,250',
+  '25.7959,-80.2870,250',
+  '42.2162,-83.3554,250',
+  '51.4700,-0.4543,250',
+  '48.8566,2.3522,250',
+  '52.5200,13.4050,250',
+  '35.6762,139.6503,250',
+  '-33.8688,151.2093,250',
+];
+
+function getAdsbLolUrls(): string[] {
+  if (process.env.ADSB_LOL_URL) return [process.env.ADSB_LOL_URL];
   if (process.env.ADSB_LOL_LAT && process.env.ADSB_LOL_LON) {
     const radius = process.env.ADSB_LOL_RADIUS || '250';
-    return `https://api.adsb.lol/v2/point/${process.env.ADSB_LOL_LAT}/${process.env.ADSB_LOL_LON}/${radius}`;
+    return [`https://api.adsb.lol/v2/point/${process.env.ADSB_LOL_LAT}/${process.env.ADSB_LOL_LON}/${radius}`];
   }
-  return 'https://api.adsb.lol/v2/aircraft';
+  const points = (process.env.ADSB_LOL_POINTS || DEFAULT_POINTS.join(';'))
+    .split(';')
+    .map((point) => point.trim())
+    .filter(Boolean);
+  return points.map((point) => {
+    const [lat, lon, radius = '250'] = point.split(',').map((part) => part.trim());
+    return `https://api.adsb.lol/v2/point/${lat}/${lon}/${radius}`;
+  });
 }
 
 function getAircraftArray(data: any): any[] {
@@ -24,28 +48,44 @@ function getNowSeconds(data: any): number {
   return Math.floor(Date.now() / 1000);
 }
 
+async function fetchAircraftBatches(): Promise<{ aircraft: any[]; nowSec: number }> {
+  const headers = { 'User-Agent': 'Dennco-Olympus-Command/1.0' };
+  const results = await Promise.allSettled(
+    getAdsbLolUrls().map(async (url) => {
+      const response = await fetch(url, { headers });
+      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+      const data = await response.json();
+      return { aircraft: getAircraftArray(data), nowSec: getNowSeconds(data) };
+    }),
+  );
+
+  const merged = new Map<string, any>();
+  let nowSec = Math.floor(Date.now() / 1000);
+
+  for (const result of results) {
+    if (result.status !== 'fulfilled') continue;
+    nowSec = result.value.nowSec;
+    for (const aircraft of result.value.aircraft) {
+      const id = String(aircraft.hex || aircraft.icao || '').toLowerCase();
+      if (id) merged.set(id, aircraft);
+    }
+  }
+
+  return { aircraft: [...merged.values()], nowSec };
+}
+
 export async function fetchStates(): Promise<AircraftState[]> {
   const cached = adsblolCache.get();
   if (cached) return cached;
 
-  const response = await fetch(getAdsbLolUrl(), {
-    headers: { 'User-Agent': 'Dennco-Olympus-Command/1.0' },
-  });
-
-  if (!response.ok) {
+  const { aircraft, nowSec } = await fetchAircraftBatches();
+  if (aircraft.length === 0) {
     const staleCached = adsblolCache.get();
-    if (staleCached && staleCached.length > 0) {
-      console.warn(`[ADSB.lol API] ${response.status} ${response.statusText}. Using stale cache fallback.`);
-      return staleCached;
-    }
-    throw new Error(`ADSB.lol API Error: ${response.status} ${response.statusText}`);
+    if (staleCached && staleCached.length > 0) return staleCached;
+    throw new Error('ADSB.lol returned no aircraft from configured regions');
   }
 
-  const data = await response.json();
-  const ac = getAircraftArray(data);
-  const nowSec = getNowSeconds(data);
-
-  const parsed: AircraftState[] = ac
+  const parsed: AircraftState[] = aircraft
     .map((s: any) => {
       const icao24 = String(s.hex || s.icao || 'unknown').toLowerCase();
       const baroAltitude =
