@@ -7,6 +7,7 @@ const modules: Array<{ id: ActiveModule; label: string }> = [
   { id: 'flights', label: 'Flights' },
   { id: 'maritime', label: 'Maritime' },
   { id: 'monitor', label: 'Monitor' },
+  { id: 'dot', label: 'DOT' },
   { id: 'cyber', label: 'Cyber' },
   { id: 'admin', label: 'Admin' },
 ];
