@@ -93,4 +93,8 @@ export class TrackManager {
       features,
     };
   }
+
+  toGeoJSON(extrapolatedStates?: AircraftState[]) {
+    return this.getLineGeoJSON(extrapolatedStates);
+  }
 }
