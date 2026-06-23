@@ -7,6 +7,16 @@ const providerLabels: Record<string, string> = {
   mapTiles: 'Map tiles',
   dotTraffic: 'DOT traffic',
   dotCameras: 'DOT cameras',
+  vhfAudio: 'VHF audio',
+};
+
+type VhfChannel = {
+  id: string;
+  label: string;
+  type: string;
+  streamUrl: string;
+  region?: string;
+  frequency?: string;
 };
 
 type EditableSettings = {
@@ -23,6 +33,8 @@ type EditableSettings = {
     aisstream: string;
     openskyUsername: string;
     openskyPassword: string;
+    openskyClientId: string;
+    openskyClientSecret: string;
     mapTilesUrl: string;
   };
   dotFeeds: {
@@ -32,6 +44,11 @@ type EditableSettings = {
     roadClosuresUrl: string;
     providerMode: string;
     states: string[];
+  };
+  vhfAudio: {
+    enabled: boolean;
+    defaultChannelId: string;
+    channels: VhfChannel[];
   };
 };
 
@@ -43,6 +60,15 @@ function fileToDataUrl(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+
+const blankChannel = (): VhfChannel => ({
+  id: `vhf-${Date.now()}`,
+  label: 'New VHF Channel',
+  type: 'ATC',
+  streamUrl: '',
+  region: '',
+  frequency: '',
+});
 
 export const AdminSettingsPage: React.FC = () => {
   const { settings, reload } = useRuntimeSettings();
@@ -60,11 +86,18 @@ export const AdminSettingsPage: React.FC = () => {
       aisstream: '',
       openskyUsername: '',
       openskyPassword: '',
+      openskyClientId: '',
+      openskyClientSecret: '',
       mapTilesUrl: '',
     },
     dotFeeds: {
       ...settings.dotFeeds,
       states: settings.dotFeeds.states || [],
+    },
+    vhfAudio: {
+      enabled: settings.vhfAudio.enabled,
+      defaultChannelId: settings.vhfAudio.defaultChannelId,
+      channels: settings.vhfAudio.channels || [],
     },
   });
   const [status, setStatus] = useState('');
@@ -84,6 +117,11 @@ export const AdminSettingsPage: React.FC = () => {
       dotFeeds: {
         ...settings.dotFeeds,
         states: settings.dotFeeds.states || [],
+      },
+      vhfAudio: {
+        enabled: settings.vhfAudio.enabled,
+        defaultChannelId: settings.vhfAudio.defaultChannelId,
+        channels: settings.vhfAudio.channels || [],
       },
     }));
   }, [settings]);
@@ -117,6 +155,22 @@ export const AdminSettingsPage: React.FC = () => {
     setForm((current) => ({ ...current, dotFeeds: { ...current.dotFeeds, [key]: value } }));
   };
 
+  const updateVhf = (patch: Partial<EditableSettings['vhfAudio']>) => {
+    setForm((current) => ({ ...current, vhfAudio: { ...current.vhfAudio, ...patch } }));
+  };
+
+  const updateVhfChannel = (index: number, patch: Partial<VhfChannel>) => {
+    setForm((current) => ({
+      ...current,
+      vhfAudio: {
+        ...current.vhfAudio,
+        channels: current.vhfAudio.channels.map((channel, i) =>
+          i === index ? { ...channel, ...patch } : channel,
+        ),
+      },
+    }));
+  };
+
   const logoPreview = form.branding.logoDataUrl || form.branding.logoUrl;
   const faviconPreview = form.branding.faviconDataUrl || form.branding.faviconUrl;
 
@@ -128,7 +182,7 @@ export const AdminSettingsPage: React.FC = () => {
             <div className="text-xs uppercase tracking-[0.35em] text-intel-accent/70 mb-2">Admin Console</div>
             <h2 className="font-mono text-3xl font-bold tracking-[0.15em] uppercase">Settings</h2>
             <p className="mt-3 text-sm text-white/50 max-w-3xl">
-              Manage authentication, NethServer 8 directory settings, API providers, DOT traffic feeds, feature toggles, branding, uploaded splash logo, favicon, and custom CSS themes.
+              Manage authentication, provider keys, VHF voice streams, DOT feeds, uploaded splash logo, favicon, branding, and custom CSS themes.
             </p>
           </div>
           <div className="flex gap-3">
@@ -182,18 +236,8 @@ export const AdminSettingsPage: React.FC = () => {
             <TextInput label="Short name" value={form.branding.shortName} onChange={(value) => updateBranding('shortName', value)} />
             <TextInput label="Footer text" value={form.branding.footerText} onChange={(value) => updateBranding('footerText', value)} />
             <TextInput label="Logo URL" value={form.branding.logoUrl} onChange={(value) => updateBranding('logoUrl', value)} />
-            <AssetUpload
-              label="Upload splash/nav logo"
-              preview={logoPreview}
-              onUpload={(dataUrl) => updateBranding('logoDataUrl', dataUrl)}
-              onClear={() => updateBranding('logoDataUrl', '')}
-            />
-            <AssetUpload
-              label="Upload favicon"
-              preview={faviconPreview}
-              onUpload={(dataUrl) => updateBranding('faviconDataUrl', dataUrl)}
-              onClear={() => updateBranding('faviconDataUrl', '')}
-            />
+            <AssetUpload label="Upload splash/nav logo" preview={logoPreview} onUpload={(dataUrl) => updateBranding('logoDataUrl', dataUrl)} onClear={() => updateBranding('logoDataUrl', '')} />
+            <AssetUpload label="Upload favicon" preview={faviconPreview} onUpload={(dataUrl) => updateBranding('faviconDataUrl', dataUrl)} onClear={() => updateBranding('faviconDataUrl', '')} />
           </div>
         </section>
 
@@ -204,6 +248,56 @@ export const AdminSettingsPage: React.FC = () => {
             <TextInput label="Map tiles URL" value={form.apiKeys.mapTilesUrl} onChange={(value) => updateApi('mapTilesUrl', value)} />
             <TextInput label="OpenSky username" value={form.apiKeys.openskyUsername} onChange={(value) => updateApi('openskyUsername', value)} />
             <SecretInput label="OpenSky password" value={form.apiKeys.openskyPassword} onChange={(value) => updateApi('openskyPassword', value)} />
+            <TextInput label="OpenSky OAuth client ID" value={form.apiKeys.openskyClientId} onChange={(value) => updateApi('openskyClientId', value)} />
+            <SecretInput label="OpenSky OAuth client secret" value={form.apiKeys.openskyClientSecret} onChange={(value) => updateApi('openskyClientSecret', value)} />
+          </div>
+        </section>
+
+        <section className="border border-purple-300/20 bg-purple-950/10 p-5">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="font-mono text-lg uppercase tracking-[0.18em]">VHF Voice / Live Chatter</h3>
+              <p className="text-sm text-white/50 mt-2 max-w-3xl">
+                Add live audio stream URLs for aviation ATC, marine VHF, or your own SDR/Icecast feed. Audio appears as a toggle panel on the Flights map.
+              </p>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-white/60">
+              <input type="checkbox" checked={form.vhfAudio.enabled} onChange={(event) => updateVhf({ enabled: event.target.checked })} />
+              Enabled
+            </label>
+          </div>
+
+          <div className="space-y-4">
+            {form.vhfAudio.channels.map((channel, index) => (
+              <div key={channel.id || index} className="border border-white/10 bg-black/30 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs uppercase tracking-[0.2em] text-purple-200/70">Channel {index + 1}</div>
+                  <button
+                    onClick={() => updateVhf({ channels: form.vhfAudio.channels.filter((_, i) => i !== index) })}
+                    className="border border-red-300/25 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-red-200/70 hover:bg-red-500/10"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  <TextInput label="Label" value={channel.label} onChange={(value) => updateVhfChannel(index, { label: value })} />
+                  <TextInput label="Type" value={channel.type} onChange={(value) => updateVhfChannel(index, { type: value })} placeholder="ATC, Marine VHF, SDR" />
+                  <TextInput label="Stream URL" value={channel.streamUrl} onChange={(value) => updateVhfChannel(index, { streamUrl: value })} />
+                  <TextInput label="Region" value={channel.region || ''} onChange={(value) => updateVhfChannel(index, { region: value })} />
+                  <TextInput label="Frequency" value={channel.frequency || ''} onChange={(value) => updateVhfChannel(index, { frequency: value })} />
+                  <label className="block border border-white/10 bg-black/30 p-4">
+                    <div className="text-xs uppercase tracking-[0.2em] text-white/35 mb-2">Default</div>
+                    <input type="radio" checked={form.vhfAudio.defaultChannelId === channel.id} onChange={() => updateVhf({ defaultChannelId: channel.id })} />
+                  </label>
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={() => updateVhf({ channels: [...form.vhfAudio.channels, blankChannel()] })}
+              className="border border-purple-300/40 px-4 py-2 text-xs uppercase tracking-[0.2em] text-purple-200 hover:bg-purple-400/10"
+            >
+              Add VHF Channel
+            </button>
           </div>
         </section>
 
