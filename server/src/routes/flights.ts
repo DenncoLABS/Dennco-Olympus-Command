@@ -11,29 +11,29 @@ import {
 const router = Router();
 
 // Simple in-memory TTL cache for the snapshot endpoint.
-// OpenSky anonymous rate limit is 10 req / 10 s; the client polls every 5 s,
-// so without caching multiple browser tabs will quickly exhaust the quota.
-let snapshotCache: { data: object; ts: number } | null = null;
+let snapshotCache: { data: object; ts: number; provider: string } | null = null;
 const SNAPSHOT_TTL_MS = 5_000;
 
-router.get('/snapshot', async (req, res) => {
+function selectedProvider(): 'adsblol' | 'opensky' {
+  return process.env.FLIGHT_DATA_SOURCE === 'opensky' ? 'opensky' : 'adsblol';
+}
+
+router.get('/snapshot', async (_req, res) => {
   const now = Date.now();
-  if (snapshotCache && now - snapshotCache.ts < SNAPSHOT_TTL_MS) {
+  const provider = selectedProvider();
+  if (snapshotCache && snapshotCache.provider === provider && now - snapshotCache.ts < SNAPSHOT_TTL_MS) {
     res.setHeader('X-Cache', 'HIT');
     return res.json(snapshotCache.data);
   }
 
   try {
-    const provider = process.env.FLIGHT_DATA_SOURCE === 'adsblol' ? 'adsblol' : 'opensky';
     const fetchStates = provider === 'adsblol' ? fetchAdsbLolStates : fetchOpenSkyStates;
-
     const states = await fetchStates();
     const payload = { states, timestamp: now, provider, live: true };
-    snapshotCache = { data: payload, ts: now };
+    snapshotCache = { data: payload, ts: now, provider };
     res.setHeader('X-Cache', 'MISS');
     res.json(payload);
   } catch (error: any) {
-    const provider = process.env.FLIGHT_DATA_SOURCE === 'adsblol' ? 'adsblol' : 'opensky';
     const message = error?.message || 'Unknown flight provider error';
     console.warn(`[Flights] ${provider} provider failed: ${message}`);
     res.status(502).json({
@@ -49,7 +49,7 @@ router.get('/snapshot', async (req, res) => {
 
 router.get('/track/:icao24', async (req, res) => {
   try {
-    const useAdsbLol = process.env.FLIGHT_DATA_SOURCE === 'adsblol';
+    const useAdsbLol = selectedProvider() === 'adsblol';
     const fetchTrack = useAdsbLol ? fetchAdsbLolTrack : fetchOpenSkyTrack;
 
     const track = await fetchTrack(req.params.icao24);
