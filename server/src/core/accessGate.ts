@@ -13,11 +13,22 @@ function hasAccessCookie(req: Request): boolean {
     .some((part) => part === `${COOKIE_NAME}=${COOKIE_VALUE}`);
 }
 
+function branding() {
+  return readAdminRuntimeSettings().branding || {};
+}
+
 function logoMarkup(): string {
-  const saved = readAdminRuntimeSettings().branding || {};
+  const saved = branding();
   const src = saved.logoDataUrl || saved.logoUrl || process.env.OLYMPUS_LOGO_URL || '';
   if (!src) return '<div class="logo-dot"></div>';
   return `<img class="logo-img" src="${src}" alt="Olympus logo" />`;
+}
+
+function faviconMarkup(): string {
+  const saved = branding();
+  const src = saved.faviconDataUrl || saved.faviconUrl || process.env.OLYMPUS_FAVICON_URL || '';
+  if (!src) return '';
+  return `<link rel="icon" href="${src}" />`;
 }
 
 function baseStyles(): string {
@@ -49,6 +60,7 @@ function loginPage(message = ''): string {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dennco Olympus Command Login</title>
+  ${faviconMarkup()}
   ${baseStyles()}
 </head>
 <body>
@@ -73,6 +85,7 @@ function setupPage(message = ''): string {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dennco Olympus Command First-Time Setup</title>
+  ${faviconMarkup()}
   ${baseStyles()}
 </head>
 <body>
