@@ -10,6 +10,7 @@ const SNAPSHOT_VESSEL_LIMIT = 30_000;
 
 router.get('/status', (req, res) => {
   res.json({
+    configured: aisStreamService.configured,
     isConnected: aisStreamService.isConnected,
     readyState: aisStreamService.readyState,
     vesselCount: aisStreamService.vessels.size,
@@ -19,6 +20,11 @@ router.get('/status', (req, res) => {
       ? Math.floor((Date.now() - aisStreamService.lastMessageReceived) / 1000)
       : null,
   });
+});
+
+router.post('/reconnect', (_req, res) => {
+  const ok = aisStreamService.reloadCredentialsAndReconnect();
+  res.json({ ok, configured: aisStreamService.configured, readyState: aisStreamService.readyState });
 });
 
 router.get('/snapshot', (req, res) => {
