@@ -69,6 +69,8 @@ jobs:
           find . -maxdepth 5 -type f -print | sort
 
       - name: Publish clean gh-pages branch
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git config --global user.name "github-actions[bot]"
@@ -97,4 +99,4 @@ jobs:
           git commit -m "Publish apt repository"
           git push --force origin gh-pages
 
-# rebuild trigger: flight snapshot guard package
+# rebuild trigger: token fix and flight snapshot guard package
