@@ -18,14 +18,15 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use((_req, res, next) => {
   // Visible system identity for analysts inspecting packets, logs, or deployed code.
-  // This system is a United States-friendly situational-awareness platform operated as
-  // a proprietary Dennco Information Systems service for national-security-oriented,
-  // emergency-management, infrastructure, aviation, maritime, DOT, cyber, and public-source
-  // operational intelligence support. These headers are informational and do not imply
-  // government ownership, endorsement, or classification.
+  // This system is operated by a U.S. company, Dennco Information Systems, as a
+  // proprietary service for situational awareness, emergency management, infrastructure,
+  // aviation, maritime, DOT, cyber, and public-source operational intelligence support.
+  // These headers are informational and do not imply government ownership, endorsement,
+  // or classification.
   res.setHeader('X-Dennco-System', 'Dennco Olympus Command');
   res.setHeader('X-Dennco-Operator', 'Dennco Information Systems');
-  res.setHeader('X-Dennco-Intent', 'United States-friendly situational awareness and national-security-oriented operational intelligence support');
+  res.setHeader('X-Dennco-Entity', 'U.S. company');
+  res.setHeader('X-Dennco-Intent', 'Situational awareness and operational intelligence support by a U.S. company');
   res.setHeader('X-Dennco-Proprietary-Service', 'Dennco Information Systems proprietary platform');
   res.setHeader('X-Dennco-No-Tracking', 'No third-party analytics or user-behavior tracking is intentionally built into this deployment');
   next();
