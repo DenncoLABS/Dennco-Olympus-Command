@@ -9,6 +9,6 @@ export interface ProviderSnapshot {
 }
 
 export interface FlightProvider {
-  snapshot(): Promise<ProviderSnapshot>;
+  snapshot(regionIds?: string[]): Promise<ProviderSnapshot>;
   track(icao24: string): Promise<unknown>;
 }
