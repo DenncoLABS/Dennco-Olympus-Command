@@ -4,22 +4,31 @@ import { useMaritimeStore } from '../state/maritime.store';
 interface MaritimeToolbarProps {
   totalCount: number;
   filteredCount: number;
+  portCount?: number;
+  installationCount?: number;
 }
 
-/**
- * Fine-grained Zustand selectors — each field subscribes independently so the
- * toolbar only re-renders when the specific slice it uses changes.
- * Previously it subscribed to the whole store object.
- */
-export const MaritimeToolbar: React.FC<MaritimeToolbarProps> = ({ totalCount, filteredCount }) => {
+export const MaritimeToolbar: React.FC<MaritimeToolbarProps> = ({
+  totalCount,
+  filteredCount,
+  portCount = 0,
+  installationCount = 0,
+}) => {
   const name = useMaritimeStore((s) => s.filters.name);
   const speedMin = useMaritimeStore((s) => s.filters.speedMin);
   const showUnderway = useMaritimeStore((s) => s.filters.showUnderway);
   const showMoored = useMaritimeStore((s) => s.filters.showMoored);
+  const showPorts = useMaritimeStore((s) => s.showPorts);
+  const setShowPorts = useMaritimeStore((s) => s.setShowPorts);
+  const showInstallations = useMaritimeStore((s) => s.showInstallations);
+  const setShowInstallations = useMaritimeStore((s) => s.setShowInstallations);
+  const showMaritimeNodes = useMaritimeStore((s) => s.showMaritimeNodes);
+  const setShowMaritimeNodes = useMaritimeStore((s) => s.setShowMaritimeNodes);
+  const activeMaritimeNodeIds = useMaritimeStore((s) => s.activeMaritimeNodeIds);
+  const activateAllMaritimeNodes = useMaritimeStore((s) => s.activateAllMaritimeNodes);
+  const clearMaritimeNodes = useMaritimeStore((s) => s.clearMaritimeNodes);
   const setFilter = useMaritimeStore((s) => s.setFilter);
 
-  // Local debounce state for the name input — avoids rebuilding filteredVessels
-  // on every keystroke; commits to the store after 300 ms of no typing.
   const [localName, setLocalName] = useState(name);
   const nameTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -34,31 +43,22 @@ export const MaritimeToolbar: React.FC<MaritimeToolbarProps> = ({ totalCount, fi
   );
 
   return (
-    <div className="absolute top-0 left-0 right-0 h-12 tech-panel z-10 flex items-center px-4 justify-between shrink-0 font-mono !border-t-0 !border-l-0 !border-r-0 shadow-[0_15px_30px_rgba(0,0,0,0.8)]">
-      <div className="flex items-center h-full space-x-6">
-        <div className="flex items-center space-x-4">
-          <span className="text-[10px] text-intel-text opacity-50 uppercase tracking-widest font-bold">
-            Stats
-          </span>
-          <div className="flex space-x-3 text-xs">
-            <span className="text-white/70">
-              TOTAL <strong className="text-white ml-1">{totalCount.toLocaleString()}</strong>
-            </span>
-            <span className="text-white/70">
-              SHOWN{' '}
-              <strong className="text-intel-accent ml-1">{filteredCount.toLocaleString()}</strong>
-            </span>
-          </div>
+    <div className="absolute top-0 left-0 right-0 min-h-12 tech-panel z-10 flex items-center px-4 py-2 justify-between shrink-0 font-mono !border-t-0 !border-l-0 !border-r-0 shadow-[0_15px_30px_rgba(0,0,0,0.8)] flex-wrap gap-3">
+      <div className="flex items-center h-full gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-intel-text opacity-50 uppercase tracking-widest font-bold">Stats</span>
+          <Stat label="TOTAL" value={totalCount} color="text-white" />
+          <Stat label="SHOWN" value={filteredCount} color="text-intel-accent" />
+          <Stat label="NODES" value={activeMaritimeNodeIds.length} color="text-white" />
+          <Stat label="PORTS" value={portCount} color="text-yellow-300" />
+          <Stat label="INSTALLATIONS" value={installationCount} color="text-red-300" />
         </div>
 
         <div className="h-4 w-px bg-white/10" />
 
-        {/* Filters */}
-        <div className="flex items-center space-x-4 h-full">
+        <div className="flex items-center gap-4 h-full flex-wrap">
           <div className="flex items-center space-x-2">
-            <span className="text-[10px] text-intel-text uppercase tracking-widest font-bold">
-              NAME
-            </span>
+            <span className="text-[10px] text-intel-text uppercase tracking-widest font-bold">NAME</span>
             <input
               type="text"
               value={localName}
@@ -68,34 +68,20 @@ export const MaritimeToolbar: React.FC<MaritimeToolbarProps> = ({ totalCount, fi
             />
           </div>
 
-          <div className="flex items-center space-x-2">
-            <span className="text-[10px] text-intel-text uppercase tracking-widest font-bold">
-              UNDERWAY
-            </span>
-            <input
-              type="checkbox"
-              checked={showUnderway}
-              onChange={(e) => setFilter('showUnderway', e.target.checked)}
-              className="accent-intel-accent cursor-pointer"
-            />
+          <Toggle label="UNDERWAY" checked={showUnderway} onChange={(checked) => setFilter('showUnderway', checked)} />
+          <Toggle label="MOORED" checked={showMoored} onChange={(checked) => setFilter('showMoored', checked)} />
+          <Toggle label="PORTS" checked={showPorts} onChange={setShowPorts} />
+          <Toggle label="INSTALLATIONS" checked={showInstallations} onChange={setShowInstallations} />
+          <Toggle label="NODES" checked={showMaritimeNodes} onChange={setShowMaritimeNodes} />
+
+          <div className="flex items-center gap-1 border border-cyan-400/20 bg-cyan-400/5 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.12em] text-cyan-200/80">
+            <span>ACTIVE NODES: <span className="text-white">{activeMaritimeNodeIds.length}</span></span>
+            <button type="button" onClick={activateAllMaritimeNodes} className="ml-2 border border-white/15 px-1.5 py-0.5 text-[9px] text-white/70 hover:border-white/45 hover:text-white transition-colors">ALL</button>
+            <button type="button" onClick={clearMaritimeNodes} className="border border-white/15 px-1.5 py-0.5 text-[9px] text-white/70 hover:border-white/45 hover:text-white transition-colors">NONE</button>
           </div>
 
           <div className="flex items-center space-x-2">
-            <span className="text-[10px] text-intel-text uppercase tracking-widest font-bold">
-              MOORED
-            </span>
-            <input
-              type="checkbox"
-              checked={showMoored}
-              onChange={(e) => setFilter('showMoored', e.target.checked)}
-              className="accent-[#f59e0b] cursor-pointer"
-            />
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <span className="text-[10px] text-intel-text uppercase tracking-widest font-bold">
-              MIN SPD (KT)
-            </span>
+            <span className="text-[10px] text-intel-text uppercase tracking-widest font-bold">MIN SPD (KT)</span>
             <input
               type="range"
               min="0"
@@ -104,12 +90,23 @@ export const MaritimeToolbar: React.FC<MaritimeToolbarProps> = ({ totalCount, fi
               onChange={(e) => setFilter('speedMin', parseInt(e.target.value))}
               className="w-24 accent-intel-accent"
             />
-            <span className="text-[10px] text-intel-accent w-6 tabular-nums text-right">
-              {speedMin}
-            </span>
+            <span className="text-[10px] text-intel-accent w-6 tabular-nums text-right">{speedMin}</span>
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+const Toggle: React.FC<{ label: string; checked: boolean; onChange: (checked: boolean) => void }> = ({ label, checked, onChange }) => (
+  <label className="flex items-center space-x-2">
+    <span className="text-[10px] text-intel-text uppercase tracking-widest font-bold">{label}</span>
+    <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="accent-intel-accent cursor-pointer" />
+  </label>
+);
+
+const Stat: React.FC<{ label: string; value: number; color: string }> = ({ label, value, color }) => (
+  <span className="text-white/70 text-xs">
+    {label} <strong className={`${color} ml-1`}>{value.toLocaleString()}</strong>
+  </span>
+);
