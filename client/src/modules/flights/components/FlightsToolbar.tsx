@@ -3,10 +3,15 @@ import { useFlightsStore } from '../state/flights.store';
 import type { FlightsFilters } from '../state/flights.store';
 
 interface FlightsToolbarProps {
-  totalCount: number;
-  filteredCount: number;
-  airborneCount: number;
-  onGroundCount: number;
+  totalCount?: number;
+  filteredCount?: number;
+  airborneCount?: number;
+  onGroundCount?: number;
+  total?: number;
+  shown?: number;
+  airborne?: number;
+  onGround?: number;
+  isError?: boolean;
 }
 
 export const FlightsToolbar: React.FC<FlightsToolbarProps> = ({
@@ -14,8 +19,16 @@ export const FlightsToolbar: React.FC<FlightsToolbarProps> = ({
   filteredCount,
   airborneCount,
   onGroundCount,
+  total,
+  shown,
+  airborne,
+  onGround,
 }) => {
   const { filters, setFilter } = useFlightsStore();
+  const resolvedTotal = totalCount ?? total ?? 0;
+  const resolvedFiltered = filteredCount ?? shown ?? 0;
+  const resolvedAirborne = airborneCount ?? airborne ?? 0;
+  const resolvedOnGround = onGroundCount ?? onGround ?? 0;
 
   // Debounce slider updates so rapid drags don't re-filter thousands of
   // states on every pixel movement.
@@ -35,10 +48,10 @@ export const FlightsToolbar: React.FC<FlightsToolbarProps> = ({
         <span className="text-[9px] font-bold tracking-widest text-intel-text-light/50 uppercase">
           Stats
         </span>
-        <StatPill label="TOTAL" value={totalCount} color="text-intel-text-light" />
-        <StatPill label="SHOWN" value={filteredCount} color="text-intel-accent" />
-        <StatPill label="AIRBORNE" value={airborneCount} color="text-green-400" />
-        <StatPill label="GROUND" value={onGroundCount} color="text-amber-400" />
+        <StatPill label="TOTAL" value={resolvedTotal} color="text-intel-text-light" />
+        <StatPill label="SHOWN" value={resolvedFiltered} color="text-intel-accent" />
+        <StatPill label="AIRBORNE" value={resolvedAirborne} color="text-green-400" />
+        <StatPill label="GROUND" value={resolvedOnGround} color="text-amber-400" />
       </div>
 
       <div className="w-px h-4 bg-white/10" />
