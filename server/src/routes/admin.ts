@@ -10,6 +10,7 @@ function runtimeSettings() {
   const savedBranding = saved.branding || {};
   const savedKeys = saved.apiKeys || {};
   const savedDot = saved.dotFeeds || {};
+  const savedVhf = saved.vhfAudio || {};
   const branding = getRuntimeBranding();
 
   return {
@@ -25,6 +26,7 @@ function runtimeSettings() {
       logoUrl: process.env.OLYMPUS_LOGO_URL || savedBranding.logoUrl || '',
       logoDataUrl: savedBranding.logoDataUrl || '',
       faviconUrl: process.env.OLYMPUS_FAVICON_URL || savedBranding.faviconUrl || '',
+      faviconDataUrl: savedBranding.faviconDataUrl || '',
       footerText: savedBranding.footerText || branding.footerText,
     },
     featureToggles: {
@@ -40,10 +42,11 @@ function runtimeSettings() {
     },
     providers: {
       aisstream: configured(process.env.AISSTREAM_API_KEY) || configured(savedKeys.aisstream),
-      opensky: configured(process.env.OPENSKY_USERNAME) || configured(process.env.OPENSKY_PASSWORD) || configured(savedKeys.openskyUsername) || configured(savedKeys.openskyPassword),
+      opensky: configured(process.env.OPENSKY_USERNAME) || configured(process.env.OPENSKY_PASSWORD) || configured(savedKeys.openskyUsername) || configured(savedKeys.openskyPassword) || configured(savedKeys.openskyClientId),
       mapTiles: configured(process.env.MAP_TILES_URL) || configured(savedKeys.mapTilesUrl),
       dotTraffic: configured(process.env.DOT_TRAFFIC_GEOJSON_URL) || configured(process.env.VITE_DOT_TRAFFIC_GEOJSON_URL) || configured(savedDot.trafficUrl),
       dotCameras: configured(process.env.DOT_CAMERAS_GEOJSON_URL) || configured(process.env.VITE_DOT_CAMERAS_GEOJSON_URL) || configured(savedDot.camerasUrl),
+      vhfAudio: Boolean(savedVhf.enabled && (savedVhf.channels || []).some((channel) => configured(channel.streamUrl))),
     },
     dotFeeds: {
       nationalTrafficUrl: savedDot.nationalTrafficUrl || process.env.DOT_NATIONAL_TRAFFIC_GEOJSON_URL || '',
@@ -55,6 +58,11 @@ function runtimeSettings() {
         .split(',')
         .map((state) => state.trim().toUpperCase())
         .filter(Boolean),
+    },
+    vhfAudio: {
+      enabled: savedVhf.enabled !== false,
+      defaultChannelId: savedVhf.defaultChannelId || savedVhf.channels?.[0]?.id || '',
+      channels: savedVhf.channels || [],
     },
   };
 }
@@ -73,10 +81,13 @@ router.post('/settings', (req, res) => {
   mergeAdminRuntimeSettings({
     branding: body.branding || {},
     dotFeeds: body.dotFeeds || {},
+    vhfAudio: body.vhfAudio || {},
     apiKeys: {
       ...(apiKeys.aisstream ? { aisstream: apiKeys.aisstream } : {}),
       ...(apiKeys.openskyUsername ? { openskyUsername: apiKeys.openskyUsername } : {}),
       ...(apiKeys.openskyPassword ? { openskyPassword: apiKeys.openskyPassword } : {}),
+      ...(apiKeys.openskyClientId ? { openskyClientId: apiKeys.openskyClientId } : {}),
+      ...(apiKeys.openskyClientSecret ? { openskyClientSecret: apiKeys.openskyClientSecret } : {}),
       ...(apiKeys.mapTilesUrl ? { mapTilesUrl: apiKeys.mapTilesUrl } : {}),
     },
   });
