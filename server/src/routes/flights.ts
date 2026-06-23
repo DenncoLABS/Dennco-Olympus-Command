@@ -40,8 +40,23 @@ function shouldUseLastGood(nextCount: number, now: number, regionKey: string): b
 router.get('/snapshot', async (req, res) => {
   const now = Date.now();
   const regionIds = parseRegionIds(req.query.regions);
-  const regionKey = regionIds.slice().sort().join(',') || 'default';
-  const providerLabel = regionIds.length ? `${PROVIDER_LABEL}-regional` : PROVIDER_LABEL;
+  const regionKey = regionIds.slice().sort().join(',');
+  const providerLabel = regionIds.length ? `${PROVIDER_LABEL}-regional` : `${PROVIDER_LABEL}-no-active-radar`;
+
+  if (!regionIds.length) {
+    const payload = {
+      states: [],
+      timestamp: now,
+      provider: providerLabel,
+      live: true,
+      radarRegions: [],
+      scanActive: false,
+      details: 'No radar region selected. Activate one or more radar pins, or use ALL.',
+    };
+    snapshotCache = { data: payload, ts: now, provider: providerLabel, regionKey: 'none' };
+    res.setHeader('X-Cache', 'NO-ACTIVE-RADAR');
+    return res.json(payload);
+  }
 
   if (snapshotCache && snapshotCache.provider === providerLabel && snapshotCache.regionKey === regionKey && now - snapshotCache.ts < SNAPSHOT_TTL_MS) {
     res.setHeader('X-Cache', 'HIT');
@@ -58,6 +73,7 @@ router.get('/snapshot', async (req, res) => {
         provider: `${providerLabel}-last-good`,
         live: true,
         radarRegions: regionIds,
+        scanActive: true,
         staleGuard: true,
         rejectedCount: states.length,
       };
@@ -66,7 +82,7 @@ router.get('/snapshot', async (req, res) => {
       return res.json(payload);
     }
 
-    const payload = { states, timestamp: now, provider: providerLabel, live: true, radarRegions: regionIds };
+    const payload = { states, timestamp: now, provider: providerLabel, live: true, radarRegions: regionIds, scanActive: true };
     snapshotCache = { data: payload, ts: now, provider: providerLabel, regionKey };
     if (states.length >= MIN_GOOD_COUNT) {
       lastGoodCombined = { states, ts: now, provider: providerLabel, regionKey };
@@ -84,6 +100,7 @@ router.get('/snapshot', async (req, res) => {
         provider: `${lastGoodCombined.provider}-last-good`,
         live: false,
         radarRegions: regionIds,
+        scanActive: true,
         staleGuard: true,
         details: message,
       };
@@ -97,6 +114,7 @@ router.get('/snapshot', async (req, res) => {
       provider: providerLabel,
       live: false,
       radarRegions: regionIds,
+      scanActive: true,
       states: [],
       timestamp: now,
       details: message,
