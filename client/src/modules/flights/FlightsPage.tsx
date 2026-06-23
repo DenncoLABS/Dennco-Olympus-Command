@@ -13,6 +13,7 @@ import { FlightsLeftPanel } from './components/FlightsLeftPanel';
 import { FlightsRightDrawer } from './components/FlightsRightDrawer';
 import { FlightsStatusBar } from './components/FlightsStatusBar';
 import { MapLayerControl } from './components/MapLayerControl';
+import { VhfAudioPanel } from '../audio/VhfAudioPanel';
 import { useOsintStore } from '../osint/osint.store';
 import { useThemeStore } from '../../ui/theme/theme.store';
 import { SATELLITE_STYLE, LIGHT_STYLE, DARK_STYLE, STREET_STYLE } from '../../lib/mapStyles';
@@ -300,132 +301,70 @@ export const FlightsPage: React.FC = () => {
 
         if (time - lastUpdateTime > updateInterval) {
           const nowSeconds = Date.now() / 1000;
-          const extrapolatedStates = filteredStates.map((state) =>
-            extrapolateState(state, nowSeconds),
+
+          // Update real-time positions in place
+          const realtimeGeoJSON = statesToPointGeoJSON(
+            filteredStates.map((s) => extrapolateState(s, nowSeconds)),
           );
-          const geojson = statesToPointGeoJSON(extrapolatedStates);
 
-          // Prevent NaN coordinates from reaching MapLibre source
-          if (
-            !geojson.features.some((f: { geometry: { coordinates: number[] } }) =>
-              Number.isNaN(f.geometry.coordinates[0]),
-            )
-          ) {
-            // Camera Tracking & Onboard Mode — read store directly to avoid
-            // adding store slices to the dep array and restarting the loop.
-            const { cameraTrackMode: trackMode, onboardMode: isOnboard } =
-              useFlightsStore.getState();
+          const pointsSource = map.getSource('points') as import('maplibre-gl').GeoJSONSource | undefined;
+          if (pointsSource) pointsSource.setData(realtimeGeoJSON);
 
-            if ((trackMode || isOnboard) && selectedIcao24) {
-              const selectedState = extrapolatedStates.find((s) => s.icao24 === selectedIcao24);
-              if (selectedState) {
-                if (isOnboard) {
-                  // 3D Onboard Mode: aggressive zoom, full pitch, bearing = heading
-                  map.jumpTo({
-                    center: [selectedState.lon, selectedState.lat],
-                    zoom: Math.max(map.getZoom(), 16),
-                    pitch: 75,
-                    bearing: selectedState.heading || 0,
-                  });
-                  const screenPt = map.project([selectedState.lon, selectedState.lat]);
-                  setIconScreenPos({ x: screenPt.x, y: screenPt.y });
-                } else {
-                  // Standard Track Mode: tight zoom, overhead
-                  map.jumpTo({
-                    center: [selectedState.lon, selectedState.lat],
-                    zoom: Math.max(map.getZoom(), 11),
-                  });
-                  setIconScreenPos(null);
-                }
-              }
-            } else {
-              setIconScreenPos(null);
-            }
+          const haloSource = map.getSource('points-halo') as
+            | import('maplibre-gl').GeoJSONSource
+            | undefined;
+          if (haloSource) haloSource.setData(realtimeGeoJSON);
 
-            const pointsSource = map.getSource('points') as import('maplibre-gl').GeoJSONSource;
-            if (pointsSource?.setData) pointsSource.setData(geojson);
+          const tracksSource = map.getSource('tracks') as import('maplibre-gl').GeoJSONSource | undefined;
+          if (tracksSource) tracksSource.setData(trackManager.toGeoJSON());
 
-            const haloSource = map.getSource('points-halo') as import('maplibre-gl').GeoJSONSource;
-            if (haloSource?.setData) haloSource.setData(geojson);
+          const historicalSource = map.getSource('historical-tracks') as
+            | import('maplibre-gl').GeoJSONSource
+            | undefined;
+          if (historicalSource) historicalSource.setData(historicalGeoJSONRef.current);
 
-            // Update breadcrumb tracks so the line always connects to the live aircraft
-            const tracksSource = map.getSource('tracks') as import('maplibre-gl').GeoJSONSource;
-            if (tracksSource?.setData) {
-              tracksSource.setData(trackManager.getLineGeoJSON(extrapolatedStates));
-            }
+          // If onboard mode is active, keep the selected aircraft centered in 3D view
+          const store = useFlightsStore.getState();
+          if (store.onboardMode && selectedFlight) {
+            const ex = extrapolateState(selectedFlight, nowSeconds);
+            if (ex.lat != null && ex.lon != null) {
+              map.easeTo({ center: [ex.lon, ex.lat], duration: updateInterval, essential: true });
 
-            // Append live aircraft position to the tail of the historical track
-            const liveHistorical = historicalGeoJSONRef.current;
-            if (selectedIcao24 && liveHistorical.features.length > 0) {
-              const selectedState = extrapolatedStates.find((s) => s.icao24 === selectedIcao24);
-              if (
-                selectedState &&
-                selectedState.lon != null &&
-                selectedState.lat != null &&
-                !Number.isNaN(selectedState.lon) &&
-                !Number.isNaN(selectedState.lat)
-              ) {
-                const updatedHistorical = {
-                  ...liveHistorical,
-                  features: [
-                    {
-                      ...liveHistorical.features[0],
-                      geometry: {
-                        ...liveHistorical.features[0].geometry,
-                        coordinates: [
-                          ...liveHistorical.features[0].geometry.coordinates,
-                          [selectedState.lon, selectedState.lat],
-                        ],
-                      },
-                    },
-                  ],
-                };
-                const historicalSource = map.getSource(
-                  'historical-tracks',
-                ) as import('maplibre-gl').GeoJSONSource;
-                if (historicalSource?.setData) {
-                  historicalSource.setData(updatedHistorical);
-                }
-              }
+              // Update overlay icon position on screen
+              const p = map.project([ex.lon, ex.lat]);
+              setIconScreenPos({ x: p.x, y: p.y });
             }
           }
 
           lastUpdateTime = time;
         }
       }
+
       animationFrameId = requestAnimationFrame(animate);
     };
 
     animationFrameId = requestAnimationFrame(animate);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-    // historicalGeoJSON intentionally excluded — accessed via ref to avoid restarting the loop
-  }, [filteredStates, selectedIcao24]);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [filteredStates, selectedFlight]);
 
   return (
     <div className="absolute inset-0 bg-intel-bg overflow-hidden flex flex-col">
       <FlightsToolbar
-        totalCount={states.length}
-        filteredCount={filteredStates.length}
-        airborneCount={airborneCount}
-        onGroundCount={onGroundCount}
+        total={states.length}
+        shown={filteredStates.length}
+        airborne={airborneCount}
+        onGround={onGroundCount}
+        isError={isError}
       />
-      <FlightsLeftPanel />
-      <FlightsRightDrawer flight={selectedFlight} onClose={() => setSelectedIcao24(null)} />
-      <MapLayerControl />
-
-      <div
-        className="absolute inset-x-0 bottom-8 h-full bg-intel-panel pointer-events-auto z-0"
-        style={{ top: '40px' }}
-      >
+      <div className="relative flex-1 min-h-0">
         <Map
           ref={mapRef}
           initialViewState={{
-            longitude: -30,
-            latitude: 40,
-            zoom: 3,
+            latitude: 44,
+            longitude: -83,
+            zoom: 4,
+            pitch: onboardMode ? 75 : 0,
+            bearing: 0,
           }}
           mapStyle={activeMapStyle}
           styleDiffing={false}
@@ -542,6 +481,7 @@ export const FlightsPage: React.FC = () => {
             </>
           )}
         </Map>
+        <VhfAudioPanel />
 
         {/* HTML overlay: aircraft icon positioned via screen coordinates */}
         {onboardMode && iconScreenPos && selectedFlight && (
