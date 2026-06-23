@@ -1,0 +1,110 @@
+import React, { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+
+export interface RuntimeSettings {
+  auth: {
+    provider: string;
+    directoryProvider: string;
+    nethserver8Enabled: boolean;
+  };
+  branding: {
+    productName: string;
+    shortName: string;
+    logoUrl: string;
+    faviconUrl: string;
+    footerText: string;
+  };
+  featureToggles: Record<string, boolean>;
+  theme: {
+    customCss: string;
+  };
+  providers: Record<string, boolean>;
+}
+
+const fallbackSettings: RuntimeSettings = {
+  auth: {
+    provider: 'local',
+    directoryProvider: 'none',
+    nethserver8Enabled: false,
+  },
+  branding: {
+    productName: 'Dennco Olympus Command',
+    shortName: 'OLYMPUS',
+    logoUrl: '',
+    faviconUrl: '',
+    footerText: 'Dennco Olympus Command',
+  },
+  featureToggles: {
+    flights: true,
+    maritime: true,
+    monitor: true,
+    cyber: true,
+    cssInjector: true,
+  },
+  theme: {
+    customCss: '',
+  },
+  providers: {},
+};
+
+interface RuntimeSettingsContextValue {
+  settings: RuntimeSettings;
+  isLoading: boolean;
+  reload: () => Promise<void>;
+}
+
+const RuntimeSettingsContext = createContext<RuntimeSettingsContextValue | null>(null);
+
+function applyDocumentBranding(settings: RuntimeSettings) {
+  document.title = settings.branding.productName;
+
+  if (settings.branding.faviconUrl) {
+    let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.href = settings.branding.faviconUrl;
+  }
+
+  let style = document.getElementById('olympus-admin-css-injector') as HTMLStyleElement | null;
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'olympus-admin-css-injector';
+    document.head.appendChild(style);
+  }
+  style.textContent = settings.featureToggles.cssInjector ? settings.theme.customCss || '' : '';
+}
+
+export const RuntimeSettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [settings, setSettings] = useState<RuntimeSettings>(fallbackSettings);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const reload = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/admin/runtime-settings');
+      if (response.ok) {
+        const next = (await response.json()) as RuntimeSettings;
+        setSettings({ ...fallbackSettings, ...next });
+        applyDocumentBranding({ ...fallbackSettings, ...next });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void reload();
+  }, []);
+
+  const value = useMemo(() => ({ settings, isLoading, reload }), [settings, isLoading]);
+
+  return <RuntimeSettingsContext.Provider value={value}>{children}</RuntimeSettingsContext.Provider>;
+};
+
+export function useRuntimeSettings() {
+  const context = useContext(RuntimeSettingsContext);
+  if (!context) throw new Error('useRuntimeSettings must be used inside RuntimeSettingsProvider');
+  return context;
+}
