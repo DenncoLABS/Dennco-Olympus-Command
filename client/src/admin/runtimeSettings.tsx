@@ -18,6 +18,14 @@ export interface RuntimeSettings {
     customCss: string;
   };
   providers: Record<string, boolean>;
+  dotFeeds: {
+    nationalTrafficUrl: string;
+    trafficUrl: string;
+    camerasUrl: string;
+    roadClosuresUrl: string;
+    providerMode: string;
+    states: string[];
+  };
 }
 
 const fallbackSettings: RuntimeSettings = {
@@ -37,6 +45,7 @@ const fallbackSettings: RuntimeSettings = {
     flights: true,
     maritime: true,
     monitor: true,
+    dot: true,
     cyber: true,
     cssInjector: true,
   },
@@ -44,6 +53,14 @@ const fallbackSettings: RuntimeSettings = {
     customCss: '',
   },
   providers: {},
+  dotFeeds: {
+    nationalTrafficUrl: '',
+    trafficUrl: '',
+    camerasUrl: '',
+    roadClosuresUrl: '',
+    providerMode: 'custom',
+    states: [],
+  },
 };
 
 interface RuntimeSettingsContextValue {
@@ -86,8 +103,9 @@ export const RuntimeSettingsProvider: React.FC<{ children: ReactNode }> = ({ chi
       const response = await fetch('/api/admin/runtime-settings');
       if (response.ok) {
         const next = (await response.json()) as RuntimeSettings;
-        setSettings({ ...fallbackSettings, ...next });
-        applyDocumentBranding({ ...fallbackSettings, ...next });
+        const merged = { ...fallbackSettings, ...next, dotFeeds: { ...fallbackSettings.dotFeeds, ...(next.dotFeeds || {}) } };
+        setSettings(merged);
+        applyDocumentBranding(merged);
       }
     } finally {
       setIsLoading(false);
