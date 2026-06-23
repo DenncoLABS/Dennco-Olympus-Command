@@ -11,15 +11,8 @@ export function useFlightsSnapshot() {
   const activeRadarRegionIds = useFlightsStore((state) => state.activeRadarRegionIds);
 
   return useQuery({
-    queryKey: ['flights-snapshot', activeRadarRegionIds.join(',')],
-    queryFn: async () => {
-      try {
-        return await provider.snapshot(activeRadarRegionIds);
-      } catch {
-        console.warn('Primary provider failed, falling back to mock');
-        return await new MockClient().snapshot();
-      }
-    },
+    queryKey: ['flights-snapshot', activeRadarRegionIds.slice().sort().join(',')],
+    queryFn: () => provider.snapshot(activeRadarRegionIds),
     refetchInterval: 5000,
     staleTime: 2000,
   });
