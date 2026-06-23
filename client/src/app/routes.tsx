@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { useThemeStore } from '../ui/theme/theme.store';
+import { AdminSettingsPage } from '../admin/AdminSettingsPage';
 
 // Lazy-load each page so they ship in separate chunks.
 // Users only pay for the JS of the module they're actively viewing.
@@ -27,6 +28,10 @@ const PageLoader: React.FC = () => (
 
 export const AppRoutes: React.FC = () => {
   const activeModule = useThemeStore((s) => s.activeModule);
+
+  if (activeModule === 'admin') {
+    return <AdminSettingsPage />;
+  }
 
   return (
     <Suspense fallback={<PageLoader />}>
