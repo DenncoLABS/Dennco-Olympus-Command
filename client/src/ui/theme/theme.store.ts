@@ -3,7 +3,7 @@ import { create } from 'zustand';
 export type ThemeMode = 'eo' | 'flir' | 'crt';
 export type MapProjection = 'mercator' | 'globe';
 export type MapLayer = 'dark' | 'light' | 'street' | 'satellite';
-export type ActiveModule = 'flights' | 'maritime' | 'monitor' | 'cyber';
+export type ActiveModule = 'flights' | 'maritime' | 'monitor' | 'cyber' | 'admin';
 
 interface ThemeState {
   mode: ThemeMode;
