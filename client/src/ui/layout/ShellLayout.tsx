@@ -27,7 +27,7 @@ export const ShellLayout: React.FC<ShellLayoutProps> = ({ children }) => {
         <span className="text-white/15">|</span>
         <span>{settings.branding.footerText}</span>
         <span className="text-white/15">|</span>
-        <span className="text-blue-300/75 uppercase tracking-[0.14em]">US-Friendly Platform</span>
+        <span className="text-blue-300/75 uppercase tracking-[0.14em]">U.S. Company</span>
         <span className="text-white/15">|</span>
         <span className="text-white/45">Dennco Information Systems service</span>
         <span className="text-white/15">|</span>
