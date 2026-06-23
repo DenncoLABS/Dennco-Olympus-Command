@@ -21,14 +21,15 @@ export const TopNav: React.FC = () => {
   const activeModule = useThemeStore((s) => s.activeModule);
   const setActiveModule = useThemeStore((s) => s.setActiveModule);
   const { settings } = useRuntimeSettings();
+  const logoSrc = settings.branding.logoDataUrl || settings.branding.logoUrl;
 
   return (
     <header className="h-14 bg-intel-bg border-b border-intel-accent/40 shadow-[0_4px_20px_rgba(0,229,255,0.1)] flex items-center px-6 justify-between z-10 relative box-border">
       {/* Left side: Logo & Module Nav */}
       <div className="flex items-center gap-8 h-full">
         <div className="flex items-center gap-3">
-          {settings.branding.logoUrl ? (
-            <img src={settings.branding.logoUrl} alt="" className="h-7 w-7 object-contain" />
+          {logoSrc ? (
+            <img src={logoSrc} alt="" className="h-7 w-7 object-contain" />
           ) : (
             <div className="w-2 h-2 bg-intel-accent animate-pulse shadow-[0_0_8px_var(--color-intel-accent)]"></div>
           )}
