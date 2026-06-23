@@ -12,7 +12,11 @@ import {
 const router = Router();
 
 let snapshotCache: { data: object; ts: number; provider: string } | null = null;
+let lastGoodCombined: { states: AircraftState[]; ts: number; provider: string } | null = null;
 const SNAPSHOT_TTL_MS = 5_000;
+const LAST_GOOD_TTL_MS = 120_000;
+const MIN_GOOD_COUNT = 50;
+const SHRINK_RATIO = 0.35;
 
 function selectedProvider(): 'adsblol' | 'opensky' {
   return process.env.FLIGHT_DATA_SOURCE === 'opensky' ? 'opensky' : 'adsblol';
@@ -47,6 +51,15 @@ async function fetchCombinedStates(): Promise<AircraftState[]> {
   return mergeStates(...successful);
 }
 
+function shouldUseLastGood(nextCount: number, now: number): boolean {
+  if (!lastGoodCombined) return false;
+  if (now - lastGoodCombined.ts > LAST_GOOD_TTL_MS) return false;
+  const goodCount = lastGoodCombined.states.length;
+  if (goodCount < MIN_GOOD_COUNT) return false;
+  if (nextCount < MIN_GOOD_COUNT) return true;
+  return nextCount < Math.floor(goodCount * SHRINK_RATIO);
+}
+
 router.get('/snapshot', async (_req, res) => {
   const now = Date.now();
   const provider = selectedProvider();
@@ -59,13 +72,46 @@ router.get('/snapshot', async (_req, res) => {
 
   try {
     const states = provider === 'adsblol' ? await fetchCombinedStates() : await fetchOpenSkyStates();
+
+    if (shouldUseLastGood(states.length, now)) {
+      const payload = {
+        states: lastGoodCombined!.states,
+        timestamp: now,
+        provider: `${providerLabel}-last-good`,
+        live: true,
+        staleGuard: true,
+        rejectedCount: states.length,
+      };
+      snapshotCache = { data: payload, ts: now, provider: providerLabel };
+      res.setHeader('X-Cache', 'LAST-GOOD');
+      return res.json(payload);
+    }
+
     const payload = { states, timestamp: now, provider: providerLabel, live: true };
     snapshotCache = { data: payload, ts: now, provider: providerLabel };
+    if (states.length >= MIN_GOOD_COUNT) {
+      lastGoodCombined = { states, ts: now, provider: providerLabel };
+    }
     res.setHeader('X-Cache', 'MISS');
     res.json(payload);
   } catch (error: any) {
     const message = error?.message || 'Unknown flight provider error';
     console.warn(`[Flights] ${providerLabel} provider failed: ${message}`);
+
+    if (lastGoodCombined && now - lastGoodCombined.ts < LAST_GOOD_TTL_MS) {
+      const payload = {
+        states: lastGoodCombined.states,
+        timestamp: now,
+        provider: `${lastGoodCombined.provider}-last-good`,
+        live: false,
+        staleGuard: true,
+        details: message,
+      };
+      snapshotCache = { data: payload, ts: now, provider: providerLabel };
+      res.setHeader('X-Cache', 'LAST-GOOD-ERROR');
+      return res.json(payload);
+    }
+
     res.status(502).json({
       error: 'Live flight provider unavailable',
       provider: providerLabel,
