@@ -10,7 +10,9 @@ export interface RuntimeSettings {
     productName: string;
     shortName: string;
     logoUrl: string;
+    logoDataUrl: string;
     faviconUrl: string;
+    faviconDataUrl: string;
     footerText: string;
   };
   featureToggles: Record<string, boolean>;
@@ -38,7 +40,9 @@ const fallbackSettings: RuntimeSettings = {
     productName: 'Dennco Olympus Command',
     shortName: 'OLYMPUS',
     logoUrl: '',
+    logoDataUrl: '',
     faviconUrl: '',
+    faviconDataUrl: '',
     footerText: 'Dennco Olympus Command',
   },
   featureToggles: {
@@ -74,14 +78,15 @@ const RuntimeSettingsContext = createContext<RuntimeSettingsContextValue | null>
 function applyDocumentBranding(settings: RuntimeSettings) {
   document.title = settings.branding.productName;
 
-  if (settings.branding.faviconUrl) {
+  const favicon = settings.branding.faviconDataUrl || settings.branding.faviconUrl;
+  if (favicon) {
     let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
     if (!link) {
       link = document.createElement('link');
       link.rel = 'icon';
       document.head.appendChild(link);
     }
-    link.href = settings.branding.faviconUrl;
+    link.href = favicon;
   }
 
   let style = document.getElementById('olympus-admin-css-injector') as HTMLStyleElement | null;
@@ -103,7 +108,12 @@ export const RuntimeSettingsProvider: React.FC<{ children: ReactNode }> = ({ chi
       const response = await fetch('/api/admin/runtime-settings');
       if (response.ok) {
         const next = (await response.json()) as RuntimeSettings;
-        const merged = { ...fallbackSettings, ...next, dotFeeds: { ...fallbackSettings.dotFeeds, ...(next.dotFeeds || {}) } };
+        const merged = {
+          ...fallbackSettings,
+          ...next,
+          branding: { ...fallbackSettings.branding, ...(next.branding || {}) },
+          dotFeeds: { ...fallbackSettings.dotFeeds, ...(next.dotFeeds || {}) },
+        };
         setSettings(merged);
         applyDocumentBranding(merged);
       }
