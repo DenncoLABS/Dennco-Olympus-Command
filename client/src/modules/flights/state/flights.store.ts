@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { DEFAULT_ACTIVE_RADAR_REGION_IDS } from '../data/aviationInfrastructure';
 
 export interface FlightsFilters {
   altitudeMin: number;
@@ -18,6 +19,13 @@ interface FlightsState {
   setCameraTrackMode: (track: boolean) => void;
   onboardMode: boolean;
   setOnboardMode: (onboard: boolean) => void;
+  showAirportPins: boolean;
+  setShowAirportPins: (show: boolean) => void;
+  showRadarPins: boolean;
+  setShowRadarPins: (show: boolean) => void;
+  activeRadarRegionIds: string[];
+  toggleRadarRegion: (regionId: string) => void;
+  setActiveRadarRegionIds: (regionIds: string[]) => void;
 }
 
 export const useFlightsStore = create<FlightsState>((set) => ({
@@ -33,7 +41,19 @@ export const useFlightsStore = create<FlightsState>((set) => ({
   selectedIcao24: null,
   setSelectedIcao24: (icao) => set({ selectedIcao24: icao }),
   cameraTrackMode: false,
-  setCameraTrackMode: (track) => set({ cameraTrackMode: track, onboardMode: false }), // mutually exclusive modes
+  setCameraTrackMode: (track) => set({ cameraTrackMode: track, onboardMode: false }),
   onboardMode: false,
-  setOnboardMode: (onboard) => set({ onboardMode: onboard, cameraTrackMode: false }), // mutually exclusive modes
+  setOnboardMode: (onboard) => set({ onboardMode: onboard, cameraTrackMode: false }),
+  showAirportPins: true,
+  setShowAirportPins: (show) => set({ showAirportPins: show }),
+  showRadarPins: true,
+  setShowRadarPins: (show) => set({ showRadarPins: show }),
+  activeRadarRegionIds: DEFAULT_ACTIVE_RADAR_REGION_IDS,
+  toggleRadarRegion: (regionId) =>
+    set((state) => ({
+      activeRadarRegionIds: state.activeRadarRegionIds.includes(regionId)
+        ? state.activeRadarRegionIds.filter((id) => id !== regionId)
+        : [...state.activeRadarRegionIds, regionId],
+    })),
+  setActiveRadarRegionIds: (regionIds) => set({ activeRadarRegionIds: regionIds }),
 }));
