@@ -14,7 +14,7 @@ export type RadarRegionPin = {
   lat: number;
   lon: number;
   radiusNm: number;
-  scope: 'US' | 'International';
+  scope: 'US' | 'Canada' | 'International';
 };
 
 export const AIRPORT_PINS: AirportPin[] = [
@@ -46,24 +46,35 @@ export const AIRPORT_PINS: AirportPin[] = [
 
 export const RADAR_REGIONS: RadarRegionPin[] = [
   { id: 'northeast', label: 'Northeast Corridor', shortLabel: 'NE', lat: 40.8, lon: -74.2, radiusNm: 250, scope: 'US' },
+  { id: 'new-england', label: 'New England', shortLabel: 'NENG', lat: 42.3, lon: -71.0, radiusNm: 250, scope: 'US' },
   { id: 'mid-atlantic', label: 'Mid-Atlantic / DC', shortLabel: 'DC', lat: 38.9, lon: -77.2, radiusNm: 250, scope: 'US' },
+  { id: 'carolinas', label: 'Carolinas', shortLabel: 'CAR', lat: 35.2, lon: -80.9, radiusNm: 250, scope: 'US' },
   { id: 'southeast', label: 'Southeast Atlanta', shortLabel: 'SE', lat: 33.6, lon: -84.4, radiusNm: 250, scope: 'US' },
   { id: 'florida', label: 'Florida Peninsula', shortLabel: 'FL', lat: 27.7, lon: -81.7, radiusNm: 250, scope: 'US' },
   { id: 'great-lakes', label: 'Great Lakes / Detroit-Chicago', shortLabel: 'GL', lat: 42.7, lon: -84.9, radiusNm: 250, scope: 'US' },
+  { id: 'upper-midwest', label: 'Upper Midwest', shortLabel: 'UMW', lat: 44.9, lon: -93.2, radiusNm: 250, scope: 'US' },
+  { id: 'central-plains', label: 'Central Plains', shortLabel: 'CP', lat: 39.1, lon: -95.7, radiusNm: 250, scope: 'US' },
+  { id: 'lower-plains', label: 'Lower Plains / Oklahoma', shortLabel: 'LP', lat: 35.5, lon: -97.5, radiusNm: 250, scope: 'US' },
   { id: 'texas-gulf', label: 'Texas / Gulf Coast', shortLabel: 'TX', lat: 31.3, lon: -97.0, radiusNm: 250, scope: 'US' },
-  { id: 'central', label: 'Central Plains', shortLabel: 'CP', lat: 39.1, lon: -95.7, radiusNm: 250, scope: 'US' },
+  { id: 'south-texas', label: 'South Texas', shortLabel: 'STX', lat: 29.4, lon: -98.5, radiusNm: 250, scope: 'US' },
   { id: 'rockies', label: 'Rocky Mountain Corridor', shortLabel: 'RM', lat: 39.8, lon: -104.7, radiusNm: 250, scope: 'US' },
+  { id: 'northern-rockies', label: 'Northern Rockies', shortLabel: 'NRM', lat: 45.8, lon: -108.5, radiusNm: 250, scope: 'US' },
   { id: 'southwest', label: 'Southwest / Los Angeles', shortLabel: 'SW', lat: 34.0, lon: -118.2, radiusNm: 250, scope: 'US' },
+  { id: 'desert-southwest', label: 'Desert Southwest / Phoenix', shortLabel: 'DSW', lat: 33.4, lon: -112.1, radiusNm: 250, scope: 'US' },
+  { id: 'bay-area', label: 'Bay Area / Northern California', shortLabel: 'BAY', lat: 37.6, lon: -122.3, radiusNm: 250, scope: 'US' },
   { id: 'pacific-nw', label: 'Pacific Northwest', shortLabel: 'PNW', lat: 47.5, lon: -122.3, radiusNm: 250, scope: 'US' },
   { id: 'alaska', label: 'Alaska Anchorage', shortLabel: 'AK', lat: 61.2, lon: -149.9, radiusNm: 250, scope: 'US' },
   { id: 'hawaii', label: 'Hawaii / Pacific', shortLabel: 'HI', lat: 21.3, lon: -157.9, radiusNm: 250, scope: 'US' },
+  { id: 'bc-vancouver', label: 'British Columbia / Vancouver', shortLabel: 'BC', lat: 49.2, lon: -123.1, radiusNm: 250, scope: 'Canada' },
+  { id: 'alberta-prairie', label: 'Alberta / Prairie West', shortLabel: 'AB', lat: 51.0, lon: -114.1, radiusNm: 250, scope: 'Canada' },
+  { id: 'manitoba-ontario', label: 'Manitoba / Ontario West', shortLabel: 'MB', lat: 49.9, lon: -97.1, radiusNm: 250, scope: 'Canada' },
+  { id: 'ontario-quebec', label: 'Ontario / Quebec Corridor', shortLabel: 'ON', lat: 43.7, lon: -79.6, radiusNm: 250, scope: 'Canada' },
+  { id: 'atlantic-canada', label: 'Atlantic Canada', shortLabel: 'ATL-C', lat: 44.9, lon: -63.5, radiusNm: 250, scope: 'Canada' },
   { id: 'uk-ireland', label: 'United Kingdom / Ireland', shortLabel: 'UK', lat: 52.0, lon: -1.5, radiusNm: 250, scope: 'International' },
   { id: 'western-europe', label: 'Western Europe', shortLabel: 'EUW', lat: 49.8, lon: 5.5, radiusNm: 250, scope: 'International' },
   { id: 'japan-korea', label: 'Japan / Korea', shortLabel: 'JPN', lat: 35.7, lon: 139.7, radiusNm: 250, scope: 'International' },
   { id: 'australia-east', label: 'Australia East Coast', shortLabel: 'AUS', lat: -33.9, lon: 151.2, radiusNm: 250, scope: 'International' },
 ];
-
-export const DEFAULT_ACTIVE_RADAR_REGION_IDS = ['northeast', 'great-lakes', 'southeast', 'texas-gulf', 'southwest', 'pacific-nw'];
 
 export function airportPinsGeoJSON() {
   return {
