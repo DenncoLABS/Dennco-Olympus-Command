@@ -13,31 +13,43 @@ import { useThemeStore } from '../../ui/theme/theme.store';
 import { SATELLITE_STYLE, LIGHT_STYLE, DARK_STYLE, STREET_STYLE } from '../../lib/mapStyles';
 
 const aircraftPath =
-  'M9.123 30.464l-1.33-6.268-6.318-1.397 1.291-2.475 5.785-0.316c0.297-0.386 0.96-1.234 1.374-1.648l5.271-5.271-10.989-5.388 2.782-2.782 13.932 2.444 4.933-4.933c0.585-0.585 1.496-0.894 2.634-0.894 0.776 0 1.395 0.143 1.421 0.149l0.3 0.070 0.089 0.295c0.469 1.55 0.187 3.298-0.67 4.155l-4.956 4.956 2.434 13.875-2.782 2.782-5.367-10.945-4.923 4.924c-0.518 0.517-1.623 1.536-2.033 1.912l-0.431 5.425-2.449 1.329zM3.065 22.059l5.63 1.244 1.176 5.544 0.685-0.372 0.418-5.268 0.155-0.142c0.016-0.014 1.542-1.409 2.153-2.020l5.978-5.979 5.367 10.945 1.334-1.335-2.434-13.876 5.349-5.348c0.464-0.464 0.745-1.598 0.484-2.783-0.216-0.032-0.526-0.066-0.87-0.066-0.593 0-1.399 0.101-1.881 0.582l-5.325 5.325-13.933-2.444-1.335 1.334 10.989 5.388-6.326 6.326c-0.483 0.482-1.418 1.722-1.428 1.734l-0.149 0.198-5.672 0.31-0.366 0.702z';
+  'M9.123 30.464l-1.33-6.268-6.318-1.397 1.291-2.475 5.785-0.316c0.297-0.386 0.96-1.234 1.374-1.648l5.271-5.271-10.989-5.388 2.782-2.782 13.932 2.444 4.933-4.933c0.585-0.585 1.496-0.894 2.634-0.894 0.776 0 1.395 0.143 1.421 0.149l0.3 0.070 0.089 0.295c0.469 1.55 0.187 3.298-0.67 4.155l-4.956 4.956 2.434 13.875-2.782 2.782-5.367-10.945-4.923 4.924c-0.518 0.517-1.623 1.536-2.033 1.912l-0.431 5.425-2.449 1.329z';
 
-const planeSvg = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32"><path fill="#ffffff" d="${aircraftPath}"/></svg>`,
-)}`;
-let planeImage: HTMLImageElement | null = null;
-const planeImagePromise = new Promise<HTMLImageElement>((resolve) => {
-  const image = new Image(64, 64);
-  image.onload = () => {
-    planeImage = image;
-    resolve(image);
-  };
-  image.src = planeSvg;
-});
+function makePlaneSvg(fill: string) {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32"><path fill="${fill}" stroke="#020617" stroke-width="0.8" d="${aircraftPath}"/></svg>`,
+  )}`;
+}
 
-function addPlaneImage(map: import('maplibre-gl').Map) {
-  if (planeImage && !map.hasImage('olympus-plane')) {
-    map.addImage('olympus-plane', planeImage, { sdf: true });
-    return;
+const aircraftImages = {
+  'olympus-plane-airborne': makePlaneSvg('#10b981'),
+  'olympus-plane-ground': makePlaneSvg('#f59e0b'),
+  'olympus-plane-selected': makePlaneSvg('#ffffff'),
+};
+
+const loadedImages: Record<string, HTMLImageElement> = {};
+const imagePromises = Object.entries(aircraftImages).map(
+  ([id, src]) =>
+    new Promise<void>((resolve) => {
+      const image = new Image(64, 64);
+      image.onload = () => {
+        loadedImages[id] = image;
+        resolve();
+      };
+      image.src = src;
+    }),
+);
+
+function addPlaneImages(map: import('maplibre-gl').Map) {
+  for (const [id, image] of Object.entries(loadedImages)) {
+    if (!map.hasImage(id)) map.addImage(id, image);
   }
-  if (!planeImage) {
-    void planeImagePromise.then((image) => {
-      if (!map.hasImage('olympus-plane')) map.addImage('olympus-plane', image, { sdf: true });
-    });
-  }
+
+  void Promise.all(imagePromises).then(() => {
+    for (const [id, image] of Object.entries(loadedImages)) {
+      if (!map.hasImage(id)) map.addImage(id, image);
+    }
+  });
 }
 
 function valueOrDash(value: unknown, suffix = '') {
@@ -121,10 +133,10 @@ export const FlightsPage: React.FC = () => {
           styleDiffing={false}
           interactiveLayerIds={['aircraft-points']}
           onClick={onClick}
-          onLoad={(event: { target: import('maplibre-gl').Map }) => addPlaneImage(event.target)}
-          onStyleData={(event: { target: import('maplibre-gl').Map }) => addPlaneImage(event.target)}
+          onLoad={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)}
+          onStyleData={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)}
           onStyleImageMissing={(event: { id: string; target: import('maplibre-gl').Map }) => {
-            if (event.id === 'olympus-plane') addPlaneImage(event.target);
+            if (event.id.startsWith('olympus-plane')) addPlaneImages(event.target);
           }}
           projection={
             mapProjection === 'globe'
@@ -161,7 +173,14 @@ export const FlightsPage: React.FC = () => {
               id="aircraft-points"
               type="symbol"
               layout={{
-                'icon-image': 'olympus-plane',
+                'icon-image': [
+                  'case',
+                  ['==', ['get', 'icao24'], selectedIcao24 || ''],
+                  'olympus-plane-selected',
+                  ['boolean', ['get', 'onGround'], false],
+                  'olympus-plane-ground',
+                  'olympus-plane-airborne',
+                ],
                 'icon-size': 0.42,
                 'icon-rotate': ['-', ['coalesce', ['get', 'heading'], 0], 45],
                 'icon-rotation-alignment': 'map',
@@ -169,17 +188,7 @@ export const FlightsPage: React.FC = () => {
                 'icon-ignore-placement': true,
               }}
               paint={{
-                'icon-color': [
-                  'case',
-                  ['==', ['get', 'icao24'], selectedIcao24 || ''],
-                  '#ffffff',
-                  ['boolean', ['get', 'onGround'], false],
-                  '#f59e0b',
-                  '#10b981',
-                ],
-                'icon-halo-color': '#020617',
-                'icon-halo-width': 1.25,
-                'icon-opacity': 0.95,
+                'icon-opacity': 0.98,
               }}
             />
           </Source>
