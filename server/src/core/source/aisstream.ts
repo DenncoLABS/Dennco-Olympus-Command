@@ -1,4 +1,5 @@
 import WebSocket from 'ws';
+import { readAdminRuntimeSettings } from '../adminRuntimeSettings';
 
 // AIS Stream Message Format Interfaces
 export interface PositionReport {
@@ -85,6 +86,13 @@ export interface VesselState {
   history?: [number, number][]; // [longitude, latitude] array for the vessel's path
 }
 
+function getAisStreamApiKey(): string {
+  const envKey = (process.env.AISSTREAM_API_KEY || '').trim();
+  if (envKey) return envKey;
+  const savedKey = (readAdminRuntimeSettings().apiKeys?.aisstream || '').trim();
+  return savedKey;
+}
+
 class AisStreamService {
   private ws: WebSocket | null = null;
   public vessels: Map<number, VesselState> = new Map();
@@ -99,14 +107,18 @@ class AisStreamService {
     return this.ws ? this.ws.readyState : -1;
   }
 
+  public get configured(): boolean {
+    return Boolean(this.apiKey);
+  }
+
   // Purge vessels not seen in 30 minutes
   private readonly STALE_THRESHOLD_MS = 30 * 60 * 1000;
 
   constructor() {
-    this.apiKey = (process.env.AISSTREAM_API_KEY || '').trim();
+    this.apiKey = getAisStreamApiKey();
     if (!this.apiKey) {
       console.warn(
-        '[AISStream] AISSTREAM_API_KEY not found in environment. Please add it to your .env file and manually restart the server if it does not automatically reload.',
+        '[AISStream] AISSTREAM_API_KEY not found in env or admin runtime settings. Add it in Admin > Settings > Provider Keys, then restart the service.',
       );
       return;
     }
@@ -115,6 +127,20 @@ class AisStreamService {
 
     // Setup purge interval every 5 minutes
     this.purgeInterval = setInterval(() => this.purgeStaleVessels(), 5 * 60 * 1000);
+  }
+
+  public reloadCredentialsAndReconnect() {
+    const nextKey = getAisStreamApiKey();
+    if (!nextKey) {
+      console.warn('[AISStream] Reload requested, but no AISStream key is configured.');
+      return false;
+    }
+    this.apiKey = nextKey;
+    this.connect();
+    if (!this.purgeInterval) {
+      this.purgeInterval = setInterval(() => this.purgeStaleVessels(), 5 * 60 * 1000);
+    }
+    return true;
   }
 
   private connect() {
@@ -318,41 +344,30 @@ class AisStreamService {
       if (safety.Text && safety.Text.trim().length > 0) vessel.textMessage = safety.Text.trim();
     }
 
-    // Only save vessels that have valid minimum coordinates
-    if (vessel.lat !== undefined && vessel.lon !== undefined && !Number.isNaN(vessel.lat)) {
-      // Append to history if it's the first point or if the vessel has moved
-      if (!vessel.history) {
-        vessel.history = [];
-      }
-      const lastPos = vessel.history[vessel.history.length - 1];
-      // Only add if we moved (to avoid filling memory with stationary ships)
-      if (!lastPos || lastPos[0] !== vessel.lon || lastPos[1] !== vessel.lat) {
-        vessel.history.push([vessel.lon, vessel.lat]);
-        // Keep only the last 150 points to save memory
-        if (vessel.history.length > 150) {
-          vessel.history.shift();
-        }
-      }
-      this.vessels.set(mmsi, vessel);
+    // Validate coords before storing
+    if (vessel.lat == null || vessel.lon == null || Math.abs(vessel.lat) > 90 || Math.abs(vessel.lon) > 180) {
+      return;
     }
+
+    // Update path history (max 150 points)
+    if (!vessel.history) vessel.history = [];
+    const lastPoint = vessel.history[vessel.history.length - 1];
+    if (!lastPoint || lastPoint[0] !== vessel.lon || lastPoint[1] !== vessel.lat) {
+      vessel.history.push([vessel.lon, vessel.lat]);
+      if (vessel.history.length > 150) vessel.history.shift();
+    }
+
+    this.vessels.set(mmsi, vessel);
   }
 
   private purgeStaleVessels() {
     const now = Date.now();
-    let purgedCount = 0;
     for (const [mmsi, vessel] of this.vessels.entries()) {
       if (now - vessel.lastUpdate > this.STALE_THRESHOLD_MS) {
         this.vessels.delete(mmsi);
-        purgedCount++;
       }
-    }
-    if (purgedCount > 0) {
-      console.log(
-        `[AISStream] Purged ${purgedCount} stale vessels. Current active count: ${this.vessels.size}`,
-      );
     }
   }
 }
 
-// Export a singleton instance
 export const aisStreamService = new AisStreamService();
