@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/DenncoLABS/Dennco-Olympus-Command/platform/manifest.schema.json",
+  "title": "Olympus Command Platform Manifest",
+  "type": "object",
+  "required": ["id", "name", "version", "kind", "status"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["extension", "mirror", "app"]
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "deprecated", "archived"]
+    }
+  },
+  "additionalProperties": true
+}
