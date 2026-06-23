@@ -7,6 +7,7 @@ interface FlightsToolbarProps {
   filteredCount?: number;
   airborneCount?: number;
   onGroundCount?: number;
+  emergencyCount?: number;
   total?: number;
   shown?: number;
   airborne?: number;
@@ -19,6 +20,7 @@ export const FlightsToolbar: React.FC<FlightsToolbarProps> = ({
   filteredCount,
   airborneCount,
   onGroundCount,
+  emergencyCount = 0,
   total,
   shown,
   airborne,
@@ -57,6 +59,7 @@ export const FlightsToolbar: React.FC<FlightsToolbarProps> = ({
         <StatPill label="SHOWN" value={resolvedFiltered} color="text-intel-accent" />
         <StatPill label="AIRBORNE" value={resolvedAirborne} color="text-green-400" />
         <StatPill label="GROUND" value={resolvedOnGround} color="text-amber-400" />
+        <StatPill label="EMERGENCIES" value={emergencyCount} color={emergencyCount > 0 ? 'text-red-400' : 'text-white/45'} />
       </div>
 
       <div className="w-px h-4 bg-white/10" />
