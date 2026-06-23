@@ -1,73 +1,54 @@
 import { AircraftState } from '../../types/flights';
-import { Cache } from '../cache';
 import { aircraftDb } from '../aircraft_db';
 
-const CACHE_TTL = 3000;
-const adsblolCache = new Cache<AircraftState[]>(CACHE_TTL);
-const regionalCache = new Map<string, { states: AircraftState[]; ts: number }>();
-let lastGoodStates: AircraftState[] = [];
-let lastGoodAt = 0;
-const LAST_GOOD_MAX_AGE_MS = 120000;
-const MIN_GOOD_COUNT = 50;
-const BATCH_SIZE = 8;
-const BATCH_DELAY_MS = 350;
-
-const DEFAULT_POINTS = [
-  '40.6413,-73.7781,250',
-  '38.9531,-77.4565,250',
-  '33.6407,-84.4277,250',
-  '41.9742,-87.9073,250',
-  '32.8998,-97.0403,250',
-  '29.9902,-95.3368,250',
-  '39.8561,-104.6737,250',
-  '34.0522,-118.2437,250',
-  '37.6213,-122.3790,250',
-  '47.4502,-122.3088,250',
-  '25.7959,-80.2870,250',
-  '28.4312,-81.3081,250',
-  '27.9755,-82.5332,250',
-  '26.5587,-78.6956,250',
-  '25.0389,-77.4662,250',
-  '35.2140,-80.9431,250',
-  '36.1245,-86.6782,250',
-  '35.3931,-97.6007,250',
-  '37.6499,-97.4331,250',
-  '39.2976,-94.7139,250',
-  '41.3032,-95.8941,250',
-  '44.8848,-93.2223,250',
-  '42.2162,-83.3554,250',
-  '43.6777,-79.6248,250',
-  '51.4700,-0.4543,250',
-  '48.8566,2.3522,250',
-  '50.0379,8.5622,250',
-  '52.5200,13.4050,250',
-  '52.3105,4.7683,250',
-  '35.6762,139.6503,250',
-  '-33.8688,151.2093,250',
-];
+const CACHE_TTL = 5000;
+const NODE_STALE_TTL_MS = 120000;
+const MIN_NODE_GOOD_COUNT = 1;
 
 const REGION_POINTS: Record<string, string> = {
+  // United States / Canada mesh
   northeast: '40.8,-74.2,250',
+  'new-england': '42.3,-71.0,250',
   'mid-atlantic': '38.9,-77.2,250',
+  carolinas: '35.2,-80.9,250',
   southeast: '33.6,-84.4,250',
   florida: '27.7,-81.7,250',
   'great-lakes': '42.7,-84.9,250',
+  'upper-midwest': '44.9,-93.2,250',
+  'central-plains': '39.1,-95.7,250',
+  'lower-plains': '35.5,-97.5,250',
   'texas-gulf': '31.3,-97.0,250',
-  central: '39.1,-95.7,250',
+  'south-texas': '29.4,-98.5,250',
   rockies: '39.8,-104.7,250',
+  'northern-rockies': '45.8,-108.5,250',
   southwest: '34.0,-118.2,250',
+  'desert-southwest': '33.4,-112.1,250',
+  'bay-area': '37.6,-122.3,250',
   'pacific-nw': '47.5,-122.3,250',
   alaska: '61.2,-149.9,250',
   hawaii: '21.3,-157.9,250',
+  'bc-vancouver': '49.2,-123.1,250',
+  'alberta-prairie': '51.0,-114.1,250',
+  'manitoba-ontario': '49.9,-97.1,250',
+  'ontario-quebec': '43.7,-79.6,250',
+  'atlantic-canada': '44.9,-63.5,250',
+
+  // International starter nodes
   'uk-ireland': '52.0,-1.5,250',
   'western-europe': '49.8,5.5,250',
   'japan-korea': '35.7,139.7,250',
   'australia-east': '-33.9,151.2,250',
 };
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+type RadarNodeCache = {
+  states: AircraftState[];
+  ts: number;
+  lastGoodStates: AircraftState[];
+  lastGoodAt: number;
+  error?: string;
+};
+
+const nodeCache = new Map<string, RadarNodeCache>();
 
 function pointToUrl(point: string): string | null {
   const [lat, lon, radius = '250'] = point.split(',').map((part) => part.trim());
@@ -77,27 +58,6 @@ function pointToUrl(point: string): string | null {
   if (!Number.isFinite(latNum) || !Number.isFinite(lonNum) || !Number.isFinite(radiusNum)) return null;
   if (Math.abs(latNum) > 90 || Math.abs(lonNum) > 180 || radiusNum <= 0) return null;
   return `https://api.adsb.lol/v2/point/${latNum}/${lonNum}/${Math.min(radiusNum, 250)}`;
-}
-
-function getRegionPoints(regionIds: string[] = []): string[] {
-  const selected = regionIds.map((id) => REGION_POINTS[id]).filter(Boolean);
-  return selected.length ? selected : [];
-}
-
-function getAdsbLolUrls(regionIds: string[] = []): string[] {
-  if (regionIds.length) {
-    return getRegionPoints(regionIds).map(pointToUrl).filter((url): url is string => Boolean(url));
-  }
-  if (process.env.ADSB_LOL_URL) return [process.env.ADSB_LOL_URL];
-  if (process.env.ADSB_LOL_LAT && process.env.ADSB_LOL_LON) {
-    const radius = process.env.ADSB_LOL_RADIUS || '250';
-    return [`https://api.adsb.lol/v2/point/${process.env.ADSB_LOL_LAT}/${process.env.ADSB_LOL_LON}/${radius}`];
-  }
-  const points = (process.env.ADSB_LOL_POINTS || DEFAULT_POINTS.join(';'))
-    .split(';')
-    .map((point) => point.trim())
-    .filter(Boolean);
-  return points.map(pointToUrl).filter((url): url is string => Boolean(url));
 }
 
 function getAircraftArray(data: any): any[] {
@@ -110,70 +70,20 @@ function getNowSeconds(data: any): number {
   return Math.floor(Date.now() / 1000);
 }
 
-function useLastGoodIfNeeded(next: AircraftState[]): AircraftState[] {
-  const now = Date.now();
-  if (next.length >= MIN_GOOD_COUNT) {
-    lastGoodStates = next;
-    lastGoodAt = now;
-    return next;
-  }
-  if (lastGoodStates.length >= MIN_GOOD_COUNT && now - lastGoodAt < LAST_GOOD_MAX_AGE_MS) {
-    return lastGoodStates;
-  }
-  return next;
-}
+async function fetchOneRegion(regionId: string): Promise<{ aircraft: any[]; nowSec: number }> {
+  const point = REGION_POINTS[regionId];
+  if (!point) throw new Error(`Unknown radar region: ${regionId}`);
+  const url = pointToUrl(point);
+  if (!url) throw new Error(`Invalid radar region point: ${regionId}`);
 
-async function fetchOneRegion(url: string): Promise<{ aircraft: any[]; nowSec: number }> {
   const response = await fetch(url, { headers: { 'User-Agent': 'Dennco-Olympus-Command/1.0' } });
-  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+  if (!response.ok) throw new Error(`${regionId}: ${response.status} ${response.statusText}`);
   const data = await response.json();
   return { aircraft: getAircraftArray(data), nowSec: getNowSeconds(data) };
 }
 
-async function fetchAircraftBatches(regionIds: string[] = []): Promise<{ aircraft: any[]; nowSec: number }> {
-  const urls = getAdsbLolUrls(regionIds);
-  if (urls.length === 0) throw new Error('No valid ADSB radar regions selected');
-  const merged = new Map<string, any>();
-  let nowSec = Math.floor(Date.now() / 1000);
-
-  for (let i = 0; i < urls.length; i += BATCH_SIZE) {
-    const batch = urls.slice(i, i + BATCH_SIZE);
-    const results = await Promise.allSettled(batch.map((url) => fetchOneRegion(url)));
-
-    for (const result of results) {
-      if (result.status !== 'fulfilled') continue;
-      nowSec = result.value.nowSec;
-      for (const aircraft of result.value.aircraft) {
-        const id = String(aircraft.hex || aircraft.icao || '').toLowerCase();
-        if (id) merged.set(id, aircraft);
-      }
-    }
-
-    if (i + BATCH_SIZE < urls.length) await sleep(BATCH_DELAY_MS);
-  }
-
-  return { aircraft: [...merged.values()], nowSec };
-}
-
-export async function fetchStates(regionIds: string[] = []): Promise<AircraftState[]> {
-  const regionalKey = regionIds.length ? regionIds.slice().sort().join(',') : '';
-  if (regionalKey) {
-    const cached = regionalCache.get(regionalKey);
-    if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.states;
-  } else {
-    const cached = adsblolCache.get();
-    if (cached) return cached;
-  }
-
-  const { aircraft, nowSec } = await fetchAircraftBatches(regionIds);
-  if (aircraft.length === 0) {
-    if (lastGoodStates.length > 0 && Date.now() - lastGoodAt < LAST_GOOD_MAX_AGE_MS) return lastGoodStates;
-    const staleCached = adsblolCache.get();
-    if (staleCached && staleCached.length > 0) return staleCached;
-    throw new Error('ADSB.lol returned no aircraft from configured regions');
-  }
-
-  const parsed: AircraftState[] = aircraft
+function parseAircraft(aircraft: any[], nowSec: number): AircraftState[] {
+  return aircraft
     .map((s: any) => {
       const icao24 = String(s.hex || s.icao || 'unknown').toLowerCase();
       const baroAltitude =
@@ -238,11 +148,52 @@ export async function fetchStates(regionIds: string[] = []): Promise<AircraftSta
       return baseState;
     })
     .filter((a: AircraftState) => a.lat !== 0 && a.lon !== 0 && a.lat != null && a.lon != null && !Number.isNaN(a.lat) && !Number.isNaN(a.lon));
+}
 
-  const guarded = useLastGoodIfNeeded(parsed);
-  if (regionalKey) regionalCache.set(regionalKey, { states: guarded, ts: Date.now() });
-  else adsblolCache.set(guarded);
-  return guarded;
+async function fetchRadarNode(regionId: string): Promise<AircraftState[]> {
+  const now = Date.now();
+  const cached = nodeCache.get(regionId);
+  if (cached && now - cached.ts < CACHE_TTL) return cached.states;
+
+  try {
+    const { aircraft, nowSec } = await fetchOneRegion(regionId);
+    const parsed = parseAircraft(aircraft, nowSec);
+    const lastGoodStates = parsed.length >= MIN_NODE_GOOD_COUNT ? parsed : cached?.lastGoodStates || [];
+    const lastGoodAt = parsed.length >= MIN_NODE_GOOD_COUNT ? now : cached?.lastGoodAt || 0;
+    nodeCache.set(regionId, { states: parsed, ts: now, lastGoodStates, lastGoodAt });
+    return parsed;
+  } catch (error: any) {
+    const message = error?.message || `Radar node failed: ${regionId}`;
+    if (cached?.lastGoodStates?.length && now - cached.lastGoodAt < NODE_STALE_TTL_MS) {
+      nodeCache.set(regionId, { ...cached, states: cached.lastGoodStates, ts: now, error: message });
+      return cached.lastGoodStates;
+    }
+    nodeCache.set(regionId, { states: [], ts: now, lastGoodStates: [], lastGoodAt: 0, error: message });
+    return [];
+  }
+}
+
+export async function fetchStates(regionIds: string[] = []): Promise<AircraftState[]> {
+  const selectedRegionIds = [...new Set(regionIds.filter((id) => REGION_POINTS[id]))];
+  if (!selectedRegionIds.length) return [];
+
+  const results = await Promise.all(selectedRegionIds.map((regionId) => fetchRadarNode(regionId)));
+  const merged = new Map<string, AircraftState>();
+
+  for (const nodeStates of results) {
+    for (const aircraft of nodeStates) {
+      if (!merged.has(aircraft.icao24)) {
+        merged.set(aircraft.icao24, aircraft);
+      } else {
+        const existing = merged.get(aircraft.icao24)!;
+        if ((aircraft.lastContact || 0) > (existing.lastContact || 0)) {
+          merged.set(aircraft.icao24, aircraft);
+        }
+      }
+    }
+  }
+
+  return [...merged.values()];
 }
 
 export async function fetchTrack(icao24: string): Promise<any> {
