@@ -1,7 +1,7 @@
 {
-  "name": "radar-server",
+  "name": "@denncolabs/olympus-command-server",
   "version": "1.0.0",
-  "description": "Radar backend proxy",
+  "description": "Dennco Olympus Command backend proxy and data service",
   "main": "dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
