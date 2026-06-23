@@ -29,6 +29,14 @@ function runtimeSettings() {
       faviconDataUrl: savedBranding.faviconDataUrl || '',
       footerText: savedBranding.footerText || branding.footerText,
     },
+    apiKeys: {
+      openskyUsername: savedKeys.openskyUsername || process.env.OPENSKY_USERNAME || '',
+      openskyClientId: savedKeys.openskyClientId || process.env.OPENSKY_CLIENT_ID || '',
+      mapTilesUrl: savedKeys.mapTilesUrl || process.env.MAP_TILES_URL || '',
+      aisstreamConfigured: configured(process.env.AISSTREAM_API_KEY) || configured(savedKeys.aisstream),
+      openskyPasswordConfigured: configured(process.env.OPENSKY_PASSWORD) || configured(savedKeys.openskyPassword),
+      openskyClientSecretConfigured: configured(process.env.OPENSKY_CLIENT_SECRET) || configured(savedKeys.openskyClientSecret),
+    },
     featureToggles: {
       flights: process.env.OLYMPUS_FEATURE_FLIGHTS !== 'false',
       maritime: process.env.OLYMPUS_FEATURE_MARITIME !== 'false',
