@@ -1,10 +1,6 @@
 import { Router } from 'express';
 import type { AircraftState } from '../types/flights';
 import {
-  fetchStates as fetchOpenSkyStates,
-  fetchTrack as fetchOpenSkyTrack,
-} from '../core/source/opensky';
-import {
   fetchStates as fetchAdsbLolStates,
   fetchTrack as fetchAdsbLolTrack,
 } from '../core/source/adsblol';
@@ -17,41 +13,10 @@ const SNAPSHOT_TTL_MS = 5_000;
 const LAST_GOOD_TTL_MS = 120_000;
 const MIN_GOOD_COUNT = 50;
 const SHRINK_RATIO = 0.8;
+const PROVIDER_LABEL = 'dennco-flightmesh';
 
-function selectedProvider(): 'adsblol' | 'opensky' {
-  return process.env.FLIGHT_DATA_SOURCE === 'opensky' ? 'opensky' : 'adsblol';
-}
-
-function shouldMergeOpenSky(): boolean {
-  return process.env.FLIGHT_MERGE_OPENSKY === 'true';
-}
-
-function mergeStates(...groups: AircraftState[][]): AircraftState[] {
-  const merged = new Map<string, AircraftState>();
-  for (const group of groups) {
-    for (const aircraft of group) {
-      if (!aircraft.icao24) continue;
-      const existing = merged.get(aircraft.icao24);
-      merged.set(aircraft.icao24, { ...(existing || {}), ...aircraft });
-    }
-  }
-  return [...merged.values()];
-}
-
-async function fetchCombinedStates(): Promise<AircraftState[]> {
-  const adsbStates = await fetchAdsbLolStates();
-
-  if (!shouldMergeOpenSky()) {
-    return adsbStates;
-  }
-
-  try {
-    const openSkyStates = await fetchOpenSkyStates();
-    return mergeStates(adsbStates, openSkyStates);
-  } catch (error: any) {
-    console.warn(`[Flights] OpenSky merge skipped: ${error?.message || error}`);
-    return adsbStates;
-  }
+async function fetchDenncoFlightMeshStates(): Promise<AircraftState[]> {
+  return fetchAdsbLolStates();
 }
 
 function shouldUseLastGood(nextCount: number, now: number): boolean {
@@ -65,9 +30,7 @@ function shouldUseLastGood(nextCount: number, now: number): boolean {
 
 router.get('/snapshot', async (_req, res) => {
   const now = Date.now();
-  const provider = selectedProvider();
-  const providerLabel =
-    provider === 'adsblol' ? (shouldMergeOpenSky() ? 'adsblol+opensky' : 'adsblol') : 'opensky';
+  const providerLabel = PROVIDER_LABEL;
 
   if (snapshotCache && snapshotCache.provider === providerLabel && now - snapshotCache.ts < SNAPSHOT_TTL_MS) {
     res.setHeader('X-Cache', 'HIT');
@@ -75,7 +38,7 @@ router.get('/snapshot', async (_req, res) => {
   }
 
   try {
-    const states = provider === 'adsblol' ? await fetchCombinedStates() : await fetchOpenSkyStates();
+    const states = await fetchDenncoFlightMeshStates();
 
     if (shouldUseLastGood(states.length, now)) {
       const payload = {
@@ -129,10 +92,7 @@ router.get('/snapshot', async (_req, res) => {
 
 router.get('/track/:icao24', async (req, res) => {
   try {
-    const useAdsbLol = selectedProvider() === 'adsblol';
-    const fetchTrack = useAdsbLol ? fetchAdsbLolTrack : fetchOpenSkyTrack;
-
-    const track = await fetchTrack(req.params.icao24);
+    const track = await fetchAdsbLolTrack(req.params.icao24);
     res.json(track);
   } catch (error: any) {
     console.error('Track error:', error.message);
