@@ -1,4 +1,5 @@
 import express from 'express';
+import { clearAccess, grantAccess, renderLogin } from '../core/accessGate';
 
 const router = express.Router();
 
@@ -40,18 +41,27 @@ router.post('/login', (req, res) => {
   const { username, accessCode } = req.body || {};
   const expectedUser = process.env.OLYMPUS_ADMIN_USER || 'admin';
   const expectedCode = process.env.OLYMPUS_ADMIN_ACCESS_CODE;
+  const wantsHtml = String(req.headers.accept || '').includes('text/html') || req.is('application/x-www-form-urlencoded');
 
   if (!expectedCode) {
-    return res.status(503).json({
-      error: 'Admin login is not configured. Set OLYMPUS_ADMIN_ACCESS_CODE in the server environment.',
-    });
+    const message = 'Admin login is not configured. Set OLYMPUS_ADMIN_ACCESS_CODE in the server environment.';
+    if (wantsHtml) return renderLogin(res, message);
+    return res.status(503).json({ error: message });
   }
 
   if (username === expectedUser && accessCode === expectedCode) {
+    grantAccess(res);
+    if (wantsHtml) return res.redirect('/');
     return res.json({ ok: true, user: { username, role: 'admin' } });
   }
 
+  if (wantsHtml) return renderLogin(res, 'Invalid login.');
   return res.status(401).json({ error: 'Invalid login.' });
+});
+
+router.post('/logout', (_req, res) => {
+  clearAccess(res);
+  res.json({ ok: true });
 });
 
 export default router;
