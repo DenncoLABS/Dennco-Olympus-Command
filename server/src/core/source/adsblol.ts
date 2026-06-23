@@ -4,6 +4,7 @@ import { aircraftDb } from '../aircraft_db';
 
 const CACHE_TTL = 3000;
 const adsblolCache = new Cache<AircraftState[]>(CACHE_TTL);
+const regionalCache = new Map<string, { states: AircraftState[]; ts: number }>();
 let lastGoodStates: AircraftState[] = [];
 let lastGoodAt = 0;
 const LAST_GOOD_MAX_AGE_MS = 120000;
@@ -45,11 +46,48 @@ const DEFAULT_POINTS = [
   '-33.8688,151.2093,250',
 ];
 
+const REGION_POINTS: Record<string, string> = {
+  northeast: '40.8,-74.2,250',
+  'mid-atlantic': '38.9,-77.2,250',
+  southeast: '33.6,-84.4,250',
+  florida: '27.7,-81.7,250',
+  'great-lakes': '42.7,-84.9,250',
+  'texas-gulf': '31.3,-97.0,250',
+  central: '39.1,-95.7,250',
+  rockies: '39.8,-104.7,250',
+  southwest: '34.0,-118.2,250',
+  'pacific-nw': '47.5,-122.3,250',
+  alaska: '61.2,-149.9,250',
+  hawaii: '21.3,-157.9,250',
+  'uk-ireland': '52.0,-1.5,250',
+  'western-europe': '49.8,5.5,250',
+  'japan-korea': '35.7,139.7,250',
+  'australia-east': '-33.9,151.2,250',
+};
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function getAdsbLolUrls(): string[] {
+function pointToUrl(point: string): string | null {
+  const [lat, lon, radius = '250'] = point.split(',').map((part) => part.trim());
+  const latNum = Number(lat);
+  const lonNum = Number(lon);
+  const radiusNum = Number(radius);
+  if (!Number.isFinite(latNum) || !Number.isFinite(lonNum) || !Number.isFinite(radiusNum)) return null;
+  if (Math.abs(latNum) > 90 || Math.abs(lonNum) > 180 || radiusNum <= 0) return null;
+  return `https://api.adsb.lol/v2/point/${latNum}/${lonNum}/${Math.min(radiusNum, 250)}`;
+}
+
+function getRegionPoints(regionIds: string[] = []): string[] {
+  const selected = regionIds.map((id) => REGION_POINTS[id]).filter(Boolean);
+  return selected.length ? selected : [];
+}
+
+function getAdsbLolUrls(regionIds: string[] = []): string[] {
+  if (regionIds.length) {
+    return getRegionPoints(regionIds).map(pointToUrl).filter((url): url is string => Boolean(url));
+  }
   if (process.env.ADSB_LOL_URL) return [process.env.ADSB_LOL_URL];
   if (process.env.ADSB_LOL_LAT && process.env.ADSB_LOL_LON) {
     const radius = process.env.ADSB_LOL_RADIUS || '250';
@@ -59,10 +97,7 @@ function getAdsbLolUrls(): string[] {
     .split(';')
     .map((point) => point.trim())
     .filter(Boolean);
-  return points.map((point) => {
-    const [lat, lon, radius = '250'] = point.split(',').map((part) => part.trim());
-    return `https://api.adsb.lol/v2/point/${lat}/${lon}/${radius}`;
-  });
+  return points.map(pointToUrl).filter((url): url is string => Boolean(url));
 }
 
 function getAircraftArray(data: any): any[] {
@@ -95,8 +130,9 @@ async function fetchOneRegion(url: string): Promise<{ aircraft: any[]; nowSec: n
   return { aircraft: getAircraftArray(data), nowSec: getNowSeconds(data) };
 }
 
-async function fetchAircraftBatches(): Promise<{ aircraft: any[]; nowSec: number }> {
-  const urls = getAdsbLolUrls();
+async function fetchAircraftBatches(regionIds: string[] = []): Promise<{ aircraft: any[]; nowSec: number }> {
+  const urls = getAdsbLolUrls(regionIds);
+  if (urls.length === 0) throw new Error('No valid ADSB radar regions selected');
   const merged = new Map<string, any>();
   let nowSec = Math.floor(Date.now() / 1000);
 
@@ -119,11 +155,17 @@ async function fetchAircraftBatches(): Promise<{ aircraft: any[]; nowSec: number
   return { aircraft: [...merged.values()], nowSec };
 }
 
-export async function fetchStates(): Promise<AircraftState[]> {
-  const cached = adsblolCache.get();
-  if (cached) return cached;
+export async function fetchStates(regionIds: string[] = []): Promise<AircraftState[]> {
+  const regionalKey = regionIds.length ? regionIds.slice().sort().join(',') : '';
+  if (regionalKey) {
+    const cached = regionalCache.get(regionalKey);
+    if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.states;
+  } else {
+    const cached = adsblolCache.get();
+    if (cached) return cached;
+  }
 
-  const { aircraft, nowSec } = await fetchAircraftBatches();
+  const { aircraft, nowSec } = await fetchAircraftBatches(regionIds);
   if (aircraft.length === 0) {
     if (lastGoodStates.length > 0 && Date.now() - lastGoodAt < LAST_GOOD_MAX_AGE_MS) return lastGoodStates;
     const staleCached = adsblolCache.get();
@@ -198,7 +240,8 @@ export async function fetchStates(): Promise<AircraftState[]> {
     .filter((a: AircraftState) => a.lat !== 0 && a.lon !== 0 && a.lat != null && a.lon != null && !Number.isNaN(a.lat) && !Number.isNaN(a.lon));
 
   const guarded = useLastGoodIfNeeded(parsed);
-  adsblolCache.set(guarded);
+  if (regionalKey) regionalCache.set(regionalKey, { states: guarded, ts: Date.now() });
+  else adsblolCache.set(guarded);
   return guarded;
 }
 
