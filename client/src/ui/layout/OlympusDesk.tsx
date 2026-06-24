@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRuntimeSettings } from '../../admin/runtimeSettings';
 import type { ActiveModule } from '../theme/theme.store';
+import { monitorDeskWidgetManifest } from '../../modules/monitor/widgets/monitorDeskWidgetManifest';
 
 type DeskView = 'core' | 'apps' | 'files' | 'architecture' | 'terminal' | 'flight' | 'maritime' | 'monitor' | 'dot' | 'cad' | 'admin' | 'settings';
 type DockPlacement = 'left' | 'center' | 'right';
@@ -13,9 +14,9 @@ type DeskItem = {
   view: DeskView;
 };
 
-const HEIGHT_KEY = 'olympus.desk.height.v1';
-const DOCK_KEY = 'olympus.desk.dockPlacement.v1';
-const VIEW_KEY = 'olympus.desk.activeView.v1';
+const HEIGHT_KEY = 'olympus.desk.height.v2';
+const DOCK_KEY = 'olympus.desk.dockPlacement.v2';
+const VIEW_KEY = 'olympus.desk.activeView.v2';
 
 const deskItems: DeskItem[] = [
   { id: 'core', label: 'Core', icon: 'Ω', view: 'core' },
@@ -38,7 +39,7 @@ function readNumber(key: string, fallback: number) {
 }
 
 function clampHeight(height: number) {
-  return Math.max(108, Math.min(height, Math.floor(window.innerHeight * 0.72)));
+  return Math.max(112, Math.min(height, Math.floor(window.innerHeight * 0.72)));
 }
 
 function readPlacement(): DockPlacement {
@@ -59,7 +60,7 @@ const dockPlacementClasses: Record<DockPlacement, string> = {
 
 export const OlympusDesk: React.FC = () => {
   const { settings } = useRuntimeSettings();
-  const [deskHeight, setDeskHeight] = useState(() => clampHeight(readNumber(HEIGHT_KEY, 168)));
+  const [deskHeight, setDeskHeight] = useState(() => clampHeight(readNumber(HEIGHT_KEY, 214)));
   const [activeView, setActiveView] = useState<DeskView>(() => readView());
   const [isOpen, setIsOpen] = useState(true);
   const [dockPlacement, setDockPlacement] = useState<DockPlacement>(() => readPlacement());
@@ -110,37 +111,36 @@ export const OlympusDesk: React.FC = () => {
     }
   };
 
+  const visibleHeight = isOpen ? deskHeight : 44;
+
   return (
-    <div className="fixed left-0 right-0 bottom-6 z-[4200] pointer-events-none font-mono">
+    <section className="relative z-[4200] w-full shrink-0 pointer-events-auto font-mono border-t border-cyan-300/25 bg-black/88 shadow-[0_-16px_40px_rgba(0,0,0,0.82)]" style={{ height: `${visibleHeight}px` }}>
       <div
-        className={`mx-auto w-[calc(100vw-48px)] max-w-[1500px] pointer-events-auto transition-transform duration-300 ${isOpen ? 'translate-y-0' : 'translate-y-[calc(100%-44px)]'}`}
-        style={{ height: `${deskHeight}px` }}
+        className="absolute left-1/2 top-0 z-20 h-4 w-48 -translate-x-1/2 cursor-ns-resize rounded-b border-x border-b border-cyan-300/25 bg-cyan-300/10 text-center text-[8px] uppercase tracking-[0.24em] text-cyan-200/65"
+        onPointerDown={beginResize}
+        onPointerMove={moveResize}
+        onPointerUp={endResize}
+        onPointerCancel={endResize}
       >
-        <div className="relative h-full rounded-t-2xl border border-cyan-300/25 bg-black/82 shadow-[0_0_38px_rgba(34,211,238,0.22)] backdrop-blur-xl overflow-hidden">
-          <div
-            className="absolute left-1/2 top-0 z-20 h-4 w-40 -translate-x-1/2 cursor-ns-resize rounded-b border-x border-b border-cyan-300/25 bg-cyan-300/10 text-center text-[8px] uppercase tracking-[0.24em] text-cyan-200/65"
-            onPointerDown={beginResize}
-            onPointerMove={moveResize}
-            onPointerUp={endResize}
-            onPointerCancel={endResize}
-          >
-            Drag Desk
+        Drag Desk
+      </div>
+
+      <div className="flex h-full flex-col overflow-hidden">
+        <div className="flex h-11 items-center justify-between border-b border-white/10 px-4 pt-2">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.26em] text-cyan-300">Olympus Desk</div>
+            <div className="text-[9px] uppercase tracking-[0.16em] text-white/40">Full-width OS workspace · pushes Earth screen upward</div>
           </div>
+          <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/45">
+            <button onClick={() => setDockPlacement('left')} className={`border px-2 py-1 ${dockPlacement === 'left' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Left</button>
+            <button onClick={() => setDockPlacement('center')} className={`border px-2 py-1 ${dockPlacement === 'center' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Center</button>
+            <button onClick={() => setDockPlacement('right')} className={`border px-2 py-1 ${dockPlacement === 'right' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Right</button>
+            <button onClick={() => setIsOpen((open) => !open)} className="border border-white/10 px-2 py-1 text-cyan-200 hover:border-cyan-300/60">{isOpen ? 'Hide' : 'Show'}</button>
+          </div>
+        </div>
 
-          <div className="flex h-full flex-col">
-            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 pt-5">
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.26em] text-cyan-300">Olympus Desk</div>
-                <div className="mt-1 text-xs uppercase tracking-[0.16em] text-white/40">Core OS workspace · Debian/GNOME shell concept</div>
-              </div>
-              <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/45">
-                <button onClick={() => setDockPlacement('left')} className={`border px-2 py-1 ${dockPlacement === 'left' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Left</button>
-                <button onClick={() => setDockPlacement('center')} className={`border px-2 py-1 ${dockPlacement === 'center' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Center</button>
-                <button onClick={() => setDockPlacement('right')} className={`border px-2 py-1 ${dockPlacement === 'right' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Right</button>
-                <button onClick={() => setIsOpen((open) => !open)} className="border border-white/10 px-2 py-1 text-cyan-200 hover:border-cyan-300/60">{isOpen ? 'Hide' : 'Show'}</button>
-              </div>
-            </div>
-
+        {isOpen && (
+          <>
             <div className="min-h-0 flex-1 overflow-hidden px-4 py-3">
               <DeskAppView view={activeView} />
             </div>
@@ -172,10 +172,10 @@ export const OlympusDesk: React.FC = () => {
                 })}
               </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
-    </div>
+    </section>
   );
 };
 
@@ -186,7 +186,7 @@ function DeskAppView({ view }: { view: DeskView }) {
       <div className="rounded border border-white/10 bg-black/35 p-3">
         <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">Desk App</div>
         <div className="mt-2 text-2xl font-bold uppercase tracking-[0.14em] text-white">{title}</div>
-        <div className="mt-2 text-xs leading-relaxed text-white/45">This opens inside the Olympus Desk. It does not change the Earth/map screen until we intentionally drag or publish a widget onto the map workspace.</div>
+        <div className="mt-2 text-xs leading-relaxed text-white/45">This opens inside the Olympus Desk. It does not change the Earth/map screen until a widget is intentionally placed onto the Earth workspace.</div>
       </div>
       <div className="min-h-0 overflow-auto rounded border border-cyan-300/15 bg-[#020617]/70 p-4">
         {view === 'core' && <CoreView />}
@@ -195,14 +195,15 @@ function DeskAppView({ view }: { view: DeskView }) {
         {view === 'architecture' && <ArchitectureView />}
         {view === 'terminal' && <TerminalView />}
         {view === 'settings' && <SettingsView />}
-        {['flight', 'maritime', 'monitor', 'dot', 'cad', 'admin'].includes(view) && <ModuleView view={view} />}
+        {view === 'monitor' && <MonitorWidgetLibrary />}
+        {['flight', 'maritime', 'dot', 'cad', 'admin'].includes(view) && <ModuleView view={view} />}
       </div>
     </div>
   );
 }
 
 function CoreView() {
-  return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Core system</h3><p className="mt-3 text-sm text-white/60">Olympus Core will become the local OS control surface for Debian/GNOME services, package state, data folders, modules, and command apps.</p></div>;
+  return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Core system</h3><p className="mt-3 text-sm text-white/60">Olympus Core is the local OS control surface for Debian/GNOME services, package state, data folders, modules, and command apps.</p></div>;
 }
 
 function AppsView() {
@@ -221,8 +222,12 @@ function TerminalView() {
   return <div className="h-full rounded border border-emerald-400/20 bg-black p-4 font-mono text-sm text-emerald-300 shadow-inner"><div className="text-[10px] uppercase tracking-[0.2em] text-emerald-200/60">Olympus Terminal</div><div className="mt-4">root@olympus:~# <span className="animate-pulse">_</span></div><div className="mt-3 text-xs text-emerald-300/55">Terminal surface placeholder. Commands will be wired through controlled backend actions later.</div></div>;
 }
 
+function MonitorWidgetLibrary() {
+  return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Saved Monitor Widgets</h3><p className="mt-3 text-sm text-white/55">The old Monitor bottom strip has been saved here for later conversion into movable Desk/Earth widgets.</p><div className="mt-4 grid grid-cols-2 gap-3">{monitorDeskWidgetManifest.map((widget) => <div key={widget.id} className="border border-white/10 bg-white/[0.03] p-3"><div className="text-sm font-bold text-white">{widget.title}</div><div className="mt-1 text-xs text-white/45">{widget.description}</div><div className="mt-2 text-[10px] uppercase tracking-[0.14em] text-cyan-300/70">{widget.defaultDock} widget · saved for later</div></div>)}</div></div>;
+}
+
 function SettingsView() {
-  return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Desk settings</h3><p className="mt-3 text-sm text-white/60">Dock placement and Desk height are already saved locally. More runtime customizations will attach here.</p></div>;
+  return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Desk settings</h3><p className="mt-3 text-sm text-white/60">Dock placement and Desk height are saved locally. More runtime customizations will attach here.</p></div>;
 }
 
 function ModuleView({ view }: { view: DeskView }) {
