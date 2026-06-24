@@ -9,7 +9,7 @@ function saveSession(session: OlympusShellSessionState) {
   }).catch(() => undefined);
 }
 
-export const AppSessionSync: React.FC = () => {
+export function AppSessionSync() {
   const hydrated = useRef(false);
   const saveTimer = useRef<number | null>(null);
 
@@ -43,4 +43,4 @@ export const AppSessionSync: React.FC = () => {
   }, []);
 
   return null;
-};
+}
