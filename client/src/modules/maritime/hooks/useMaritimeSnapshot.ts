@@ -11,6 +11,7 @@ export interface VesselState {
   heading: number;
   navigationalStatus: number;
   lastUpdate: number;
+  sourceKind?: 'vessel' | 'base-station' | 'aid-to-navigation' | 'sar-aircraft';
   type?: number;
   callsign?: string;
   dimension?: { a: number; b: number; c: number; d: number };
