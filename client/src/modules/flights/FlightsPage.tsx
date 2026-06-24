@@ -11,6 +11,7 @@ import { VhfAudioPanel } from '../audio/VhfAudioPanel';
 import { NoaaWeatherRadarLayer } from '../weather/NoaaWeatherRadarLayer';
 import { useMilitaryBases } from '../monitor/hooks/useMilitaryBases';
 import { useThemeStore } from '../../ui/theme/theme.store';
+import { useGlobalNotificationsStore } from '../../notifications/globalNotifications.store';
 import { SATELLITE_STYLE, LIGHT_STYLE, DARK_STYLE, STREET_STYLE } from '../../lib/mapStyles';
 import {
   activeRadarPulseGeoJSON,
@@ -101,6 +102,7 @@ type FlightAlert = {
   callsign?: string | null;
   emergency: string;
   reportedBy: string;
+  activeDistress: boolean;
 };
 
 function infrastructureTitle(popup: InfrastructurePopup): string {
@@ -116,6 +118,7 @@ function infrastructureSubtitle(popup: InfrastructurePopup): string {
 
 export const FlightsPage: React.FC = () => {
   const { mapProjection, mapLayer } = useThemeStore();
+  const pushGlobalNotification = useGlobalNotificationsStore((state) => state.pushNotification);
   const { data, isError } = useFlightsSnapshot();
   const { data: militaryBasesGeoJSON } = useMilitaryBases();
   const states = useMemo(() => data?.states || [], [data?.states]);
@@ -159,17 +162,26 @@ export const FlightsPage: React.FC = () => {
 
   const pushAlert = useCallback((alert: FlightAlert) => {
     setFlightAlerts((current) => [alert, ...current].slice(0, 14));
-  }, []);
+    pushGlobalNotification({
+      id: `global-${alert.id}`,
+      domain: 'flight',
+      severity: alert.activeDistress ? 'critical' : 'warning',
+      title: alert.title,
+      details: alert.details,
+      entityId: alert.icao24,
+      reportedBy: alert.reportedBy,
+      timestamp: alert.timestamp,
+    });
+  }, [pushGlobalNotification]);
 
   useEffect(() => {
-    const newAlerts: FlightAlert[] = [];
     displayedStates.forEach((state) => {
       if (!state.emergency || state.emergency === 'none') return;
       const key = `feed-${state.icao24}-${state.emergency}`;
       if (seenEmergencyAlerts.current.has(key)) return;
       seenEmergencyAlerts.current.add(key);
       const emergency = emergencyLabel(state.emergency);
-      newAlerts.push({
+      pushAlert({
         id: key,
         timestamp: Date.now(),
         title: 'Air Emergency Reported',
@@ -178,10 +190,10 @@ export const FlightsPage: React.FC = () => {
         callsign: state.callsign,
         emergency,
         reportedBy: simulatedEmergencyIcaos.has(state.icao24) ? 'Olympus / Local Admin user' : 'Olympus / Live feed',
+        activeDistress: true,
       });
     });
-    if (newAlerts.length) setFlightAlerts((current) => [...newAlerts, ...current].slice(0, 14));
-  }, [displayedStates, simulatedEmergencyIcaos]);
+  }, [displayedStates, pushAlert, simulatedEmergencyIcaos]);
 
   const airborneCount = useMemo(() => displayedStates.filter((state) => !state.onGround).length, [displayedStates]);
   const onGroundCount = useMemo(() => displayedStates.filter((state) => state.onGround).length, [displayedStates]);
@@ -239,6 +251,7 @@ export const FlightsPage: React.FC = () => {
       callsign: selectedFlight.callsign,
       emergency,
       reportedBy: 'Olympus / Local Admin user',
+      activeDistress: true,
     });
   }, [pushAlert, selectedFlight]);
 
@@ -254,6 +267,7 @@ export const FlightsPage: React.FC = () => {
       callsign: selectedDisplayFlight.callsign,
       emergency,
       reportedBy: 'Olympus / Local Admin user',
+      activeDistress: true,
     });
   }, [pushAlert, selectedDisplayFlight]);
 
@@ -269,8 +283,42 @@ export const FlightsPage: React.FC = () => {
       callsign: selectedDisplayFlight.callsign,
       emergency,
       reportedBy: 'Olympus / Local Admin user',
+      activeDistress: true,
     });
   }, [pushAlert, selectedDisplayFlight]);
+
+  const standDownSelectedEmergency = useCallback(() => {
+    if (!selectedDisplayFlight?.icao24) return;
+    const icao24 = selectedDisplayFlight.icao24;
+    const emergency = emergencyLabel(selectedDisplayFlight.emergency);
+    setSimulatedEmergencyIcaos((current) => {
+      const next = new Set(current);
+      next.delete(icao24);
+      return next;
+    });
+    const standDown: FlightAlert = {
+      id: `standdown-${icao24}-${Date.now()}`,
+      timestamp: Date.now(),
+      title: 'Air Emergency Stood Down',
+      details: `${emergency} stood down for ${selectedDisplayFlight.callsign || selectedDisplayFlight.registration || icao24}.`,
+      icao24,
+      callsign: selectedDisplayFlight.callsign,
+      emergency,
+      reportedBy: 'Olympus / Local Admin user',
+      activeDistress: false,
+    };
+    setFlightAlerts((current) => [standDown, ...current.filter((alert) => alert.icao24 !== icao24)].slice(0, 14));
+    pushGlobalNotification({
+      id: `global-${standDown.id}`,
+      domain: 'flight',
+      severity: 'warning',
+      title: standDown.title,
+      details: standDown.details,
+      entityId: icao24,
+      reportedBy: standDown.reportedBy,
+      timestamp: standDown.timestamp,
+    });
+  }, [pushGlobalNotification, selectedDisplayFlight]);
 
   const onClick = useCallback(
     (
@@ -298,16 +346,7 @@ export const FlightsPage: React.FC = () => {
         const p = feature?.properties as Record<string, unknown> | undefined;
         const coords = feature?.geometry?.type === 'Point' ? (feature.geometry as GeoJSON.Point).coordinates : null;
         if (p && coords) {
-          setInfrastructurePopup({
-            type: 'military',
-            item: {
-              name: String(p.name ?? ''),
-              description: String(p.description ?? ''),
-              country: String(p.country ?? ''),
-              lon: coords[0],
-              lat: coords[1],
-            },
-          });
+          setInfrastructurePopup({ type: 'military', item: { name: String(p.name ?? ''), description: String(p.description ?? ''), country: String(p.country ?? ''), lon: coords[0], lat: coords[1] } });
         }
         return;
       }
@@ -322,277 +361,14 @@ export const FlightsPage: React.FC = () => {
     [airportGeoJSON.features, setSelectedIcao24, toggleRadarRegion],
   );
 
-  return (
-    <div className="absolute inset-0 bg-intel-bg overflow-hidden flex flex-col">
-      <FlightsToolbar
-        totalCount={states.length}
-        filteredCount={displayedStates.length}
-        airborneCount={airborneCount}
-        onGroundCount={onGroundCount}
-        emergencyCount={emergencyCount}
-      />
-
-      <div className="relative flex-1 min-h-0">
-        <Map
-          initialViewState={{ latitude: 39.8283, longitude: -98.5795, zoom: 4 }}
-          mapStyle={activeMapStyle}
-          styleDiffing={false}
-          interactiveLayerIds={['aircraft-points', 'radar-region-points', 'airport-points', 'flight-airbase-points']}
-          onClick={onClick}
-          onLoad={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)}
-          onStyleData={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)}
-          onStyleImageMissing={(event: { id: string; target: import('maplibre-gl').Map }) => {
-            if (event.id.startsWith('olympus-plane')) addPlaneImages(event.target);
-          }}
-          projection={
-            mapProjection === 'globe'
-              ? ({ type: 'globe' } as import('maplibre-gl').ProjectionSpecification)
-              : ({ type: 'mercator' } as import('maplibre-gl').ProjectionSpecification)
-          }
-          style={{ width: '100%', height: '100%' }}
-        >
-          <NavigationControl position="top-right" showCompass={true} visualizePitch={true} />
-          <NoaaWeatherRadarLayer />
-
-          {showRadarPins && (
-            <>
-              <Source id="active-radar-zones" type="geojson" data={activeRadarZones}>
-                <Layer id="active-radar-zone-fill" type="fill" paint={{ 'fill-color': '#ffffff', 'fill-opacity': 0.035 }} />
-                <Layer id="active-radar-zone-ring" type="line" paint={{ 'line-color': '#ffffff', 'line-opacity': 0.85, 'line-width': 2 }} />
-              </Source>
-              <Source id="active-radar-pulse" type="geojson" data={activeRadarPulse}>
-                <Layer id="active-radar-pulse-ring" type="line" paint={{ 'line-color': '#ffffff', 'line-opacity': 0.45, 'line-width': 1.5, 'line-blur': 1 }} />
-              </Source>
-              <Source id="active-radar-sweeps" type="geojson" data={activeRadarSweeps}>
-                <Layer id="active-radar-sweep-line" type="line" paint={{ 'line-color': '#ffffff', 'line-opacity': 0.95, 'line-width': 2, 'line-blur': 1 }} />
-              </Source>
-              <Source id="radar-regions" type="geojson" data={radarGeoJSON}>
-                <Layer
-                  id="radar-region-points"
-                  type="circle"
-                  paint={{
-                    'circle-radius': ['case', ['boolean', ['get', 'active'], false], 8, 6],
-                    'circle-color': '#ffffff',
-                    'circle-stroke-color': ['case', ['boolean', ['get', 'active'], false], '#ffffff', '#94a3b8'],
-                    'circle-stroke-width': ['case', ['boolean', ['get', 'active'], false], 2, 1],
-                    'circle-opacity': ['case', ['boolean', ['get', 'active'], false], 1, 0.65],
-                  }}
-                />
-                <Layer
-                  id="radar-region-labels"
-                  type="symbol"
-                  layout={{ 'text-field': ['get', 'shortLabel'], 'text-size': 10, 'text-offset': [0, 1.2], 'text-allow-overlap': true }}
-                  paint={{ 'text-color': '#ffffff', 'text-halo-color': '#020617', 'text-halo-width': 1 }}
-                />
-              </Source>
-            </>
-          )}
-
-          {showAirportPins && (
-            <>
-              <Source id="airports" type="geojson" data={airportGeoJSON}>
-                <Layer
-                  id="airport-points"
-                  type="circle"
-                  paint={{
-                    'circle-radius': 4.8,
-                    'circle-color': '#facc15',
-                    'circle-stroke-color': '#713f12',
-                    'circle-stroke-width': 1.5,
-                    'circle-opacity': 0.92,
-                  }}
-                />
-                <Layer
-                  id="airport-labels"
-                  type="symbol"
-                  layout={{ 'text-field': ['get', 'code'], 'text-size': 10, 'text-offset': [0, 1.1], 'text-allow-overlap': false }}
-                  paint={{ 'text-color': '#fde68a', 'text-halo-color': '#020617', 'text-halo-width': 1 }}
-                />
-              </Source>
-
-              {militaryAirbasesGeoJSON && (
-                <Source id="flight-airbases" type="geojson" data={militaryAirbasesGeoJSON as GeoJSON.FeatureCollection}>
-                  <Layer
-                    id="flight-airbase-points"
-                    type="circle"
-                    paint={{
-                      'circle-radius': 5.6,
-                      'circle-color': '#facc15',
-                      'circle-stroke-color': '#ef4444',
-                      'circle-stroke-width': 1.8,
-                      'circle-opacity': 0.94,
-                    }}
-                  />
-                  <Layer
-                    id="flight-airbase-labels"
-                    type="symbol"
-                    layout={{ 'text-field': ['slice', ['get', 'name'], 0, 12], 'text-size': 9, 'text-offset': [0, 1.25], 'text-allow-overlap': false }}
-                    paint={{ 'text-color': '#fef3c7', 'text-halo-color': '#020617', 'text-halo-width': 1 }}
-                  />
-                </Source>
-              )}
-            </>
-          )}
-
-          <Source id="aircraft" type="geojson" data={pointsGeoJSON}>
-            <Layer
-              id="aircraft-halo"
-              type="circle"
-              paint={{
-                'circle-radius': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 12, ['boolean', ['get', 'isEmergency'], false], 10, 0],
-                'circle-color': 'transparent',
-                'circle-stroke-width': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 2, ['boolean', ['get', 'isEmergency'], false], 2, 0],
-                'circle-stroke-color': ['case', ['boolean', ['get', 'isEmergency'], false], '#ef4444', '#38bdf8'],
-              }}
-            />
-            <Layer
-              id="aircraft-points"
-              type="symbol"
-              layout={{
-                'icon-image': [
-                  'case',
-                  ['==', ['get', 'icao24'], selectedIcao24 || ''],
-                  'olympus-plane-selected',
-                  ['boolean', ['get', 'isEmergency'], false],
-                  'olympus-plane-emergency',
-                  ['boolean', ['get', 'onGround'], false],
-                  'olympus-plane-ground',
-                  'olympus-plane-airborne',
-                ],
-                'icon-size': 0.42,
-                'icon-rotate': ['-', ['coalesce', ['get', 'heading'], 0], 45],
-                'icon-rotation-alignment': 'map',
-                'icon-allow-overlap': true,
-                'icon-ignore-placement': true,
-              }}
-              paint={{ 'icon-opacity': 0.98 }}
-            />
-          </Source>
-
-          {infrastructurePopup && (
-            <Popup longitude={infrastructurePopup.item.lon} latitude={infrastructurePopup.item.lat} anchor="bottom" closeButton={false} onClose={() => setInfrastructurePopup(null)}>
-              <div className="bg-[#05070b] border border-white/20 text-white font-mono min-w-[260px]">
-                <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between">
-                  <span className="text-cyan-300 text-[10px] uppercase tracking-[0.18em]">
-                    {infrastructurePopup.type === 'radar' ? 'Radar Region' : infrastructurePopup.type === 'military' ? 'Air Force / Military Base' : 'Airport'}
-                  </span>
-                  <button onClick={() => setInfrastructurePopup(null)} className="text-white/40 hover:text-white">×</button>
-                </div>
-                <div className="p-3 space-y-1 text-[11px] text-white/65">
-                  <div className="text-white text-sm font-bold">{infrastructureTitle(infrastructurePopup)}</div>
-                  <div>{infrastructureSubtitle(infrastructurePopup)}</div>
-                  {infrastructurePopup.type === 'radar' && <div className="text-white/45">Click radar pin to toggle this region feed.</div>}
-                  {infrastructurePopup.type === 'military' && infrastructurePopup.item.description && <div className="text-white/45">{infrastructurePopup.item.description}</div>}
-                </div>
-              </div>
-            </Popup>
-          )}
-
-          {selectedDisplayFlight?.lat != null && selectedDisplayFlight?.lon != null && (
-            <Popup longitude={selectedDisplayFlight.lon} latitude={selectedDisplayFlight.lat} anchor="bottom" closeButton={false} onClose={() => setSelectedIcao24(null)}>
-              <div className={`bg-[#05070b] border text-white font-mono min-w-[320px] max-w-[380px] ${selectedDisplayFlight.emergency && selectedDisplayFlight.emergency !== 'none' ? 'border-red-500 shadow-[0_0_18px_rgba(239,68,68,0.45)]' : 'border-cyan-400/30'}`}>
-                <div className="px-3 py-2 border-b border-cyan-400/20 flex items-center justify-between">
-                  <span className="text-cyan-300 text-[10px] uppercase tracking-[0.18em]">Aircraft Detail</span>
-                  <button onClick={() => setSelectedIcao24(null)} className="text-white/40 hover:text-white">×</button>
-                </div>
-                <div className="p-3 space-y-3 text-[11px] text-white/60">
-                  <div>
-                    <div className="text-lg text-white font-bold leading-none">{selectedDisplayFlight.callsign || selectedDisplayFlight.registration || selectedDisplayFlight.icao24}</div>
-                    <div className="text-cyan-300/70 mt-1 uppercase tracking-[0.16em]">{selectedDisplayFlight.icao24}</div>
-                  </div>
-                  {selectedDisplayFlight.emergency && selectedDisplayFlight.emergency !== 'none' && (
-                    <div className="animate-pulse border border-red-500 bg-red-950/35 p-2 text-red-200 shadow-[0_0_18px_rgba(239,68,68,0.35)]">
-                      ⚠ AIR EMERGENCY: {emergencyLabel(selectedDisplayFlight.emergency)}
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    <Detail label="Registration" value={selectedDisplayFlight.registration} />
-                    <Detail label="Country" value={selectedDisplayFlight.originCountry} />
-                    <Detail label="Manufacturer" value={selectedDisplayFlight.manufacturerName} />
-                    <Detail label="Model" value={selectedDisplayFlight.model} />
-                    <Detail label="Operator" value={selectedDisplayFlight.operator} />
-                    <Detail label="Type" value={selectedDisplayFlight.typecode} />
-                    <Detail label="Built" value={selectedDisplayFlight.built} />
-                    <Detail label="Squawk" value={selectedDisplayFlight.squawk} />
-                    <Detail label="Baro Alt" value={valueOrDash(selectedDisplayFlight.baroAltitude, ' m')} />
-                    <Detail label="Geo Alt" value={valueOrDash(selectedDisplayFlight.geoAltitude, ' m')} />
-                    <Detail label="Speed" value={valueOrDash(selectedDisplayFlight.velocity, ' m/s')} />
-                    <Detail label="Heading" value={valueOrDash(selectedDisplayFlight.heading, '°')} />
-                    <Detail label="Vertical" value={valueOrDash(selectedDisplayFlight.verticalRate, ' m/s')} />
-                    <Detail label="RSSI" value={selectedDisplayFlight.rssi} />
-                    <Detail label="IAS" value={selectedDisplayFlight.ias} />
-                    <Detail label="TAS" value={selectedDisplayFlight.tas} />
-                    <Detail label="Mach" value={selectedDisplayFlight.mach} />
-                    <Detail label="Emergency" value={selectedDisplayFlight.emergency || 'none'} />
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    <button onClick={reportSelectedAirEmergency} className="w-full border border-red-500 bg-red-950/30 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-red-200 hover:bg-red-500/20">⚠ Report Air Emergency</button>
-                    <button onClick={confirmSelectedEmergency} className="w-full border border-amber-400 bg-amber-950/25 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-amber-200 hover:bg-amber-400/20">Confirm Emergency</button>
-                    <button onClick={makeRadioContact} className="w-full border border-cyan-400 bg-cyan-950/20 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-cyan-200 hover:bg-cyan-400/20">Make Radio Contact</button>
-                  </div>
-                </div>
-              </div>
-            </Popup>
-          )}
-        </Map>
-
-        <FlightAlertLog alerts={flightAlerts} onClear={() => setFlightAlerts([])} onSelect={(icao24) => setSelectedIcao24(icao24)} />
-        <MapLayerControl />
-        <VhfAudioPanel />
-      </div>
-
-      <FlightsStatusBar lastUpdated={timestamp} isError={isError} provider={provider} />
-    </div>
-  );
+  return <div className="absolute inset-0 bg-intel-bg overflow-hidden flex flex-col"><FlightsToolbar totalCount={states.length} filteredCount={displayedStates.length} airborneCount={airborneCount} onGroundCount={onGroundCount} emergencyCount={emergencyCount} /><div className="relative flex-1 min-h-0"><Map initialViewState={{ latitude: 39.8283, longitude: -98.5795, zoom: 4 }} mapStyle={activeMapStyle} styleDiffing={false} interactiveLayerIds={['aircraft-points', 'radar-region-points', 'airport-points', 'flight-airbase-points']} onClick={onClick} onLoad={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)} onStyleData={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)} onStyleImageMissing={(event: { id: string; target: import('maplibre-gl').Map }) => { if (event.id.startsWith('olympus-plane')) addPlaneImages(event.target); }} projection={mapProjection === 'globe' ? ({ type: 'globe' } as import('maplibre-gl').ProjectionSpecification) : ({ type: 'mercator' } as import('maplibre-gl').ProjectionSpecification)} style={{ width: '100%', height: '100%' }}><NavigationControl position="top-right" showCompass={true} visualizePitch={true} /><NoaaWeatherRadarLayer /><Source id="aircraft" type="geojson" data={pointsGeoJSON}><Layer id="aircraft-halo" type="circle" paint={{ 'circle-radius': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 12, ['boolean', ['get', 'isEmergency'], false], 10, 0], 'circle-color': 'transparent', 'circle-stroke-width': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 2, ['boolean', ['get', 'isEmergency'], false], 2, 0], 'circle-stroke-color': ['case', ['boolean', ['get', 'isEmergency'], false], '#ef4444', '#38bdf8'] }} /><Layer id="aircraft-points" type="symbol" layout={{ 'icon-image': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 'olympus-plane-selected', ['boolean', ['get', 'isEmergency'], false], 'olympus-plane-emergency', ['boolean', ['get', 'onGround'], false], 'olympus-plane-ground', 'olympus-plane-airborne'], 'icon-size': 0.42, 'icon-rotate': ['-', ['coalesce', ['get', 'heading'], 0], 45], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'icon-ignore-placement': true }} paint={{ 'icon-opacity': 0.98 }} /></Source>{selectedDisplayFlight?.lat != null && selectedDisplayFlight?.lon != null && <Popup longitude={selectedDisplayFlight.lon} latitude={selectedDisplayFlight.lat} anchor="bottom" closeButton={false} onClose={() => setSelectedIcao24(null)}><div className={`bg-[#05070b] border text-white font-mono min-w-[320px] max-w-[380px] ${selectedDisplayFlight.emergency && selectedDisplayFlight.emergency !== 'none' ? 'border-red-500 shadow-[0_0_18px_rgba(239,68,68,0.45)]' : 'border-cyan-400/30'}`}><div className="px-3 py-2 border-b border-cyan-400/20 flex items-center justify-between"><span className="text-cyan-300 text-[10px] uppercase tracking-[0.18em]">Aircraft Detail</span><button onClick={() => setSelectedIcao24(null)} className="text-white/40 hover:text-white">×</button></div><div className="p-3 space-y-3 text-[11px] text-white/60"><div><div className="text-lg text-white font-bold leading-none">{selectedDisplayFlight.callsign || selectedDisplayFlight.registration || selectedDisplayFlight.icao24}</div><div className="text-cyan-300/70 mt-1 uppercase tracking-[0.16em]">{selectedDisplayFlight.icao24}</div></div>{selectedDisplayFlight.emergency && selectedDisplayFlight.emergency !== 'none' && <div className="animate-pulse border border-red-500 bg-red-950/35 p-2 text-red-200 shadow-[0_0_18px_rgba(239,68,68,0.35)]">⚠ AIR EMERGENCY: {emergencyLabel(selectedDisplayFlight.emergency)}</div>}<div className="grid grid-cols-2 gap-x-4 gap-y-1"><Detail label="Registration" value={selectedDisplayFlight.registration} /><Detail label="Country" value={selectedDisplayFlight.originCountry} /><Detail label="Operator" value={selectedDisplayFlight.operator} /><Detail label="Squawk" value={selectedDisplayFlight.squawk} /><Detail label="Baro Alt" value={valueOrDash(selectedDisplayFlight.baroAltitude, ' m')} /><Detail label="Geo Alt" value={valueOrDash(selectedDisplayFlight.geoAltitude, ' m')} /><Detail label="Speed" value={valueOrDash(selectedDisplayFlight.velocity, ' m/s')} /><Detail label="Emergency" value={selectedDisplayFlight.emergency || 'none'} /></div><div className="grid grid-cols-1 gap-2"><button onClick={reportSelectedAirEmergency} className="w-full border border-red-500 bg-red-950/30 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-red-200 hover:bg-red-500/20">⚠ Report Air Emergency</button><button onClick={confirmSelectedEmergency} className="w-full border border-amber-400 bg-amber-950/25 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-amber-200 hover:bg-amber-400/20">Confirm Emergency</button><button onClick={makeRadioContact} className="w-full border border-cyan-400 bg-cyan-950/20 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-cyan-200 hover:bg-cyan-400/20">Make Radio Contact</button><button onClick={standDownSelectedEmergency} className="w-full border border-white/25 bg-white/5 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-white/70 hover:bg-white/10">Stand Down / Resolve</button></div></div></div></Popup>}</Map><FlightAlertLog alerts={flightAlerts} onClear={() => setFlightAlerts([])} onSelect={(alert) => { if (alert.activeDistress) setSelectedIcao24(alert.icao24); }} /><MapLayerControl /><VhfAudioPanel /></div><FlightsStatusBar lastUpdated={timestamp} isError={isError} provider={provider} /></div>;
 };
 
-function FlightAlertLog({ alerts, onClear, onSelect }: { alerts: FlightAlert[]; onClear: () => void; onSelect: (icao24: string) => void }) {
-  const latest = alerts[0];
-
-  return (
-    <div className="absolute top-4 right-16 z-[6] w-[360px] font-mono pointer-events-auto">
-      {latest && (
-        <button onClick={() => onSelect(latest.icao24)} className="mb-3 block w-full text-left animate-pulse border-2 border-red-500 bg-red-950/45 p-3 text-red-100 shadow-[0_0_24px_rgba(239,68,68,0.55)]">
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-[10px] uppercase tracking-[0.22em] text-red-200">⚠ {latest.title}</div>
-            <div className="text-[9px] text-red-200/65">{new Date(latest.timestamp).toLocaleTimeString()}</div>
-          </div>
-          <div className="mt-2 text-sm font-bold uppercase tracking-[0.08em]">{latest.emergency}</div>
-          <div className="mt-1 text-xs text-red-100/75">{latest.details}</div>
-        </button>
-      )}
-
-      <div className="border border-cyan-400/25 bg-black/60 backdrop-blur shadow-[0_0_20px_rgba(0,229,255,0.08)]">
-        <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
-          <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">Notifications</div>
-          <button onClick={onClear} className="text-[9px] uppercase tracking-[0.16em] text-white/35 hover:text-white">Clear</button>
-        </div>
-        <div className="max-h-56 overflow-auto">
-          {alerts.length === 0 ? (
-            <div className="px-3 py-3 text-[11px] text-white/35">No alert reports yet.</div>
-          ) : (
-            alerts.map((alert) => (
-              <button key={alert.id} onClick={() => onSelect(alert.icao24)} className="block w-full border-b border-white/8 px-3 py-2 text-left text-[11px] text-white/65 hover:bg-cyan-400/10">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-red-200 uppercase tracking-[0.14em]">{alert.title}</span>
-                  <span className="text-white/35">{new Date(alert.timestamp).toLocaleString()}</span>
-                </div>
-                <div className="mt-1 text-white/80">{alert.details}</div>
-                <div className="mt-1 text-white/35">ICAO {alert.icao24} | Reported by {alert.reportedBy}</div>
-              </button>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
-  );
+function FlightAlertLog({ alerts, onClear, onSelect }: { alerts: FlightAlert[]; onClear: () => void; onSelect: (alert: FlightAlert) => void }) {
+  const active = alerts.find((alert) => alert.activeDistress);
+  return <div className="absolute top-4 right-16 z-[6] w-[360px] font-mono pointer-events-auto">{active && <button onClick={() => onSelect(active)} className="mb-3 block w-full text-left animate-pulse border-2 border-red-500 bg-red-950/45 p-3 text-red-100 shadow-[0_0_24px_rgba(239,68,68,0.55)]"><div className="flex items-center justify-between gap-3"><div className="text-[10px] uppercase tracking-[0.22em] text-red-200">⚠ {active.title}</div><div className="text-[9px] text-red-200/65">{new Date(active.timestamp).toLocaleTimeString()}</div></div><div className="mt-2 text-sm font-bold uppercase tracking-[0.08em]">{active.emergency}</div><div className="mt-1 text-xs text-red-100/75">{active.details}</div></button>}<div className="border border-cyan-400/25 bg-black/60 backdrop-blur shadow-[0_0_20px_rgba(0,229,255,0.08)]"><div className="flex items-center justify-between border-b border-white/10 px-3 py-2"><div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">Flight Notifications</div><button onClick={onClear} className="text-[9px] uppercase tracking-[0.16em] text-white/35 hover:text-white">Clear</button></div><div className="max-h-56 overflow-auto">{alerts.length === 0 ? <div className="px-3 py-3 text-[11px] text-white/35">No flight notifications yet.</div> : alerts.map((alert) => <button key={alert.id} onClick={() => onSelect(alert)} disabled={!alert.activeDistress} className={`block w-full border-b border-white/8 px-3 py-2 text-left text-[11px] ${alert.activeDistress ? 'text-white/65 hover:bg-cyan-400/10' : 'text-white/35 cursor-default'}`}><div className="flex items-center justify-between gap-2"><span className={alert.activeDistress ? 'text-red-200 uppercase tracking-[0.14em]' : 'text-white/45 uppercase tracking-[0.14em]'}>{alert.title}</span><span className="text-white/35">{new Date(alert.timestamp).toLocaleString()}</span></div><div className="mt-1 text-white/80">{alert.details}</div><div className="mt-1 text-white/35">ICAO {alert.icao24} | Reported by {alert.reportedBy}</div></button>)}</div></div></div>;
 }
 
 function Detail({ label, value }: { label: string; value: unknown }) {
-  return (
-    <div>
-      <div className="text-white/35 uppercase tracking-[0.16em]">{label}</div>
-      <div className="text-white/75">{valueOrDash(value)}</div>
-    </div>
-  );
+  return <div><div className="text-white/35 uppercase tracking-[0.16em]">{label}</div><div className="text-white/75">{valueOrDash(value)}</div></div>;
 }
