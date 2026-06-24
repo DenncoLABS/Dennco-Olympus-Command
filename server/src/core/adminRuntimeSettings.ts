@@ -27,6 +27,10 @@ export interface AdminRuntimeSettings {
     providerMode?: string;
     states?: string[];
   };
+  cad?: {
+    resgridUrl?: string;
+    mode?: string;
+  };
   vhfAudio?: {
     enabled?: boolean;
     defaultChannelId?: string;
@@ -67,6 +71,7 @@ export function mergeAdminRuntimeSettings(patch: AdminRuntimeSettings): AdminRun
     branding: { ...(current.branding || {}), ...(patch.branding || {}) },
     apiKeys: { ...(current.apiKeys || {}), ...(patch.apiKeys || {}) },
     dotFeeds: { ...(current.dotFeeds || {}), ...(patch.dotFeeds || {}) },
+    cad: { ...(current.cad || {}), ...(patch.cad || {}) },
     vhfAudio: { ...(current.vhfAudio || {}), ...(patch.vhfAudio || {}) },
   });
 }
