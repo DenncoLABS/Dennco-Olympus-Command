@@ -21,3 +21,5 @@ Rebuild: restored flight airports, installations, radar nodes, and radar sweep o
 Rebuild: animated radar sweep, flight notification placement, and radar node fallback regions.
 
 Rebuild: flight map crosshair and infrastructure detail popups.
+
+Rebuild: maritime AISStream bounding box and coordinate parsing fix.
