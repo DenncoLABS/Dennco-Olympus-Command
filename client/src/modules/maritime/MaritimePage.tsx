@@ -1,1 +1,1 @@
-export { MaritimePage } from './MaritimePageV4';
+export { MaritimePage } from './MaritimePageV5';
