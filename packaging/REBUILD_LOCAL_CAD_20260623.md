@@ -13,3 +13,5 @@ Rebuild: flight emergency notification log and report action.
 Rebuild: simulated emergencies behave like live aircraft emergencies.
 
 Rebuild: global and flight notification lifecycle.
+
+Rebuild: client TypeScript build fix.
