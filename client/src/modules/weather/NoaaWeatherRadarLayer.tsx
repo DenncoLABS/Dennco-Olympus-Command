@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Source, Layer } from 'react-map-gl/maplibre';
 import { useThemeStore } from '../../ui/theme/theme.store';
 import { useFlightsStore } from '../flights/state/flights.store';
+import { useMilitaryBases } from '../monitor/hooks/useMilitaryBases';
 import {
   activeRadarPulseGeoJSON,
   activeRadarSweepsGeoJSON,
