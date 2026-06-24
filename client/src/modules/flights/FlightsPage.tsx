@@ -1,15 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Map, { Layer, NavigationControl, Popup, Source } from 'react-map-gl/maplibre';
+import { Target } from 'lucide-react';
 import { useFlightsSnapshot } from './hooks/useFlightsSnapshot';
 import { useFlightSelection } from './hooks/useFlightSelection';
 import { useFlightsStore } from './state/flights.store';
 import { statesToPointGeoJSON } from './lib/flights.geojson';
+import type { AircraftState } from './lib/flights.types';
 import { FlightsToolbar } from './components/FlightsToolbar';
 import { FlightsStatusBar } from './components/FlightsStatusBar';
 import { MapLayerControl } from './components/MapLayerControl';
 import { VhfAudioPanel } from '../audio/VhfAudioPanel';
 import { NoaaWeatherRadarLayer } from '../weather/NoaaWeatherRadarLayer';
 import { useThemeStore } from '../../ui/theme/theme.store';
+import { DraggableDockPanel } from '../../ui/layout/DraggableDockPanel';
 import { useGlobalNotificationsStore } from '../../notifications/globalNotifications.store';
 import { SATELLITE_STYLE, LIGHT_STYLE, DARK_STYLE, STREET_STYLE } from '../../lib/mapStyles';
 import { airportPinsGeoJSON, RADAR_REGIONS, type AirportPin, type RadarRegionPin } from './data/aviationInfrastructure';
@@ -94,16 +97,25 @@ export const FlightsPage: React.FC = () => {
   const [simulatedEmergencyIcaos, setSimulatedEmergencyIcaos] = useState<Set<string>>(new Set());
   const seenEmergencyAlerts = useRef<Set<string>>(new Set());
 
-  const filteredStates = useMemo(() => states.filter((state) => {
-    if (!filters.showOnGround && state.onGround) return false;
-    if (state.baroAltitude != null && state.baroAltitude > filters.altitudeMax) return false;
-    if (state.velocity != null && state.velocity > filters.speedMax) return false;
-    if (filters.callsign && state.callsign && !state.callsign.includes(filters.callsign)) return false;
-    return true;
-  }), [states, filters]);
+  const filteredStates = useMemo(
+    () => states.filter((state) => {
+      if (!filters.showOnGround && state.onGround) return false;
+      if (state.baroAltitude != null && state.baroAltitude > filters.altitudeMax) return false;
+      if (state.velocity != null && state.velocity > filters.speedMax) return false;
+      if (filters.callsign && state.callsign && !state.callsign.includes(filters.callsign)) return false;
+      return true;
+    }),
+    [states, filters],
+  );
 
-  const displayedStates = useMemo(() => filteredStates.map((state) => simulatedEmergencyIcaos.has(state.icao24) ? { ...state, emergency: state.emergency && state.emergency !== 'none' ? state.emergency : 'nordo' } : state), [filteredStates, simulatedEmergencyIcaos]);
-  const selectedDisplayFlight = useMemo(() => selectedFlight && simulatedEmergencyIcaos.has(selectedFlight.icao24) ? { ...selectedFlight, emergency: selectedFlight.emergency && selectedFlight.emergency !== 'none' ? selectedFlight.emergency : 'nordo' } : selectedFlight, [selectedFlight, simulatedEmergencyIcaos]);
+  const displayedStates = useMemo(
+    () => filteredStates.map((state) => simulatedEmergencyIcaos.has(state.icao24) ? { ...state, emergency: state.emergency && state.emergency !== 'none' ? state.emergency : 'nordo' } : state),
+    [filteredStates, simulatedEmergencyIcaos],
+  );
+  const selectedDisplayFlight = useMemo(
+    () => selectedFlight && simulatedEmergencyIcaos.has(selectedFlight.icao24) ? { ...selectedFlight, emergency: selectedFlight.emergency && selectedFlight.emergency !== 'none' ? selectedFlight.emergency : 'nordo' } : selectedFlight,
+    [selectedFlight, simulatedEmergencyIcaos],
+  );
 
   const pushAlert = useCallback((alert: FlightAlert) => {
     setFlightAlerts((current) => [alert, ...current].slice(0, 14));
@@ -171,7 +183,10 @@ export const FlightsPage: React.FC = () => {
     const layerId = feature?.layer?.id;
     if (layerId === 'radar-region-points' && feature?.properties?.id) {
       const region = RADAR_REGIONS.find((item) => item.id === String(feature.properties?.id));
-      if (region) { toggleRadarRegion(region.id); setInfrastructurePopup({ type: 'radar', item: region }); }
+      if (region) {
+        toggleRadarRegion(region.id);
+        setInfrastructurePopup({ type: 'radar', item: region });
+      }
       return;
     }
     if (layerId === 'airport-points' && feature?.properties?.id) {
@@ -185,12 +200,147 @@ export const FlightsPage: React.FC = () => {
       if (p && coords) setInfrastructurePopup({ type: 'military', item: { name: String(p.name ?? ''), description: String(p.description ?? ''), country: String(p.country ?? ''), lon: coords[0], lat: coords[1] } });
       return;
     }
-    if (feature?.properties?.icao24) { setSelectedIcao24(String(feature.properties.icao24)); setInfrastructurePopup(null); return; }
+    if (feature?.properties?.icao24) {
+      setSelectedIcao24(String(feature.properties.icao24));
+      setInfrastructurePopup(null);
+      return;
+    }
     setSelectedIcao24(null);
+    setInfrastructurePopup(null);
   }, [airportGeoJSON.features, setSelectedIcao24, toggleRadarRegion]);
 
-  return <div className="absolute inset-0 bg-intel-bg overflow-hidden flex flex-col"><FlightsToolbar totalCount={states.length} filteredCount={displayedStates.length} airborneCount={airborneCount} onGroundCount={onGroundCount} emergencyCount={emergencyCount} /><div className="relative flex-1 min-h-0"><Map initialViewState={{ latitude: 39.8283, longitude: -98.5795, zoom: 4 }} mapStyle={activeMapStyle} styleDiffing={false} interactiveLayerIds={['aircraft-points', 'radar-region-points', 'airport-points', 'flight-airbase-points']} onClick={onClick} cursor={selectedIcao24 ? 'pointer' : 'crosshair'} onLoad={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)} onStyleData={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)} onStyleImageMissing={(event: { id: string; target: import('maplibre-gl').Map }) => { if (event.id.startsWith('olympus-plane')) addPlaneImages(event.target); }} projection={mapProjection === 'globe' ? ({ type: 'globe' } as import('maplibre-gl').ProjectionSpecification) : ({ type: 'mercator' } as import('maplibre-gl').ProjectionSpecification)} style={{ width: '100%', height: '100%' }}><NavigationControl position="top-right" showCompass={true} visualizePitch={true} /><NoaaWeatherRadarLayer />{infrastructurePopup && <Popup longitude={infrastructurePopup.item.lon} latitude={infrastructurePopup.item.lat} anchor="bottom" closeButton={false} onClose={() => setInfrastructurePopup(null)}><div className="bg-[#05070b] border border-white/20 text-white font-mono min-w-[280px]"><div className="px-3 py-2 border-b border-white/10 flex items-center justify-between"><span className="text-cyan-300 text-[10px] uppercase tracking-[0.18em]">{infrastructurePopup.type === 'radar' ? 'Radar Region' : infrastructurePopup.type === 'military' ? 'Installation' : 'Airport'}</span><button onClick={() => setInfrastructurePopup(null)} className="text-white/40 hover:text-white">×</button></div><div className="p-3 space-y-1 text-[11px] text-white/65"><div className="text-white text-sm font-bold">{infrastructureTitle(infrastructurePopup)}</div><div>{infrastructureSubtitle(infrastructurePopup)}</div>{infrastructurePopup.type === 'radar' && <div className="text-white/45">Click toggles this radar region feed node.</div>}{infrastructurePopup.type === 'military' && infrastructurePopup.item.description && <div className="text-white/45">{infrastructurePopup.item.description}</div>}</div></div></Popup>}<Source id="aircraft" type="geojson" data={pointsGeoJSON}><Layer id="aircraft-halo" type="circle" paint={{ 'circle-radius': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 12, ['boolean', ['get', 'isEmergency'], false], 10, 0], 'circle-color': 'transparent', 'circle-stroke-width': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 2, ['boolean', ['get', 'isEmergency'], false], 2, 0], 'circle-stroke-color': ['case', ['boolean', ['get', 'isEmergency'], false], '#ef4444', '#38bdf8'] }} /><Layer id="aircraft-points" type="symbol" layout={{ 'icon-image': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 'olympus-plane-selected', ['boolean', ['get', 'isEmergency'], false], 'olympus-plane-emergency', ['boolean', ['get', 'onGround'], false], 'olympus-plane-ground', 'olympus-plane-airborne'], 'icon-size': 0.42, 'icon-rotate': ['-', ['coalesce', ['get', 'heading'], 0], 45], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'icon-ignore-placement': true }} paint={{ 'icon-opacity': 0.98 }} /></Source>{selectedDisplayFlight?.lat != null && selectedDisplayFlight?.lon != null && <Popup longitude={selectedDisplayFlight.lon} latitude={selectedDisplayFlight.lat} anchor="bottom" closeButton={false} onClose={() => setSelectedIcao24(null)}><div className={`bg-[#05070b] border text-white font-mono min-w-[320px] max-w-[380px] ${selectedDisplayFlight.emergency && selectedDisplayFlight.emergency !== 'none' ? 'border-red-500 shadow-[0_0_18px_rgba(239,68,68,0.45)]' : 'border-cyan-400/30'}`}><div className="px-3 py-2 border-b border-cyan-400/20 flex items-center justify-between"><span className="text-cyan-300 text-[10px] uppercase tracking-[0.18em]">Aircraft Detail</span><button onClick={() => setSelectedIcao24(null)} className="text-white/40 hover:text-white">×</button></div><div className="p-3 space-y-3 text-[11px] text-white/60"><div><div className="text-lg text-white font-bold leading-none">{selectedDisplayFlight.callsign || selectedDisplayFlight.registration || selectedDisplayFlight.icao24}</div><div className="text-cyan-300/70 mt-1 uppercase tracking-[0.16em]">{selectedDisplayFlight.icao24}</div></div>{selectedDisplayFlight.emergency && selectedDisplayFlight.emergency !== 'none' && <div className="animate-pulse border border-red-500 bg-red-950/35 p-2 text-red-200 shadow-[0_0_18px_rgba(239,68,68,0.35)]">⚠ AIR EMERGENCY: {emergencyLabel(selectedDisplayFlight.emergency)}</div>}<div className="grid grid-cols-2 gap-x-4 gap-y-1"><Detail label="Registration" value={selectedDisplayFlight.registration} /><Detail label="Country" value={selectedDisplayFlight.originCountry} /><Detail label="Operator" value={selectedDisplayFlight.operator} /><Detail label="Squawk" value={selectedDisplayFlight.squawk} /><Detail label="Baro Alt" value={valueOrDash(selectedDisplayFlight.baroAltitude, ' m')} /><Detail label="Geo Alt" value={valueOrDash(selectedDisplayFlight.geoAltitude, ' m')} /><Detail label="Speed" value={valueOrDash(selectedDisplayFlight.velocity, ' m/s')} /><Detail label="Emergency" value={selectedDisplayFlight.emergency || 'none'} /></div><div className="grid grid-cols-1 gap-2"><button onClick={reportSelectedAirEmergency} className="w-full border border-red-500 bg-red-950/30 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-red-200 hover:bg-red-500/20">⚠ Report Air Emergency</button><button onClick={confirmSelectedEmergency} className="w-full border border-amber-400 bg-amber-950/25 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-amber-200 hover:bg-amber-400/20">Confirm Emergency</button><button onClick={makeRadioContact} className="w-full border border-cyan-400 bg-cyan-950/20 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-cyan-200 hover:bg-cyan-400/20">Make Radio Contact</button><button onClick={standDownSelectedEmergency} className="w-full border border-white/25 bg-white/5 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-white/70 hover:bg-white/10">Stand Down / Resolve</button></div></div></div></Popup>}</Map><FlightAlertLog alerts={flightAlerts} onClear={() => setFlightAlerts([])} onSelect={(alert) => { if (alert.activeDistress) setSelectedIcao24(alert.icao24); }} /><MapLayerControl /><VhfAudioPanel /></div><FlightsStatusBar lastUpdated={timestamp} isError={isError} provider={provider} /></div>;
+  return (
+    <div className="absolute inset-0 bg-intel-bg overflow-hidden flex flex-col">
+      <FlightsToolbar totalCount={states.length} filteredCount={displayedStates.length} airborneCount={airborneCount} onGroundCount={onGroundCount} emergencyCount={emergencyCount} />
+      <div className="relative flex-1 min-h-0">
+        <Map
+          initialViewState={{ latitude: 39.8283, longitude: -98.5795, zoom: 4 }}
+          mapStyle={activeMapStyle}
+          styleDiffing={false}
+          interactiveLayerIds={['aircraft-points', 'radar-region-points', 'airport-points', 'flight-airbase-points']}
+          onClick={onClick}
+          cursor={selectedIcao24 ? 'pointer' : 'crosshair'}
+          onLoad={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)}
+          onStyleData={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)}
+          onStyleImageMissing={(event: { id: string; target: import('maplibre-gl').Map }) => { if (event.id.startsWith('olympus-plane')) addPlaneImages(event.target); }}
+          projection={mapProjection === 'globe' ? ({ type: 'globe' } as import('maplibre-gl').ProjectionSpecification) : ({ type: 'mercator' } as import('maplibre-gl').ProjectionSpecification)}
+          style={{ width: '100%', height: '100%' }}
+        >
+          <NavigationControl position="top-right" showCompass={true} visualizePitch={true} />
+          <NoaaWeatherRadarLayer />
+
+          {infrastructurePopup && (
+            <Popup longitude={infrastructurePopup.item.lon} latitude={infrastructurePopup.item.lat} anchor="bottom" closeButton={false} onClose={() => setInfrastructurePopup(null)}>
+              <div className="bg-[#05070b] border border-white/20 text-white font-mono min-w-[280px]">
+                <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between">
+                  <span className="text-cyan-300 text-[10px] uppercase tracking-[0.18em]">{infrastructurePopup.type === 'radar' ? 'Radar Region' : infrastructurePopup.type === 'military' ? 'Installation' : 'Airport'}</span>
+                  <button onClick={() => setInfrastructurePopup(null)} className="text-white/40 hover:text-white">×</button>
+                </div>
+                <div className="p-3 space-y-1 text-[11px] text-white/65">
+                  <div className="text-white text-sm font-bold">{infrastructureTitle(infrastructurePopup)}</div>
+                  <div>{infrastructureSubtitle(infrastructurePopup)}</div>
+                  {infrastructurePopup.type === 'radar' && <div className="text-white/45">Click toggles this radar region feed node.</div>}
+                  {infrastructurePopup.type === 'military' && infrastructurePopup.item.description && <div className="text-white/45">{infrastructurePopup.item.description}</div>}
+                </div>
+              </div>
+            </Popup>
+          )}
+
+          <Source id="aircraft" type="geojson" data={pointsGeoJSON}>
+            <Layer
+              id="aircraft-halo"
+              type="circle"
+              paint={{
+                'circle-radius': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 12, ['boolean', ['get', 'isEmergency'], false], 10, 0],
+                'circle-color': 'transparent',
+                'circle-stroke-width': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 2, ['boolean', ['get', 'isEmergency'], false], 2, 0],
+                'circle-stroke-color': ['case', ['boolean', ['get', 'isEmergency'], false], '#ef4444', '#38bdf8'],
+              }}
+            />
+            <Layer
+              id="aircraft-points"
+              type="symbol"
+              layout={{
+                'icon-image': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 'olympus-plane-selected', ['boolean', ['get', 'isEmergency'], false], 'olympus-plane-emergency', ['boolean', ['get', 'onGround'], false], 'olympus-plane-ground', 'olympus-plane-airborne'],
+                'icon-size': 0.42,
+                'icon-rotate': ['-', ['coalesce', ['get', 'heading'], 0], 45],
+                'icon-rotation-alignment': 'map',
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true,
+              }}
+              paint={{ 'icon-opacity': 0.98 }}
+            />
+          </Source>
+        </Map>
+
+        <FlightTargetPanel
+          flight={selectedDisplayFlight}
+          onClose={() => setSelectedIcao24(null)}
+          onReport={reportSelectedAirEmergency}
+          onConfirm={confirmSelectedEmergency}
+          onRadio={makeRadioContact}
+          onStandDown={standDownSelectedEmergency}
+        />
+        <FlightAlertLog alerts={flightAlerts} onClear={() => setFlightAlerts([])} onSelect={(alert) => { if (alert.activeDistress) setSelectedIcao24(alert.icao24); }} />
+        <MapLayerControl />
+        <VhfAudioPanel />
+      </div>
+      <FlightsStatusBar lastUpdated={timestamp} isError={isError} provider={provider} />
+    </div>
+  );
 };
+
+function FlightTargetPanel({ flight, onClose, onReport, onConfirm, onRadio, onStandDown }: { flight: AircraftState | null; onClose: () => void; onReport: () => void; onConfirm: () => void; onRadio: () => void; onStandDown: () => void }) {
+  if (!flight) return null;
+  const isEmergency = Boolean(flight.emergency && flight.emergency !== 'none');
+
+  return (
+    <DraggableDockPanel
+      storageKey="olympus.flight.detailPanel.position.v1"
+      title="TARGET // FLIGHT"
+      subtitle="Drag to dock anywhere on the map"
+      width={384}
+      minHeight={420}
+      defaultPosition={{ x: 16, y: 86 }}
+      onClose={onClose}
+      className={`${isEmergency ? '!border-red-500/60 shadow-[0_0_24px_rgba(239,68,68,0.42)]' : '!border-l-intel-accent/30'}`}
+      bodyClassName="p-5 space-y-5"
+    >
+      <div className="pb-4 border-b border-intel-accent/20">
+        <div className="text-2xl font-bold text-intel-text-light tracking-wider drop-shadow-[0_0_8px_rgba(224,242,254,0.5)]">
+          {(flight.callsign || flight.registration || flight.icao24).toUpperCase()}
+        </div>
+        <div className="text-intel-text text-xs mt-2 space-x-3 opacity-80">
+          <span>ICAO: {flight.icao24}</span>
+          {flight.registration && <span>REG: {flight.registration}</span>}
+        </div>
+      </div>
+
+      {isEmergency && <div className="animate-pulse border border-red-500 bg-red-950/35 p-3 text-red-200 shadow-[0_0_18px_rgba(239,68,68,0.35)]">⚠ AIR EMERGENCY: {emergencyLabel(flight.emergency)}</div>}
+
+      <div className="space-y-3 relative">
+        <div className="absolute -left-5 top-0 bottom-0 w-1 bg-intel-accent/30" />
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-[11px]">
+          <Detail label="Registration" value={flight.registration} />
+          <Detail label="Country" value={flight.originCountry} />
+          <Detail label="Operator" value={flight.operator} />
+          <Detail label="Squawk" value={flight.squawk} />
+          <Detail label="Baro Alt" value={valueOrDash(flight.baroAltitude, ' m')} />
+          <Detail label="Geo Alt" value={valueOrDash(flight.geoAltitude, ' m')} />
+          <Detail label="Speed" value={valueOrDash(flight.velocity, ' m/s')} />
+          <Detail label="Emergency" value={flight.emergency || 'none'} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 pt-4 border-t border-white/10">
+        <button onClick={onReport} className="w-full border border-red-500 bg-red-950/30 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-red-200 hover:bg-red-500/20">⚠ Report Air Emergency</button>
+        <button onClick={onConfirm} className="w-full border border-amber-400 bg-amber-950/25 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-amber-200 hover:bg-amber-400/20">Confirm Emergency</button>
+        <button onClick={onRadio} className="w-full border border-cyan-400 bg-cyan-950/20 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-cyan-200 hover:bg-cyan-400/20">Make Radio Contact</button>
+        <button onClick={onStandDown} className="w-full border border-white/25 bg-white/5 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-white/70 hover:bg-white/10">Stand Down / Resolve</button>
+      </div>
+    </DraggableDockPanel>
+  );
+}
 
 function FlightAlertLog({ alerts, onClear, onSelect }: { alerts: FlightAlert[]; onClear: () => void; onSelect: (alert: FlightAlert) => void }) {
   const active = alerts.find((alert) => alert.activeDistress);
