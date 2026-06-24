@@ -19,6 +19,18 @@ type DotCamera = {
   country?: string;
 };
 
+type DotTrafficEvent = {
+  id: string;
+  title: string;
+  description?: string;
+  lat?: number;
+  lon?: number;
+  severity?: string;
+  type?: string;
+  updatedAt?: string;
+  source: string;
+};
+
 const US_FALLBACK_CAMERAS: DotCamera[] = [
   { id: 'us-nyc-midtown', name: 'New York Midtown Traffic Camera', lat: 40.7549, lon: -73.9840, city: 'New York', country: 'US', externalUrl: 'https://webcams.nyctmc.org/', source: 'NYC DOT fallback' },
   { id: 'us-nyc-brooklyn-bridge', name: 'Brooklyn Bridge Traffic Camera', lat: 40.7061, lon: -73.9969, city: 'New York', country: 'US', externalUrl: 'https://webcams.nyctmc.org/', source: 'NYC DOT fallback' },
@@ -49,6 +61,14 @@ const STATIC_GLOBAL_CAMERAS: DotCamera[] = [
   { id: 'fr-paris-eiffel', name: 'Paris - Eiffel Tower Area', lat: 48.8584, lon: 2.2945, city: 'Paris', country: 'France', streamUrl: 'https://www.youtube.com/embed/UMuEooW0iAQ?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0', streamType: 'iframe', source: 'OSIRIS / YouTube Live' },
   { id: 'fr-nice-promenade', name: 'Nice - Promenade des Anglais', lat: 43.6961, lon: 7.2717, city: 'Nice', country: 'France', streamUrl: 'https://www.youtube.com/embed/YAdNYoRY0Cw?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0', streamType: 'iframe', source: 'OSIRIS / YouTube Live' },
   ...US_FALLBACK_CAMERAS,
+];
+
+const FALLBACK_TRAFFIC_EVENTS: DotTrafficEvent[] = [
+  { id: 'traffic-watch-nyc', title: 'NYC DOT traffic watch', description: 'Live NYC DOT traffic feed can be opened from source link when available.', lat: 40.7549, lon: -73.9840, severity: 'watch', type: 'traffic-watch', source: 'NYC DOT fallback', updatedAt: new Date().toISOString() },
+  { id: 'traffic-watch-la', title: 'Los Angeles traffic watch', description: 'Caltrans live traffic collection monitors the LA basin when district feeds are reachable.', lat: 34.0522, lon: -118.2437, severity: 'watch', type: 'traffic-watch', source: 'Caltrans fallback', updatedAt: new Date().toISOString() },
+  { id: 'traffic-watch-detroit', title: 'Detroit traffic watch', description: 'MDOT MiDrive is linked for regional traffic verification.', lat: 42.3314, lon: -83.0458, severity: 'watch', type: 'traffic-watch', source: 'MDOT fallback', updatedAt: new Date().toISOString() },
+  { id: 'traffic-watch-chicago', title: 'Chicago traffic watch', description: 'Travel Midwest is linked for live traffic verification.', lat: 41.8781, lon: -87.6298, severity: 'watch', type: 'traffic-watch', source: 'IDOT fallback', updatedAt: new Date().toISOString() },
+  { id: 'traffic-watch-houston', title: 'Houston TranStar traffic watch', description: 'Houston TranStar is linked for real-time regional traffic conditions.', lat: 29.7604, lon: -95.3698, severity: 'watch', type: 'traffic-watch', source: 'Houston TranStar fallback', updatedAt: new Date().toISOString() },
 ];
 
 function normalizeNumber(value: unknown): number | null {
@@ -120,6 +140,44 @@ async function fetchAustraliaCameras(): Promise<DotCamera[]> {
   }).filter(Boolean) as DotCamera[];
 }
 
+async function fetchTfLTrafficEvents(): Promise<DotTrafficEvent[]> {
+  const data = await fetchJson('https://api.tfl.gov.uk/Road/all/Disruption', 12_000);
+  if (!Array.isArray(data)) return [];
+  return data.map((event: any, index: number): DotTrafficEvent => ({
+    id: `tfl-disruption-${event.id || index}`,
+    title: event.location || event.category || 'London road disruption',
+    description: event.comments || event.description || event.currentUpdate || '',
+    lat: normalizeNumber(event.point?.coordinates?.[1]) ?? 51.5074,
+    lon: normalizeNumber(event.point?.coordinates?.[0]) ?? -0.1278,
+    severity: event.severity || event.impact || 'warning',
+    type: event.category || 'road-disruption',
+    updatedAt: event.lastModifiedTime || event.startDateTime || new Date().toISOString(),
+    source: 'TfL Road Disruptions',
+  }));
+}
+
+async function fetchAustraliaTrafficEvents(): Promise<DotTrafficEvent[]> {
+  const data = await fetchJson('https://www.livetraffic.com/datajson/all-feeds-web.json', 12_000);
+  if (!Array.isArray(data)) return [];
+  return data.filter((event: any) => event.eventType !== 'liveCams').map((event: any, index: number): DotTrafficEvent | null => {
+    const coords = event.geometry?.coordinates;
+    const lat = normalizeNumber(Array.isArray(coords?.[0]) ? coords[0]?.[1] : coords?.[1]);
+    const lon = normalizeNumber(Array.isArray(coords?.[0]) ? coords[0]?.[0] : coords?.[0]);
+    if (lat == null || lon == null) return null;
+    return {
+      id: `aus-event-${event.path || index}`,
+      title: event.properties?.title || event.properties?.displayName || 'Australia traffic event',
+      description: event.properties?.adviceA || event.properties?.mainAdvice || event.properties?.description || '',
+      lat,
+      lon,
+      severity: event.properties?.incidentKind || event.properties?.impact || 'watch',
+      type: event.eventType || 'traffic-event',
+      updatedAt: event.properties?.lastUpdated || new Date().toISOString(),
+      source: 'Live Traffic Australia',
+    };
+  }).filter(Boolean) as DotTrafficEvent[];
+}
+
 router.get('/cctv', async (_req, res) => {
   const settled = await Promise.allSettled([fetchTfLCameras(), fetchWsdotCameras(), fetchCaltransCameras(), fetchAustraliaCameras()]);
   const live = settled.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
@@ -129,6 +187,15 @@ router.get('/cctv', async (_req, res) => {
   });
   const cameras = [...dedup.values()].slice(0, 3000);
   res.json({ cameras, count: cameras.length, sources: [...new Set(cameras.map((camera) => camera.source))], updatedAt: new Date().toISOString() });
+});
+
+router.get('/traffic', async (_req, res) => {
+  const settled = await Promise.allSettled([fetchTfLTrafficEvents(), fetchAustraliaTrafficEvents()]);
+  const live = settled.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
+  const dedup = new Map<string, DotTrafficEvent>();
+  [...live, ...FALLBACK_TRAFFIC_EVENTS].forEach((event) => dedup.set(event.id, event));
+  const events = [...dedup.values()].slice(0, 1500);
+  res.json({ events, count: events.length, sources: [...new Set(events.map((event) => event.source))], updatedAt: new Date().toISOString() });
 });
 
 export default router;
