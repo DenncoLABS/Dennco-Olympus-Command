@@ -25,3 +25,5 @@ Rebuild: flight map crosshair and infrastructure detail popups.
 Rebuild: maritime AISStream bounding box and coordinate parsing fix.
 
 Rebuild: loopback-only maritime diagnostic status endpoint.
+
+Rebuild: maritime feed and node diagnostics UI.
