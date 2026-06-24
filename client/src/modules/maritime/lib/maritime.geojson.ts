@@ -16,6 +16,7 @@ export function vesselsToPointGeoJSON(vessels: VesselState[]) {
         cog: v.cog,
         heading: v.heading,
         navigationalStatus: v.navigationalStatus,
+        sourceKind: v.sourceKind || 'vessel',
         type: v.type,
         lastUpdate: v.lastUpdate,
       },
