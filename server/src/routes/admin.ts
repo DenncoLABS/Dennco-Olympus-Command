@@ -10,6 +10,7 @@ function runtimeSettings() {
   const savedBranding = saved.branding || {};
   const savedKeys = saved.apiKeys || {};
   const savedDot = saved.dotFeeds || {};
+  const savedCad = saved.cad || {};
   const savedVhf = saved.vhfAudio || {};
   const branding = getRuntimeBranding();
 
@@ -43,6 +44,7 @@ function runtimeSettings() {
       monitor: process.env.OLYMPUS_FEATURE_MONITOR !== 'false',
       dot: process.env.OLYMPUS_FEATURE_DOT !== 'false',
       cyber: process.env.OLYMPUS_FEATURE_CYBER !== 'false',
+      cad: process.env.OLYMPUS_FEATURE_CAD !== 'false',
       cssInjector: process.env.OLYMPUS_FEATURE_CSS_INJECTOR !== 'false',
     },
     theme: {
@@ -55,6 +57,12 @@ function runtimeSettings() {
       dotTraffic: configured(process.env.DOT_TRAFFIC_GEOJSON_URL) || configured(process.env.VITE_DOT_TRAFFIC_GEOJSON_URL) || configured(savedDot.trafficUrl),
       dotCameras: configured(process.env.DOT_CAMERAS_GEOJSON_URL) || configured(process.env.VITE_DOT_CAMERAS_GEOJSON_URL) || configured(savedDot.camerasUrl),
       vhfAudio: Boolean(savedVhf.enabled && (savedVhf.channels || []).some((channel) => configured(channel.streamUrl))),
+      cad: configured(process.env.OLYMPUS_CAD_URL) || configured(process.env.RESGRID_URL) || configured(savedCad.resgridUrl),
+    },
+    cad: {
+      mode: savedCad.mode || process.env.OLYMPUS_CAD_MODE || 'embedded-resgrid',
+      resgridUrl: savedCad.resgridUrl || process.env.OLYMPUS_CAD_URL || process.env.RESGRID_URL || '/cad/',
+      repositoryUrl: 'https://github.com/DenncoLABS/Resgrid',
     },
     dotFeeds: {
       nationalTrafficUrl: savedDot.nationalTrafficUrl || process.env.DOT_NATIONAL_TRAFFIC_GEOJSON_URL || '',
@@ -89,6 +97,7 @@ router.post('/settings', (req, res) => {
   mergeAdminRuntimeSettings({
     branding: body.branding || {},
     dotFeeds: body.dotFeeds || {},
+    cad: body.cad || {},
     vhfAudio: body.vhfAudio || {},
     apiKeys: {
       ...(apiKeys.aisstream ? { aisstream: apiKeys.aisstream } : {}),
