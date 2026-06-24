@@ -120,7 +120,7 @@ The DOT page displays:
 The Debian package includes a protected local CAD service embedded through Olympus. It stores persistent local CAD state under:
 
 ```text
-/var/lib/dennco/olymus-cad
+/var/lib/dennco/olympus-cad
 ```
 
 Call folders are written under:
