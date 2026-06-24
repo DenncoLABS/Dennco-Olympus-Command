@@ -14,9 +14,14 @@ type TrafficCamera = {
   lon: number;
   imageUrl?: string;
   streamUrl?: string;
+  streamType?: string;
+  externalUrl?: string;
   roadway?: string;
   direction?: string;
   status?: string;
+  city?: string;
+  country?: string;
+  source?: string;
 };
 
 type TrafficUpdate = {
@@ -48,6 +53,7 @@ function normalizeCameraFeature(feature: GeoJSON.Feature, index: number): Traffi
     roadway: String(p.roadway || p.road || p.route || p.Route || ''),
     direction: String(p.direction || p.Direction || ''),
     status: String(p.status || p.Status || ''),
+    source: String(p.source || p.Source || 'DOT feed'),
   };
 }
 
@@ -79,13 +85,20 @@ async function fetchGeoJson<T>(url: string, normalizer: (feature: GeoJSON.Featur
   return (body.features || []).map(normalizer).filter(Boolean) as T[];
 }
 
+async function fetchOlympusCctv(): Promise<TrafficCamera[]> {
+  const response = await fetch('/api/dot/cctv');
+  if (!response.ok) throw new Error(`CCTV feed failed: ${response.status}`);
+  const body = (await response.json()) as { cameras?: TrafficCamera[] };
+  return (body.cameras || []).filter((camera) => Number.isFinite(camera.lat) && Number.isFinite(camera.lon));
+}
+
 function camerasToGeoJson(cameras: TrafficCamera[]): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
     features: cameras.map((camera) => ({
       type: 'Feature',
       geometry: { type: 'Point', coordinates: [camera.lon, camera.lat] },
-      properties: { id: camera.id, name: camera.name, status: camera.status || '' },
+      properties: { id: camera.id, name: camera.name, status: camera.status || '', source: camera.source || '' },
     })),
   };
 }
@@ -117,15 +130,11 @@ export const DotPage: React.FC = () => {
 
   const activeMapStyle = useMemo(() => {
     switch (mapLayer) {
-      case 'light':
-        return LIGHT_STYLE;
-      case 'street':
-        return STREET_STYLE;
-      case 'satellite':
-        return SATELLITE_STYLE;
+      case 'light': return LIGHT_STYLE;
+      case 'street': return STREET_STYLE;
+      case 'satellite': return SATELLITE_STYLE;
       case 'dark':
-      default:
-        return DARK_STYLE;
+      default: return DARK_STYLE;
     }
   }, [mapLayer]);
 
@@ -133,11 +142,14 @@ export const DotPage: React.FC = () => {
     setIsLoading(true);
     setError('');
     try {
-      const [nextCameras, nextUpdates] = await Promise.all([
-        fetchGeoJson<TrafficCamera>(cameraFeedUrl, normalizeCameraFeature),
-        fetchGeoJson<TrafficUpdate>(updatesFeedUrl, normalizeUpdateFeature),
+      const [envCameras, osirisCameras, nextUpdates] = await Promise.all([
+        fetchGeoJson<TrafficCamera>(cameraFeedUrl, normalizeCameraFeature).catch(() => []),
+        fetchOlympusCctv().catch(() => []),
+        fetchGeoJson<TrafficUpdate>(updatesFeedUrl, normalizeUpdateFeature).catch(() => []),
       ]);
-      setCameras(nextCameras);
+      const dedup = new Map<string, TrafficCamera>();
+      [...envCameras, ...osirisCameras].forEach((camera) => dedup.set(camera.id, camera));
+      setCameras([...dedup.values()]);
       setUpdates(nextUpdates);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load DOT feeds.');
@@ -181,6 +193,7 @@ export const DotPage: React.FC = () => {
           <span className="text-xs uppercase tracking-[0.24em] text-intel-text-light">DOT Traffic Command</span>
           <span className="text-[10px] text-white/35">Updates: {updates.length}</span>
           <span className="text-[10px] text-white/35">Cameras: {cameras.length}</span>
+          <span className="text-[10px] text-sky-300/65">Global CCTV folded into DOT</span>
         </div>
         <button onClick={() => void reload()} className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-intel-accent border border-intel-accent/35 px-3 py-1 hover:bg-intel-accent/10">
           <RefreshCcw size={12} className={isLoading ? 'animate-spin' : ''} />
@@ -195,58 +208,37 @@ export const DotPage: React.FC = () => {
           styleDiffing={false}
           interactiveLayerIds={['dot-camera-points', 'dot-traffic-update-points']}
           onClick={handleMapClick}
-          projection={
-            mapProjection === 'globe'
-              ? ({ type: 'globe' } as import('maplibre-gl').ProjectionSpecification)
-              : ({ type: 'mercator' } as import('maplibre-gl').ProjectionSpecification)
-          }
+          projection={mapProjection === 'globe' ? ({ type: 'globe' } as import('maplibre-gl').ProjectionSpecification) : ({ type: 'mercator' } as import('maplibre-gl').ProjectionSpecification)}
           style={{ width: '100%', height: '100%' }}
         >
           <NavigationControl position="top-right" showCompass={true} visualizePitch={true} />
           <NoaaWeatherRadarLayer />
 
           <Source id="dot-traffic-updates" type="geojson" data={updatesGeoJson}>
-            <Layer
-              id="dot-traffic-update-points"
-              type="circle"
-              paint={{
-                'circle-radius': 7,
-                'circle-color': '#f97316',
-                'circle-stroke-width': 2,
-                'circle-stroke-color': '#111827',
-                'circle-opacity': 0.9,
-              }}
-            />
+            <Layer id="dot-traffic-update-points" type="circle" paint={{ 'circle-radius': 7, 'circle-color': '#f97316', 'circle-stroke-width': 2, 'circle-stroke-color': '#111827', 'circle-opacity': 0.9 }} />
           </Source>
 
           <Source id="dot-cameras" type="geojson" data={cameraGeoJson}>
-            <Layer
-              id="dot-camera-points"
-              type="circle"
-              paint={{
-                'circle-radius': 6,
-                'circle-color': '#38bdf8',
-                'circle-stroke-width': 2,
-                'circle-stroke-color': '#020617',
-                'circle-opacity': 0.92,
-              }}
-            />
+            <Layer id="dot-camera-points" type="circle" paint={{ 'circle-radius': 6, 'circle-color': '#38bdf8', 'circle-stroke-width': 2, 'circle-stroke-color': '#020617', 'circle-opacity': 0.92 }} />
           </Source>
 
           {selectedCamera && (
             <Popup longitude={selectedCamera.lon} latitude={selectedCamera.lat} anchor="bottom" closeButton={false} onClose={() => setSelectedCamera(null)}>
               <div className="bg-[#05070b] border border-sky-400/30 text-white font-mono min-w-[260px] max-w-[360px]">
                 <div className="px-3 py-2 border-b border-sky-400/20 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sky-300 text-[10px] uppercase tracking-[0.18em]"><Camera size={13} /> DOT Camera</div>
+                  <div className="flex items-center gap-2 text-sky-300 text-[10px] uppercase tracking-[0.18em]"><Camera size={13} /> DOT CCTV</div>
                   <button onClick={() => setSelectedCamera(null)} className="text-white/40 hover:text-white">×</button>
                 </div>
                 <div className="p-3 space-y-2">
                   <div className="text-sm font-bold text-white">{selectedCamera.name}</div>
-                  {(selectedCamera.roadway || selectedCamera.direction) && <div className="text-[10px] text-white/45">{selectedCamera.roadway} {selectedCamera.direction}</div>}
+                  <div className="text-[10px] text-white/45">{selectedCamera.city || selectedCamera.roadway} {selectedCamera.country || selectedCamera.direction}</div>
+                  {selectedCamera.source && <div className="text-[10px] text-sky-300/65 uppercase tracking-wide">{selectedCamera.source}</div>}
                   {selectedCamera.imageUrl ? (
                     <img src={selectedCamera.imageUrl} alt={selectedCamera.name} className="w-full border border-white/10 bg-black" />
                   ) : selectedCamera.streamUrl ? (
                     <a href={selectedCamera.streamUrl} target="_blank" rel="noreferrer" className="block border border-sky-400/30 px-3 py-2 text-sky-300 text-xs hover:bg-sky-400/10">Open live camera</a>
+                  ) : selectedCamera.externalUrl ? (
+                    <a href={selectedCamera.externalUrl} target="_blank" rel="noreferrer" className="block border border-sky-400/30 px-3 py-2 text-sky-300 text-xs hover:bg-sky-400/10">Open external camera</a>
                   ) : (
                     <div className="text-[11px] text-white/40 border border-white/10 p-3">No image URL in camera feed.</div>
                   )}
@@ -275,19 +267,26 @@ export const DotPage: React.FC = () => {
         <MapLayerControl />
 
         <aside className="absolute left-3 top-3 bottom-3 w-[340px] pointer-events-auto bg-black/75 border border-white/10 font-mono text-white overflow-hidden z-10">
-          <div className="px-3 py-2 border-b border-white/10 text-[10px] uppercase tracking-[0.24em] text-intel-accent">Live Traffic Updates</div>
+          <div className="px-3 py-2 border-b border-white/10 text-[10px] uppercase tracking-[0.24em] text-intel-accent">DOT Traffic + Global CCTV</div>
           {error && <div className="m-3 border border-red-400/30 bg-red-950/30 p-2 text-xs text-red-200">{error}</div>}
           {!cameraFeedUrl && !updatesFeedUrl && (
-            <div className="m-3 border border-amber-300/30 bg-amber-950/20 p-3 text-xs text-amber-100/70 leading-relaxed">
-              DOT feeds are not configured yet. Set VITE_DOT_TRAFFIC_GEOJSON_URL and VITE_DOT_CAMERAS_GEOJSON_URL during build to show live incidents and cameras.
+            <div className="m-3 border border-sky-300/30 bg-sky-950/20 p-3 text-xs text-sky-100/70 leading-relaxed">
+              Global CCTV is loaded through the Olympus DOT CCTV route. Optional DOT GeoJSON env feeds can still be added at build time.
             </div>
           )}
           <div className="h-full overflow-y-auto pb-16">
-            {updates.slice(0, 100).map((update) => (
+            {updates.slice(0, 80).map((update) => (
               <button key={update.id} onClick={() => setSelectedUpdate(update)} className="block w-full text-left px-3 py-3 border-b border-white/8 hover:bg-white/5">
                 <div className="text-xs text-white/90 font-bold">{update.title}</div>
                 {update.description && <div className="text-[10px] text-white/45 line-clamp-2 mt-1">{update.description}</div>}
                 <div className="text-[9px] text-orange-300/65 mt-1 uppercase tracking-wide">{update.type || 'Update'} {update.severity ? `· ${update.severity}` : ''}</div>
+              </button>
+            ))}
+            {cameras.slice(0, 80).map((camera) => (
+              <button key={camera.id} onClick={() => setSelectedCamera(camera)} className="block w-full text-left px-3 py-3 border-b border-white/8 hover:bg-white/5">
+                <div className="text-xs text-white/90 font-bold">{camera.name}</div>
+                <div className="text-[10px] text-white/45 mt-1">{camera.city || camera.roadway} {camera.country || camera.direction}</div>
+                <div className="text-[9px] text-sky-300/65 mt-1 uppercase tracking-wide">{camera.source || 'Camera'}</div>
               </button>
             ))}
           </div>
