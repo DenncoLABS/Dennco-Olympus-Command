@@ -37,3 +37,5 @@ Rebuild: maritime moored count, ship icons, static locations, vessel dossiers, a
 Rebuild: corrected maritime map implementation.
 
 Rebuild: stabilize maritime experimental page exports after failed runs.
+
+Rebuild: stable maritime export path.
