@@ -12,10 +12,16 @@ import sessionRouter from './routes/session';
 import cadRouter from './routes/cad';
 import { requireAdminAccess } from './core/accessGate';
 import { aircraftDb } from './core/aircraft_db';
+import { aisStreamService } from './core/source/aisstream';
 import { initializeDefaultJobs, startScheduler } from './core/scheduler';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+function isLoopbackRequest(req: express.Request): boolean {
+  const ip = req.ip || req.socket.remoteAddress || '';
+  return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip === 'localhost';
+}
 
 app.use(cors());
 app.use((_req, res, next) => {
@@ -35,6 +41,31 @@ app.use((_req, res, next) => {
 });
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json({ limit: '2mb' }));
+
+app.get('/api/maritime-local-status', (req, res) => {
+  if (!isLoopbackRequest(req)) {
+    res.status(403).json({ error: 'Loopback diagnostics only.' });
+    return;
+  }
+
+  res.json({
+    configured: aisStreamService.configured,
+    isConnected: aisStreamService.isConnected,
+    readyState: aisStreamService.readyState,
+    subscribed: aisStreamService.subscribed,
+    lastError: aisStreamService.lastError,
+    lastRawMessageReceived: aisStreamService.lastRawMessageReceived,
+    lastMessageType: aisStreamService.lastMessageType,
+    lastIgnoredReason: aisStreamService.lastIgnoredReason,
+    vesselCount: aisStreamService.vessels.size,
+    totalMessagesReceived: aisStreamService.totalMessagesReceived,
+    lastMessageReceived: aisStreamService.lastMessageReceived,
+    secondsSinceLastMessage: aisStreamService.lastMessageReceived
+      ? Math.floor((Date.now() - aisStreamService.lastMessageReceived) / 1000)
+      : null,
+  });
+});
+
 app.use(requireAdminAccess);
 
 app.use('/api/admin', adminRouter);
