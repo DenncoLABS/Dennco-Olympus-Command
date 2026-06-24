@@ -31,3 +31,5 @@ Rebuild: maritime feed and node diagnostics UI.
 Rebuild: inactive AISStream label when no AIS messages are arriving.
 
 Rebuild: restore NO_AIS_MESSAGES for silent AIS and add flight data link diagnostics.
+
+Rebuild: maritime moored count, ship icons, static locations, vessel dossiers, and Mayday panel.
