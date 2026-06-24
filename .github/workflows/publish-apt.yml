@@ -126,4 +126,4 @@ jobs:
           git commit -m "Publish apt repository"
           git push --force origin gh-pages
 
-# rebuild trigger: complete apt release metadata
+# rebuild trigger: core services repo-controlled stack
