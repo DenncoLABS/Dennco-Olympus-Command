@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRuntimeSettings } from '../../admin/runtimeSettings';
 import type { ActiveModule } from '../theme/theme.store';
-import { monitorDeskWidgetManifest } from '../../modules/monitor/widgets/monitorDeskWidgetManifest';
+import { monitorDeskWidgetManifest, type MonitorDeskWidgetId } from '../../modules/monitor/widgets/monitorDeskWidgetManifest';
 
 type DeskView = 'core' | 'apps' | 'files' | 'architecture' | 'terminal' | 'flight' | 'maritime' | 'monitor' | 'dot' | 'cad' | 'admin' | 'settings';
 type DockPlacement = 'left' | 'center' | 'right';
@@ -17,6 +17,8 @@ type DeskItem = {
 const HEIGHT_KEY = 'olympus.desk.height.v2';
 const DOCK_KEY = 'olympus.desk.dockPlacement.v2';
 const VIEW_KEY = 'olympus.desk.activeView.v2';
+const MONITOR_WIDGET_ORDER_KEY = 'olympus.desk.monitorWidgetOrder.v1';
+const EARTH_WIDGETS_KEY = 'olympus.earth.stagedWidgets.v1';
 
 const deskItems: DeskItem[] = [
   { id: 'core', label: 'Core', icon: 'Ω', view: 'core' },
@@ -50,6 +52,35 @@ function readPlacement(): DockPlacement {
 function readView(): DeskView {
   const raw = localStorage.getItem(VIEW_KEY) as DeskView | null;
   return deskItems.some((item) => item.view === raw) ? raw as DeskView : 'core';
+}
+
+function allMonitorWidgetIds(): MonitorDeskWidgetId[] {
+  return monitorDeskWidgetManifest.map((widget) => widget.id);
+}
+
+function readMonitorWidgetOrder(): MonitorDeskWidgetId[] {
+  const defaults = allMonitorWidgetIds();
+  try {
+    const raw = localStorage.getItem(MONITOR_WIDGET_ORDER_KEY);
+    if (!raw) return defaults;
+    const parsed = JSON.parse(raw) as MonitorDeskWidgetId[];
+    const valid = parsed.filter((id) => defaults.includes(id));
+    const missing = defaults.filter((id) => !valid.includes(id));
+    return [...valid, ...missing];
+  } catch {
+    return defaults;
+  }
+}
+
+function readEarthWidgets(): MonitorDeskWidgetId[] {
+  const defaults = allMonitorWidgetIds();
+  try {
+    const raw = localStorage.getItem(EARTH_WIDGETS_KEY);
+    if (!raw) return [];
+    return (JSON.parse(raw) as MonitorDeskWidgetId[]).filter((id) => defaults.includes(id));
+  } catch {
+    return [];
+  }
 }
 
 const dockPlacementClasses: Record<DockPlacement, string> = {
@@ -223,11 +254,99 @@ function TerminalView() {
 }
 
 function MonitorWidgetLibrary() {
-  return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Saved Monitor Widgets</h3><p className="mt-3 text-sm text-white/55">The old Monitor bottom strip has been saved here for later conversion into movable Desk/Earth widgets.</p><div className="mt-4 grid grid-cols-2 gap-3">{monitorDeskWidgetManifest.map((widget) => <div key={widget.id} className="border border-white/10 bg-white/[0.03] p-3"><div className="text-sm font-bold text-white">{widget.title}</div><div className="mt-1 text-xs text-white/45">{widget.description}</div><div className="mt-2 text-[10px] uppercase tracking-[0.14em] text-cyan-300/70">{widget.defaultDock} widget · saved for later</div></div>)}</div></div>;
+  const [order, setOrder] = useState<MonitorDeskWidgetId[]>(() => readMonitorWidgetOrder());
+  const [draggedId, setDraggedId] = useState<MonitorDeskWidgetId | null>(null);
+  const [earthWidgets, setEarthWidgets] = useState<MonitorDeskWidgetId[]>(() => readEarthWidgets());
+
+  const orderedWidgets = order
+    .map((id) => monitorDeskWidgetManifest.find((widget) => widget.id === id))
+    .filter((widget): widget is (typeof monitorDeskWidgetManifest)[number] => Boolean(widget));
+
+  const persistOrder = (next: MonitorDeskWidgetId[]) => {
+    setOrder(next);
+    localStorage.setItem(MONITOR_WIDGET_ORDER_KEY, JSON.stringify(next));
+  };
+
+  const moveWidget = (id: MonitorDeskWidgetId, direction: -1 | 1) => {
+    const index = order.indexOf(id);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= order.length) return;
+    const next = [...order];
+    [next[index], next[target]] = [next[target], next[index]];
+    persistOrder(next);
+  };
+
+  const dropWidget = (targetId: MonitorDeskWidgetId) => {
+    if (!draggedId || draggedId === targetId) return;
+    const next = order.filter((id) => id !== draggedId);
+    const targetIndex = next.indexOf(targetId);
+    next.splice(targetIndex, 0, draggedId);
+    persistOrder(next);
+    setDraggedId(null);
+  };
+
+  const toggleEarthWidget = (id: MonitorDeskWidgetId) => {
+    const next = earthWidgets.includes(id) ? earthWidgets.filter((item) => item !== id) : [...earthWidgets, id];
+    setEarthWidgets(next);
+    localStorage.setItem(EARTH_WIDGETS_KEY, JSON.stringify(next));
+  };
+
+  return (
+    <div className="h-full min-h-0 overflow-auto custom-scrollbar">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Monitor Widget Library</h3>
+          <p className="mt-2 text-sm text-white/55">These are the old Monitor dashboard panels saved as Desk widgets. Drag cards to reorder them. Pin marks them for future Earth workspace placement.</p>
+        </div>
+        <div className="text-[10px] uppercase tracking-[0.14em] text-white/40">{earthWidgets.length} staged for Earth</div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {orderedWidgets.map((widget, index) => {
+          const pinned = earthWidgets.includes(widget.id);
+          return (
+            <div
+              key={widget.id}
+              draggable
+              onDragStart={() => setDraggedId(widget.id)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => dropWidget(widget.id)}
+              className={`rounded border bg-white/[0.035] p-3 transition-all ${pinned ? 'border-cyan-300/50 shadow-[0_0_18px_rgba(34,211,238,0.16)]' : 'border-white/10 hover:border-cyan-300/35'}`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.16em] text-white/35">Widget {index + 1}</div>
+                  <div className="mt-1 text-sm font-bold text-white">{widget.title}</div>
+                </div>
+                <div className="cursor-grab text-cyan-300/50 active:cursor-grabbing">⋮⋮</div>
+              </div>
+              <div className="mt-2 min-h-[52px] text-xs leading-relaxed text-white/45">{widget.description}</div>
+              <div className="mt-3 rounded border border-white/10 bg-black/35 p-2 text-[10px] text-white/35">{widget.futureUse}</div>
+              <div className="mt-3 flex flex-wrap gap-2 text-[9px] uppercase tracking-[0.12em]">
+                <button onClick={() => moveWidget(widget.id, -1)} className="border border-white/10 px-2 py-1 text-white/45 hover:border-cyan-300/45 hover:text-cyan-200">Move Left</button>
+                <button onClick={() => moveWidget(widget.id, 1)} className="border border-white/10 px-2 py-1 text-white/45 hover:border-cyan-300/45 hover:text-cyan-200">Move Right</button>
+                <button onClick={() => toggleEarthWidget(widget.id)} className={`border px-2 py-1 ${pinned ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 text-white/45 hover:border-cyan-300/45 hover:text-cyan-200'}`}>{pinned ? 'Earth Staged' : 'Pin to Earth'}</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {earthWidgets.length > 0 && (
+        <div className="mt-4 border border-cyan-300/20 bg-cyan-300/5 p-3">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-200">Earth Workspace Staging</div>
+          <div className="mt-2 text-xs text-white/55">Pinned widgets are saved for the next phase, where they will become draggable overlays on the Earth/map screen.</div>
+          <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-cyan-200/80">
+            {earthWidgets.map((id) => <span key={id} className="border border-cyan-300/25 px-2 py-1">{monitorDeskWidgetManifest.find((widget) => widget.id === id)?.title || id}</span>)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SettingsView() {
-  return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Desk settings</h3><p className="mt-3 text-sm text-white/60">Dock placement and Desk height are saved locally. More runtime customizations will attach here.</p></div>;
+  return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Desk settings</h3><p className="mt-3 text-sm text-white/60">Dock placement, Desk height, Monitor widget order, and Earth-staged widget selections are saved locally. More runtime customizations will attach here.</p></div>;
 }
 
 function ModuleView({ view }: { view: DeskView }) {
