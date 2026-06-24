@@ -8,6 +8,7 @@ import geoRouter from './routes/geo';
 import monitorRouter from './routes/monitor';
 import cyberRouter from './routes/cyber';
 import adminRouter from './routes/admin';
+import sessionRouter from './routes/session';
 import { requireAdminAccess } from './core/accessGate';
 import { aircraftDb } from './core/aircraft_db';
 import { initializeDefaultJobs, startScheduler } from './core/scheduler';
@@ -36,6 +37,7 @@ app.use(express.json({ limit: '2mb' }));
 app.use(requireAdminAccess);
 
 app.use('/api/admin', adminRouter);
+app.use('/api/session', sessionRouter);
 app.use('/api/flights', flightsRouter);
 app.use('/api/maritime', maritimeRouter);
 app.use('/api/geo', geoRouter);
