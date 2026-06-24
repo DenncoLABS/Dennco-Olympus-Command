@@ -17,3 +17,5 @@ Rebuild: global and flight notification lifecycle.
 Rebuild: client TypeScript build fix.
 
 Rebuild: restored flight airports, installations, radar nodes, and radar sweep overlays.
+
+Rebuild: animated radar sweep, flight notification placement, and radar node fallback regions.
