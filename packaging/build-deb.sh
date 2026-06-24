@@ -44,6 +44,17 @@ if [ -d server/src/Data ]; then
   cp -R server/src/Data/. "$APP_DIR/Data/"
 fi
 
+if [ -d ops/core ]; then
+  mkdir -p "$APP_DIR/ops"
+  cp -R ops/core "$APP_DIR/ops/core"
+fi
+
+if [ -f scripts/install-core-services.sh ] || [ -f scripts/update-core-services.sh ]; then
+  mkdir -p "$APP_DIR/scripts"
+  [ -f scripts/install-core-services.sh ] && cp scripts/install-core-services.sh "$APP_DIR/scripts/install-core-services.sh"
+  [ -f scripts/update-core-services.sh ] && cp scripts/update-core-services.sh "$APP_DIR/scripts/update-core-services.sh"
+fi
+
 cp packaging/config/olympus-command.env.example "$SHARE_DIR/olympus-command.env.example"
 cp packaging/systemd/dennco-olympus-command.service "$SYSTEMD_DIR/dennco-olympus-command.service"
 
@@ -55,6 +66,8 @@ chmod 0755 "$DEBIAN_DIR/postinst" "$DEBIAN_DIR/prerm" "$DEBIAN_DIR/postrm"
 
 find "$PKG_DIR" -type d -exec chmod 0755 {} \;
 find "$PKG_DIR" -type f -exec chmod 0644 {} \;
+[ -f "$APP_DIR/scripts/install-core-services.sh" ] && chmod 0755 "$APP_DIR/scripts/install-core-services.sh"
+[ -f "$APP_DIR/scripts/update-core-services.sh" ] && chmod 0755 "$APP_DIR/scripts/update-core-services.sh"
 chmod 0755 "$DEBIAN_DIR/postinst" "$DEBIAN_DIR/prerm" "$DEBIAN_DIR/postrm"
 
 echo "Building .deb..."
