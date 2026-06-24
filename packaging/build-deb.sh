@@ -44,15 +44,17 @@ if [ -d server/src/Data ]; then
   cp -R server/src/Data/. "$APP_DIR/Data/"
 fi
 
-if [ -d ops/core ]; then
+if [ -d ops/core ] || [ -d ops/cad ]; then
   mkdir -p "$APP_DIR/ops"
-  cp -R ops/core "$APP_DIR/ops/core"
+  [ -d ops/core ] && cp -R ops/core "$APP_DIR/ops/core"
+  [ -d ops/cad ] && cp -R ops/cad "$APP_DIR/ops/cad"
 fi
 
-if [ -f scripts/install-core-services.sh ] || [ -f scripts/update-core-services.sh ]; then
+if [ -d scripts ]; then
   mkdir -p "$APP_DIR/scripts"
   [ -f scripts/install-core-services.sh ] && cp scripts/install-core-services.sh "$APP_DIR/scripts/install-core-services.sh"
   [ -f scripts/update-core-services.sh ] && cp scripts/update-core-services.sh "$APP_DIR/scripts/update-core-services.sh"
+  [ -f scripts/install-cad-services.sh ] && cp scripts/install-cad-services.sh "$APP_DIR/scripts/install-cad-services.sh"
 fi
 
 cp packaging/config/olympus-command.env.example "$SHARE_DIR/olympus-command.env.example"
@@ -68,6 +70,7 @@ find "$PKG_DIR" -type d -exec chmod 0755 {} \;
 find "$PKG_DIR" -type f -exec chmod 0644 {} \;
 [ -f "$APP_DIR/scripts/install-core-services.sh" ] && chmod 0755 "$APP_DIR/scripts/install-core-services.sh"
 [ -f "$APP_DIR/scripts/update-core-services.sh" ] && chmod 0755 "$APP_DIR/scripts/update-core-services.sh"
+[ -f "$APP_DIR/scripts/install-cad-services.sh" ] && chmod 0755 "$APP_DIR/scripts/install-cad-services.sh"
 chmod 0755 "$DEBIAN_DIR/postinst" "$DEBIAN_DIR/prerm" "$DEBIAN_DIR/postrm"
 
 echo "Building .deb..."
