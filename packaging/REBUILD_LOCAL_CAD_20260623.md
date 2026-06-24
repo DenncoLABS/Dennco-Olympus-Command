@@ -23,3 +23,5 @@ Rebuild: animated radar sweep, flight notification placement, and radar node fal
 Rebuild: flight map crosshair and infrastructure detail popups.
 
 Rebuild: maritime AISStream bounding box and coordinate parsing fix.
+
+Rebuild: loopback-only maritime diagnostic status endpoint.
