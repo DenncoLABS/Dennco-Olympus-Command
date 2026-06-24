@@ -29,3 +29,5 @@ Rebuild: loopback-only maritime diagnostic status endpoint.
 Rebuild: maritime feed and node diagnostics UI.
 
 Rebuild: inactive AISStream label when no AIS messages are arriving.
+
+Rebuild: restore NO_AIS_MESSAGES for silent AIS and add flight data link diagnostics.
