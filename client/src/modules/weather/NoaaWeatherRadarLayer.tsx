@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Source, Layer } from 'react-map-gl/maplibre';
 import { useThemeStore } from '../../ui/theme/theme.store';
 import { useFlightsStore } from '../flights/state/flights.store';
@@ -23,6 +23,12 @@ export const NoaaWeatherRadarLayer: React.FC = () => {
   const weatherRadar = useThemeStore((s) => s.weatherRadar);
   const { showAirportPins, showRadarPins, activeRadarRegionIds } = useFlightsStore();
   const { data: militaryBasesGeoJSON } = useMilitaryBases();
+  const [sweepDeg, setSweepDeg] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setSweepDeg((current) => (current + 6) % 360), 100);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const tileUrl = useMemo(() => {
     if (weatherRadar.product === 'custom' && weatherRadar.customTileUrl.trim()) {
@@ -58,8 +64,8 @@ export const NoaaWeatherRadarLayer: React.FC = () => {
   const airportGeoJSON = useMemo(() => airportPinsGeoJSON(), []);
   const radarGeoJSON = useMemo(() => radarPinsGeoJSON(activeRadarRegionIds), [activeRadarRegionIds]);
   const activeRadarZones = useMemo(() => activeRadarZonesGeoJSON(activeRadarRegionIds), [activeRadarRegionIds]);
-  const activeRadarPulse = useMemo(() => activeRadarPulseGeoJSON(activeRadarRegionIds, Date.now() / 16), [activeRadarRegionIds]);
-  const activeRadarSweeps = useMemo(() => activeRadarSweepsGeoJSON(activeRadarRegionIds, Date.now() / 16), [activeRadarRegionIds]);
+  const activeRadarPulse = useMemo(() => activeRadarPulseGeoJSON(activeRadarRegionIds, sweepDeg), [activeRadarRegionIds, sweepDeg]);
+  const activeRadarSweeps = useMemo(() => activeRadarSweepsGeoJSON(activeRadarRegionIds, sweepDeg), [activeRadarRegionIds, sweepDeg]);
   const militaryAirbasesGeoJSON = useMemo(() => {
     if (!militaryBasesGeoJSON) return null;
     return {
