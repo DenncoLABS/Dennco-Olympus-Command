@@ -4,6 +4,7 @@ import { useMaritimeStore } from '../state/maritime.store';
 interface MaritimeToolbarProps {
   totalCount: number;
   filteredCount: number;
+  mooredCount?: number;
   portCount?: number;
   installationCount?: number;
 }
@@ -11,6 +12,7 @@ interface MaritimeToolbarProps {
 export const MaritimeToolbar: React.FC<MaritimeToolbarProps> = ({
   totalCount,
   filteredCount,
+  mooredCount = 0,
   portCount = 0,
   installationCount = 0,
 }) => {
@@ -49,6 +51,7 @@ export const MaritimeToolbar: React.FC<MaritimeToolbarProps> = ({
           <span className="text-[10px] text-intel-text opacity-50 uppercase tracking-widest font-bold">Stats</span>
           <Stat label="TOTAL" value={totalCount} color="text-white" />
           <Stat label="SHOWN" value={filteredCount} color="text-intel-accent" />
+          <Stat label="MOORED" value={mooredCount} color="text-yellow-300" />
           <Stat label="NODES" value={activeMaritimeNodeIds.length} color="text-white" />
           <Stat label="PORTS" value={portCount} color="text-yellow-300" />
           <Stat label="INSTALLATIONS" value={installationCount} color="text-red-300" />
