@@ -28,6 +28,11 @@ export interface RuntimeSettings {
     customCss: string;
   };
   providers: Record<string, boolean>;
+  cad: {
+    mode: string;
+    resgridUrl: string;
+    repositoryUrl: string;
+  };
   dotFeeds: {
     nationalTrafficUrl: string;
     trafficUrl: string;
@@ -79,12 +84,18 @@ const fallbackSettings: RuntimeSettings = {
     monitor: true,
     dot: true,
     cyber: true,
+    cad: true,
     cssInjector: true,
   },
   theme: {
     customCss: '',
   },
   providers: {},
+  cad: {
+    mode: 'embedded-resgrid',
+    resgridUrl: '/cad/',
+    repositoryUrl: 'https://github.com/DenncoLABS/Resgrid',
+  },
   dotFeeds: {
     nationalTrafficUrl: '',
     trafficUrl: '',
@@ -146,6 +157,8 @@ export const RuntimeSettingsProvider: React.FC<{ children: ReactNode }> = ({ chi
           ...next,
           branding: { ...fallbackSettings.branding, ...(next.branding || {}) },
           apiKeys: { ...fallbackSettings.apiKeys, ...(next.apiKeys || {}) },
+          featureToggles: { ...fallbackSettings.featureToggles, ...(next.featureToggles || {}) },
+          cad: { ...fallbackSettings.cad, ...(next.cad || {}) },
           dotFeeds: { ...fallbackSettings.dotFeeds, ...(next.dotFeeds || {}) },
           vhfAudio: { ...fallbackSettings.vhfAudio, ...(next.vhfAudio || {}) },
         };
