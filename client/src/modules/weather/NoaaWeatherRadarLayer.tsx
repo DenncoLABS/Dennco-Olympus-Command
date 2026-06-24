@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Source, Layer } from 'react-map-gl/maplibre';
 import { useThemeStore } from '../../ui/theme/theme.store';
 import { useFlightsStore } from '../flights/state/flights.store';
-import { useMilitaryBases } from '../monitor/hooks/useMilitaryBases';
 import {
   activeRadarPulseGeoJSON,
   activeRadarSweepsGeoJSON,
@@ -11,7 +10,7 @@ import {
   radarPinsGeoJSON,
 } from '../flights/data/aviationInfrastructure';
 
-const DEFAULT_NOAA_RADAR_WMS =
+const DEFAULT_NOAA_WEATHER_WMS =
   'https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows?service=WMS&version=1.3.0&request=GetMap&format=image/png&transparent=true&layers=conus_bref_qcd&styles=&crs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}';
 
 function clampOpacity(value: number) {
@@ -34,7 +33,7 @@ export const NoaaWeatherRadarLayer: React.FC = () => {
     if (weatherRadar.product === 'custom' && weatherRadar.customTileUrl.trim()) {
       return weatherRadar.customTileUrl.trim();
     }
-    return import.meta.env.VITE_NOAA_RADAR_TILE_URL || DEFAULT_NOAA_RADAR_WMS;
+    return import.meta.env.VITE_NOAA_RADAR_TILE_URL || DEFAULT_NOAA_WEATHER_WMS;
   }, [weatherRadar.customTileUrl, weatherRadar.product]);
 
   const opacity = clampOpacity(weatherRadar.opacity);
@@ -80,14 +79,14 @@ export const NoaaWeatherRadarLayer: React.FC = () => {
     <>
       {weatherRadar.enabled && (
         <Source
-          id="noaa-weather-radar"
+          id="noaa-atmospheric-weather"
           type="raster"
           tiles={[tileUrl]}
           tileSize={256}
-          attribution="NOAA / NWS atmospheric radar layer"
+          attribution="NOAA / NWS atmospheric weather layer"
         >
           <Layer
-            id="noaa-weather-radar-layer"
+            id="noaa-atmospheric-weather-layer"
             type="raster"
             paint={{
               'raster-opacity': atmosphericOpacity,
@@ -99,7 +98,7 @@ export const NoaaWeatherRadarLayer: React.FC = () => {
             }}
             metadata={{
               'dennco:layer-role': 'atmospheric-weather-overlay',
-              'dennco:altitude-band': 'cloud/radar visualization layer; aircraft and ground infrastructure render above it',
+              'dennco:altitude-band': 'cloud/weather visualization layer; aircraft and ground infrastructure render above it',
             }}
           />
         </Source>
