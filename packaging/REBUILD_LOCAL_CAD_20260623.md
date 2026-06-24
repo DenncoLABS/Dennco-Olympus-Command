@@ -15,3 +15,5 @@ Rebuild: simulated emergencies behave like live aircraft emergencies.
 Rebuild: global and flight notification lifecycle.
 
 Rebuild: client TypeScript build fix.
+
+Rebuild: restored flight airports, installations, radar nodes, and radar sweep overlays.
