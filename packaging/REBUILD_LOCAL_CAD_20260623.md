@@ -27,3 +27,5 @@ Rebuild: maritime AISStream bounding box and coordinate parsing fix.
 Rebuild: loopback-only maritime diagnostic status endpoint.
 
 Rebuild: maritime feed and node diagnostics UI.
+
+Rebuild: inactive AISStream label when no AIS messages are arriving.
