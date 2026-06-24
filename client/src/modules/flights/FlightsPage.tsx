@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Map, { Layer, NavigationControl, Popup, Source } from 'react-map-gl/maplibre';
 import { useFlightsSnapshot } from './hooks/useFlightsSnapshot';
 import { useFlightSelection } from './hooks/useFlightSelection';
@@ -69,6 +69,16 @@ function valueOrDash(value: unknown, suffix = '') {
   return `${value}${suffix}`;
 }
 
+function emergencyLabel(value: unknown) {
+  const code = String(value || 'none').toLowerCase();
+  if (code === 'nordo') return 'NORDO "NO RADIO"';
+  if (code === '7500') return '7500 HIJACK / UNLAWFUL INTERFERENCE';
+  if (code === '7600') return '7600 RADIO FAILURE';
+  if (code === '7700') return '7700 GENERAL EMERGENCY';
+  if (code === 'none' || code === '') return 'SIMULATED AIR EMERGENCY';
+  return String(value).toUpperCase();
+}
+
 type MilitaryAirbasePin = {
   name: string;
   description: string;
@@ -81,6 +91,17 @@ type InfrastructurePopup =
   | { type: 'airport'; item: AirportPin }
   | { type: 'radar'; item: RadarRegionPin }
   | { type: 'military'; item: MilitaryAirbasePin };
+
+type FlightAlert = {
+  id: string;
+  timestamp: number;
+  title: string;
+  details: string;
+  icao24: string;
+  callsign?: string | null;
+  emergency: string;
+  reportedBy: string;
+};
 
 function infrastructureTitle(popup: InfrastructurePopup): string {
   if (popup.type === 'radar') return popup.item.label;
@@ -104,6 +125,8 @@ export const FlightsPage: React.FC = () => {
   const { selectedIcao24, setSelectedIcao24, selectedFlight } = useFlightSelection(states);
   const [sweepDeg, setSweepDeg] = useState(0);
   const [infrastructurePopup, setInfrastructurePopup] = useState<InfrastructurePopup | null>(null);
+  const [flightAlerts, setFlightAlerts] = useState<FlightAlert[]>([]);
+  const seenEmergencyAlerts = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const timer = window.setInterval(() => setSweepDeg((current) => (current + 6) % 360), 100);
@@ -119,6 +142,28 @@ export const FlightsPage: React.FC = () => {
       return true;
     });
   }, [states, filters]);
+
+  useEffect(() => {
+    const newAlerts: FlightAlert[] = [];
+    filteredStates.forEach((state) => {
+      if (!state.emergency || state.emergency === 'none') return;
+      const key = `feed-${state.icao24}-${state.emergency}`;
+      if (seenEmergencyAlerts.current.has(key)) return;
+      seenEmergencyAlerts.current.add(key);
+      const emergency = emergencyLabel(state.emergency);
+      newAlerts.push({
+        id: key,
+        timestamp: Date.now(),
+        title: 'Air Emergency Reported',
+        details: `${emergency} detected for ${state.callsign || state.registration || state.icao24}.`,
+        icao24: state.icao24,
+        callsign: state.callsign,
+        emergency,
+        reportedBy: 'Olympus / Live feed',
+      });
+    });
+    if (newAlerts.length) setFlightAlerts((current) => [...newAlerts, ...current].slice(0, 14));
+  }, [filteredStates]);
 
   const airborneCount = useMemo(() => filteredStates.filter((state) => !state.onGround).length, [filteredStates]);
   const onGroundCount = useMemo(() => filteredStates.filter((state) => state.onGround).length, [filteredStates]);
@@ -162,6 +207,25 @@ export const FlightsPage: React.FC = () => {
         return DARK_STYLE;
     }
   }, [mapLayer]);
+
+  const reportSelectedAirEmergency = useCallback(() => {
+    if (!selectedFlight?.icao24) return;
+    const emergency = emergencyLabel(selectedFlight.emergency && selectedFlight.emergency !== 'none' ? selectedFlight.emergency : 'nordo');
+    const id = `manual-${selectedFlight.icao24}-${Date.now()}`;
+    setFlightAlerts((current) => [
+      {
+        id,
+        timestamp: Date.now(),
+        title: 'Air Emergency Reported',
+        details: `${emergency} reported for ${selectedFlight.callsign || selectedFlight.registration || selectedFlight.icao24}.`,
+        icao24: selectedFlight.icao24,
+        callsign: selectedFlight.callsign,
+        emergency,
+        reportedBy: 'Olympus / Local Admin user',
+      },
+      ...current,
+    ].slice(0, 14));
+  }, [selectedFlight]);
 
   const onClick = useCallback(
     (
@@ -381,7 +445,7 @@ export const FlightsPage: React.FC = () => {
 
           {selectedFlight?.lat != null && selectedFlight?.lon != null && (
             <Popup longitude={selectedFlight.lon} latitude={selectedFlight.lat} anchor="bottom" closeButton={false} onClose={() => setSelectedIcao24(null)}>
-              <div className="bg-[#05070b] border border-cyan-400/30 text-white font-mono min-w-[320px] max-w-[380px]">
+              <div className={`bg-[#05070b] border text-white font-mono min-w-[320px] max-w-[380px] ${selectedFlight.emergency && selectedFlight.emergency !== 'none' ? 'border-red-500 shadow-[0_0_18px_rgba(239,68,68,0.45)]' : 'border-cyan-400/30'}`}>
                 <div className="px-3 py-2 border-b border-cyan-400/20 flex items-center justify-between">
                   <span className="text-cyan-300 text-[10px] uppercase tracking-[0.18em]">Aircraft Detail</span>
                   <button onClick={() => setSelectedIcao24(null)} className="text-white/40 hover:text-white">×</button>
@@ -391,6 +455,11 @@ export const FlightsPage: React.FC = () => {
                     <div className="text-lg text-white font-bold leading-none">{selectedFlight.callsign || selectedFlight.registration || selectedFlight.icao24}</div>
                     <div className="text-cyan-300/70 mt-1 uppercase tracking-[0.16em]">{selectedFlight.icao24}</div>
                   </div>
+                  {selectedFlight.emergency && selectedFlight.emergency !== 'none' && (
+                    <div className="animate-pulse border border-red-500 bg-red-950/35 p-2 text-red-200 shadow-[0_0_18px_rgba(239,68,68,0.35)]">
+                      ⚠ AIR EMERGENCY: {emergencyLabel(selectedFlight.emergency)}
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                     <Detail label="Registration" value={selectedFlight.registration} />
                     <Detail label="Country" value={selectedFlight.originCountry} />
@@ -411,12 +480,16 @@ export const FlightsPage: React.FC = () => {
                     <Detail label="Mach" value={selectedFlight.mach} />
                     <Detail label="Emergency" value={selectedFlight.emergency || 'none'} />
                   </div>
+                  <button onClick={reportSelectedAirEmergency} className="w-full border border-red-500 bg-red-950/30 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-red-200 hover:bg-red-500/20">
+                    ⚠ Report Air Emergency
+                  </button>
                 </div>
               </div>
             </Popup>
           )}
         </Map>
 
+        <FlightAlertLog alerts={flightAlerts} onClear={() => setFlightAlerts([])} />
         <MapLayerControl />
         <VhfAudioPanel />
       </div>
@@ -425,6 +498,48 @@ export const FlightsPage: React.FC = () => {
     </div>
   );
 };
+
+function FlightAlertLog({ alerts, onClear }: { alerts: FlightAlert[]; onClear: () => void }) {
+  const latest = alerts[0];
+
+  return (
+    <div className="absolute top-4 right-16 z-[6] w-[360px] font-mono pointer-events-auto">
+      {latest && (
+        <div className="mb-3 animate-pulse border-2 border-red-500 bg-red-950/45 p-3 text-red-100 shadow-[0_0_24px_rgba(239,68,68,0.55)]">
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-[10px] uppercase tracking-[0.22em] text-red-200">⚠ {latest.title}</div>
+            <div className="text-[9px] text-red-200/65">{new Date(latest.timestamp).toLocaleTimeString()}</div>
+          </div>
+          <div className="mt-2 text-sm font-bold uppercase tracking-[0.08em]">{latest.emergency}</div>
+          <div className="mt-1 text-xs text-red-100/75">{latest.details}</div>
+        </div>
+      )}
+
+      <div className="border border-cyan-400/25 bg-black/60 backdrop-blur shadow-[0_0_20px_rgba(0,229,255,0.08)]">
+        <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
+          <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">Notifications</div>
+          <button onClick={onClear} className="text-[9px] uppercase tracking-[0.16em] text-white/35 hover:text-white">Clear</button>
+        </div>
+        <div className="max-h-56 overflow-auto">
+          {alerts.length === 0 ? (
+            <div className="px-3 py-3 text-[11px] text-white/35">No alert reports yet.</div>
+          ) : (
+            alerts.map((alert) => (
+              <div key={alert.id} className="border-b border-white/8 px-3 py-2 text-[11px] text-white/65">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-red-200 uppercase tracking-[0.14em]">{alert.title}</span>
+                  <span className="text-white/35">{new Date(alert.timestamp).toLocaleString()}</span>
+                </div>
+                <div className="mt-1 text-white/80">{alert.details}</div>
+                <div className="mt-1 text-white/35">ICAO {alert.icao24} | Reported by {alert.reportedBy}</div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Detail({ label, value }: { label: string; value: unknown }) {
   return (
