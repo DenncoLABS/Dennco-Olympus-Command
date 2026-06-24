@@ -28,6 +28,7 @@ export const TopNav: React.FC = () => {
   );
   const activeIntelModule = enabledIntelModules.find((module) => module.id === activeModule);
   const intelActive = Boolean(activeIntelModule);
+  const cadEnabled = settings.featureToggles.cad !== false;
 
   const openIntelModule = (module: ActiveModule) => {
     setActiveModule(module);
@@ -96,6 +97,19 @@ export const TopNav: React.FC = () => {
               </div>
             )}
           </div>
+
+          {cadEnabled && (
+            <button
+              onClick={() => setActiveModule('cad')}
+              className={`px-4 h-full border-b-2 font-mono text-sm tracking-widest uppercase transition-all ${
+                activeModule === 'cad'
+                  ? 'border-intel-accent text-intel-accent drop-shadow-[0_0_8px_var(--color-intel-accent)] bg-gradient-to-t from-intel-accent/10 to-transparent'
+                  : 'border-transparent text-intel-text hover:text-intel-text-light hover:border-intel-text/50 opacity-70 hover:opacity-100'
+              }`}
+            >
+              CAD
+            </button>
+          )}
 
           <button
             onClick={() => setActiveModule('admin')}
