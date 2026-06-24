@@ -1,5 +1,6 @@
 import React, { type ReactNode } from 'react';
 import { TopNav } from './TopNav';
+import { OlympusDesk } from './OlympusDesk';
 import { useThemeStore } from '../theme/theme.store';
 import { clsx } from 'clsx';
 import { Shield } from 'lucide-react';
@@ -20,6 +21,7 @@ export const ShellLayout: React.FC<ShellLayoutProps> = ({ children }) => {
     <div className={clsx('flex flex-col h-screen w-screen overflow-hidden', `theme-${mode}`)}>
       <TopNav />
       <main className="flex-1 relative bg-intel-bg">{children}</main>
+      <OlympusDesk />
       <footer className="flex items-center justify-center gap-4 px-4 py-1.5 bg-black/70 border-t border-white/10 text-[10px] text-white/40 shrink-0">
         <span className="font-bold tracking-[0.2em] text-white/70 uppercase text-[11px]">
           {settings.branding.shortName}
