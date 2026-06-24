@@ -13,7 +13,6 @@ const AIS_MESSAGE_TYPES = [
   'SafetyBroadcastMessage',
 ];
 
-// AIS Stream Message Format Interfaces
 export interface PositionReport {
   MessageID: number;
   RepeatIndicator: number;
@@ -44,19 +43,9 @@ export interface ShipStaticData {
   CallSign: string;
   Name: string;
   Type: number;
-  Dimension: {
-    A: number;
-    B: number;
-    C: number;
-    D: number;
-  };
+  Dimension: { A: number; B: number; C: number; D: number };
   FixType: number;
-  Eta: {
-    Day: number;
-    Hour: number;
-    Minute: number;
-    Month: number;
-  };
+  Eta: { Day: number; Hour: number; Minute: number; Month: number };
   MaximumStaticDraught: number;
   Destination: string;
   Dte: boolean;
@@ -68,8 +57,10 @@ export interface AisMessage {
   MetaData: {
     MMSI: number;
     ShipName: string;
-    latitude: number;
-    longitude: number;
+    latitude?: number;
+    longitude?: number;
+    Latitude?: number;
+    Longitude?: number;
     time_utc: string;
   };
   Message: {
@@ -101,8 +92,25 @@ export interface VesselState {
 function getAisStreamApiKey(): string {
   const envKey = (process.env.AISSTREAM_API_KEY || '').trim();
   if (envKey) return envKey;
-  const savedKey = (readAdminRuntimeSettings().apiKeys?.aisstream || '').trim();
-  return savedKey;
+  return (readAdminRuntimeSettings().apiKeys?.aisstream || '').trim();
+}
+
+function validLat(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= -90 && value <= 90;
+}
+
+function validLon(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= -180 && value <= 180;
+}
+
+function metaLat(message: AisMessage): number | undefined {
+  const value = message.MetaData?.latitude ?? message.MetaData?.Latitude;
+  return validLat(value) ? value : undefined;
+}
+
+function metaLon(message: AisMessage): number | undefined {
+  const value = message.MetaData?.longitude ?? message.MetaData?.Longitude;
+  return validLon(value) ? value : undefined;
 }
 
 class AisStreamService {
@@ -111,12 +119,12 @@ class AisStreamService {
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private purgeInterval: NodeJS.Timeout | null = null;
   private apiKey: string;
-  public lastMessageReceived: number = 0;
-  public totalMessagesReceived: number = 0;
-  public isConnected: boolean = false;
-  public subscribed: boolean = false;
+  public lastMessageReceived = 0;
+  public totalMessagesReceived = 0;
+  public isConnected = false;
+  public subscribed = false;
   public lastError: string | null = null;
-  public lastRawMessageReceived: number = 0;
+  public lastRawMessageReceived = 0;
   public lastMessageType: string | null = null;
   public lastIgnoredReason: string | null = null;
 
@@ -137,7 +145,6 @@ class AisStreamService {
       console.warn('[AISStream] AISStream key not found in env or admin runtime settings.');
       return;
     }
-
     this.connect();
     this.purgeInterval = setInterval(() => this.purgeStaleVessels(), 5 * 60 * 1000);
   }
@@ -151,9 +158,7 @@ class AisStreamService {
     }
     this.apiKey = nextKey;
     this.connect();
-    if (!this.purgeInterval) {
-      this.purgeInterval = setInterval(() => this.purgeStaleVessels(), 5 * 60 * 1000);
-    }
+    if (!this.purgeInterval) this.purgeInterval = setInterval(() => this.purgeStaleVessels(), 5 * 60 * 1000);
     return true;
   }
 
@@ -163,9 +168,7 @@ class AisStreamService {
     this.lastIgnoredReason = null;
 
     if (this.ws) {
-      try {
-        this.ws.close();
-      } catch (e) {}
+      try { this.ws.close(); } catch (e) {}
     }
 
     console.log('[AISStream] Connecting to wss://stream.aisstream.io/v0/stream...');
@@ -177,10 +180,11 @@ class AisStreamService {
 
       const subscriptionMessage = {
         APIKey: this.apiKey,
+        // AISStream expects [longitude, latitude], not [latitude, longitude].
         BoundingBoxes: [
           [
-            [-90, -180],
-            [90, 180],
+            [-180, -90],
+            [180, 90],
           ],
         ],
         FilterMessageTypes: AIS_MESSAGE_TYPES,
@@ -210,7 +214,6 @@ class AisStreamService {
         this.lastMessageType = aisMessage.MessageType || null;
         this.lastMessageReceived = Date.now();
         this.totalMessagesReceived++;
-
         this.handleMessage(aisMessage as AisMessage);
       } catch (e) {
         this.lastError = e instanceof Error ? e.message : 'Error parsing AISStream message.';
@@ -241,10 +244,10 @@ class AisStreamService {
     let vessel = this.vessels.get(mmsi);
     if (!vessel) {
       vessel = {
-        mmsi: mmsi,
+        mmsi,
         name: message.MetaData.ShipName ? message.MetaData.ShipName.trim() : `Unknown (${mmsi})`,
-        lat: message.MetaData.latitude,
-        lon: message.MetaData.longitude,
+        lat: metaLat(message) ?? 0,
+        lon: metaLon(message) ?? 0,
         sog: 0,
         cog: 0,
         heading: 0,
@@ -253,11 +256,11 @@ class AisStreamService {
       };
     } else {
       vessel.lastUpdate = Date.now();
-      if (message.MetaData.ShipName && message.MetaData.ShipName.trim()) {
-        vessel.name = message.MetaData.ShipName.trim();
-      }
-      if (message.MetaData.latitude != null) vessel.lat = message.MetaData.latitude;
-      if (message.MetaData.longitude != null) vessel.lon = message.MetaData.longitude;
+      if (message.MetaData.ShipName && message.MetaData.ShipName.trim()) vessel.name = message.MetaData.ShipName.trim();
+      const mLat = metaLat(message);
+      const mLon = metaLon(message);
+      if (mLat != null) vessel.lat = mLat;
+      if (mLon != null) vessel.lon = mLon;
     }
 
     if (message.MessageType === 'PositionReport' && message.Message.PositionReport) {
@@ -266,28 +269,22 @@ class AisStreamService {
       if (pos.Cog != null) vessel.cog = pos.Cog;
       if (pos.TrueHeading != null && pos.TrueHeading !== 511) vessel.heading = pos.TrueHeading;
       if (pos.NavigationalStatus != null) vessel.navigationalStatus = pos.NavigationalStatus;
-      if (pos.Latitude != null && pos.Latitude <= 90) vessel.lat = pos.Latitude;
-      if (pos.Longitude != null && pos.Longitude <= 180) vessel.lon = pos.Longitude;
-    } else if (
-      message.MessageType === 'StandardClassBPositionReport' &&
-      message.Message.StandardClassBPositionReport
-    ) {
+      if (validLat(pos.Latitude)) vessel.lat = pos.Latitude;
+      if (validLon(pos.Longitude)) vessel.lon = pos.Longitude;
+    } else if (message.MessageType === 'StandardClassBPositionReport' && message.Message.StandardClassBPositionReport) {
       const pos = message.Message.StandardClassBPositionReport;
       if (pos.Sog != null) vessel.sog = pos.Sog;
       if (pos.Cog != null) vessel.cog = pos.Cog;
       if (pos.TrueHeading != null && pos.TrueHeading !== 511) vessel.heading = pos.TrueHeading;
-      if (pos.Latitude != null && pos.Latitude <= 90) vessel.lat = pos.Latitude;
-      if (pos.Longitude != null && pos.Longitude <= 180) vessel.lon = pos.Longitude;
-    } else if (
-      message.MessageType === 'ExtendedClassBPositionReport' &&
-      message.Message.ExtendedClassBPositionReport
-    ) {
+      if (validLat(pos.Latitude)) vessel.lat = pos.Latitude;
+      if (validLon(pos.Longitude)) vessel.lon = pos.Longitude;
+    } else if (message.MessageType === 'ExtendedClassBPositionReport' && message.Message.ExtendedClassBPositionReport) {
       const pos = message.Message.ExtendedClassBPositionReport;
       if (pos.Sog != null) vessel.sog = pos.Sog;
       if (pos.Cog != null) vessel.cog = pos.Cog;
       if (pos.TrueHeading != null && pos.TrueHeading !== 511) vessel.heading = pos.TrueHeading;
-      if (pos.Latitude != null && pos.Latitude <= 90) vessel.lat = pos.Latitude;
-      if (pos.Longitude != null && pos.Longitude <= 180) vessel.lon = pos.Longitude;
+      if (validLat(pos.Latitude)) vessel.lat = pos.Latitude;
+      if (validLon(pos.Longitude)) vessel.lon = pos.Longitude;
       if (pos.Name && pos.Name.trim().length > 0) vessel.name = pos.Name.trim().replace(/@+$/, '');
       if (pos.Type != null) vessel.type = pos.Type;
     } else if (message.MessageType === 'ShipStaticData' && message.Message.ShipStaticData) {
@@ -299,49 +296,38 @@ class AisStreamService {
       if (stat.Dimension) vessel.dimension = { a: stat.Dimension.A, b: stat.Dimension.B, c: stat.Dimension.C, d: stat.Dimension.D };
     } else if (message.MessageType === 'BaseStationReport' && message.Message.BaseStationReport) {
       const pos = message.Message.BaseStationReport;
-      if (pos.Latitude != null && pos.Latitude <= 90) vessel.lat = pos.Latitude;
-      if (pos.Longitude != null && pos.Longitude <= 180) vessel.lon = pos.Longitude;
+      if (validLat(pos.Latitude)) vessel.lat = pos.Latitude;
+      if (validLon(pos.Longitude)) vessel.lon = pos.Longitude;
       if (vessel.name.startsWith('Unknown')) vessel.name = `Base Station (${mmsi})`;
-    } else if (
-      message.MessageType === 'StandardSearchAndRescueAircraftReport' &&
-      message.Message.StandardSearchAndRescueAircraftReport
-    ) {
+    } else if (message.MessageType === 'StandardSearchAndRescueAircraftReport' && message.Message.StandardSearchAndRescueAircraftReport) {
       const pos = message.Message.StandardSearchAndRescueAircraftReport;
       if (pos.Sog != null) vessel.sog = pos.Sog;
       if (pos.Cog != null) vessel.cog = pos.Cog;
       if (pos.Altitude != null) vessel.altitude = pos.Altitude;
-      if (pos.Latitude != null && pos.Latitude <= 90) vessel.lat = pos.Latitude;
-      if (pos.Longitude != null && pos.Longitude <= 180) vessel.lon = pos.Longitude;
+      if (validLat(pos.Latitude)) vessel.lat = pos.Latitude;
+      if (validLon(pos.Longitude)) vessel.lon = pos.Longitude;
       if (vessel.name.startsWith('Unknown')) vessel.name = `SAR Aircraft (${mmsi})`;
     } else if (message.MessageType === 'StaticDataReport' && message.Message.StaticDataReport) {
       const stat = message.Message.StaticDataReport;
-      if (stat.ReportA && stat.ReportA.Name && stat.ReportA.Name.trim().length > 0) {
-        vessel.name = stat.ReportA.Name.trim().replace(/@+$/, '');
-      }
+      if (stat.ReportA?.Name && stat.ReportA.Name.trim().length > 0) vessel.name = stat.ReportA.Name.trim().replace(/@+$/, '');
       if (stat.ReportB) {
         if (stat.ReportB.CallSign && stat.ReportB.CallSign.trim().length > 0) vessel.callsign = stat.ReportB.CallSign.trim().replace(/@+$/, '');
         if (stat.ReportB.ShipType != null) vessel.type = stat.ReportB.ShipType;
         if (stat.ReportB.Dimension) vessel.dimension = { a: stat.ReportB.Dimension.A, b: stat.ReportB.Dimension.B, c: stat.ReportB.Dimension.C, d: stat.ReportB.Dimension.D };
       }
-    } else if (
-      message.MessageType === 'AidsToNavigationReport' &&
-      message.Message.AidsToNavigationReport
-    ) {
+    } else if (message.MessageType === 'AidsToNavigationReport' && message.Message.AidsToNavigationReport) {
       const aton = message.Message.AidsToNavigationReport;
-      if (aton.Latitude != null && aton.Latitude <= 90) vessel.lat = aton.Latitude;
-      if (aton.Longitude != null && aton.Longitude <= 180) vessel.lon = aton.Longitude;
+      if (validLat(aton.Latitude)) vessel.lat = aton.Latitude;
+      if (validLon(aton.Longitude)) vessel.lon = aton.Longitude;
       if (aton.Name && aton.Name.trim().length > 0) vessel.name = aton.Name.trim().replace(/@+$/, '');
       if (aton.Type != null) vessel.type = aton.Type;
       if (aton.Dimension) vessel.dimension = { a: aton.Dimension.A, b: aton.Dimension.B, c: aton.Dimension.C, d: aton.Dimension.D };
-    } else if (
-      message.MessageType === 'SafetyBroadcastMessage' &&
-      message.Message.SafetyBroadcastMessage
-    ) {
+    } else if (message.MessageType === 'SafetyBroadcastMessage' && message.Message.SafetyBroadcastMessage) {
       const safety = message.Message.SafetyBroadcastMessage;
       if (safety.Text && safety.Text.trim().length > 0) vessel.textMessage = safety.Text.trim();
     }
 
-    if (vessel.lat == null || vessel.lon == null || Math.abs(vessel.lat) > 90 || Math.abs(vessel.lon) > 180) {
+    if (!validLat(vessel.lat) || !validLon(vessel.lon) || (vessel.lat === 0 && vessel.lon === 0)) {
       this.lastIgnoredReason = `Invalid coordinates for ${message.MessageType || 'unknown message'}.`;
       return;
     }
@@ -360,9 +346,7 @@ class AisStreamService {
   private purgeStaleVessels() {
     const now = Date.now();
     for (const [mmsi, vessel] of this.vessels.entries()) {
-      if (now - vessel.lastUpdate > this.STALE_THRESHOLD_MS) {
-        this.vessels.delete(mmsi);
-      }
+      if (now - vessel.lastUpdate > this.STALE_THRESHOLD_MS) this.vessels.delete(mmsi);
     }
   }
 }
