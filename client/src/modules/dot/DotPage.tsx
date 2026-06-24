@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import Map, { Layer, NavigationControl, Popup, Source } from 'react-map-gl/maplibre';
+import MapGl, { Layer, NavigationControl, Popup, Source } from 'react-map-gl/maplibre';
 import type { MapLayerMouseEvent } from 'maplibre-gl';
 import { Camera, CarFront, RefreshCcw, TriangleAlert } from 'lucide-react';
 import { useThemeStore } from '../../ui/theme/theme.store';
 import { SATELLITE_STYLE, LIGHT_STYLE, DARK_STYLE, STREET_STYLE } from '../../lib/mapStyles';
 import { MapLayerControl } from '../flights/components/MapLayerControl';
-import { NoaaWeatherRadarLayer } from '../weather/NoaaWeatherRadarLayer';
 
 type TrafficCamera = {
   id: string;
@@ -147,7 +146,7 @@ export const DotPage: React.FC = () => {
         fetchOlympusCctv().catch(() => []),
         fetchGeoJson<TrafficUpdate>(updatesFeedUrl, normalizeUpdateFeature).catch(() => []),
       ]);
-      const dedup = new Map<string, TrafficCamera>();
+      const dedup = new globalThis.Map<string, TrafficCamera>();
       [...envCameras, ...osirisCameras].forEach((camera) => dedup.set(camera.id, camera));
       setCameras([...dedup.values()]);
       setUpdates(nextUpdates);
@@ -202,7 +201,7 @@ export const DotPage: React.FC = () => {
       </div>
 
       <div className="relative flex-1">
-        <Map
+        <MapGl
           initialViewState={DEFAULT_VIEW}
           mapStyle={activeMapStyle}
           styleDiffing={false}
@@ -212,7 +211,6 @@ export const DotPage: React.FC = () => {
           style={{ width: '100%', height: '100%' }}
         >
           <NavigationControl position="top-right" showCompass={true} visualizePitch={true} />
-          <NoaaWeatherRadarLayer />
 
           <Source id="dot-traffic-updates" type="geojson" data={updatesGeoJson}>
             <Layer id="dot-traffic-update-points" type="circle" paint={{ 'circle-radius': 7, 'circle-color': '#f97316', 'circle-stroke-width': 2, 'circle-stroke-color': '#111827', 'circle-opacity': 0.9 }} />
@@ -262,7 +260,7 @@ export const DotPage: React.FC = () => {
               </div>
             </Popup>
           )}
-        </Map>
+        </MapGl>
 
         <MapLayerControl />
 
