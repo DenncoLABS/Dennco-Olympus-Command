@@ -124,16 +124,15 @@ const RuntimeSettingsContext = createContext<RuntimeSettingsContextValue | null>
 function applyDocumentBranding(settings: RuntimeSettings) {
   document.title = settings.branding.productName;
 
-  const favicon = settings.branding.faviconDataUrl || settings.branding.faviconUrl;
-  if (favicon) {
-    let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'icon';
-      document.head.appendChild(link);
-    }
-    link.href = favicon;
+  const favicon = settings.branding.faviconDataUrl || settings.branding.faviconUrl || 'data:,';
+  let link = document.querySelector<HTMLLinkElement>('#olympus-runtime-favicon');
+  if (!link) {
+    link = document.querySelector<HTMLLinkElement>('link[rel="icon"]') || document.createElement('link');
+    link.id = 'olympus-runtime-favicon';
+    link.rel = 'icon';
+    if (!link.parentElement) document.head.appendChild(link);
   }
+  link.href = favicon;
 
   let style = document.getElementById('olympus-admin-css-injector') as HTMLStyleElement | null;
   if (!style) {
