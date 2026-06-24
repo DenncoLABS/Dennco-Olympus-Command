@@ -29,6 +29,7 @@ export interface AdminRuntimeSettings {
   };
   cad?: {
     resgridUrl?: string;
+    serviceUrl?: string;
     mode?: string;
   };
   vhfAudio?: {
