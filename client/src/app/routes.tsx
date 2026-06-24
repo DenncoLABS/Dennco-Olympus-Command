@@ -19,6 +19,9 @@ const DotPage = lazy(() =>
 const CyberPage = lazy(() =>
   import('../modules/cyber/CyberPage').then((m) => ({ default: m.CyberPage })),
 );
+const CadPage = lazy(() =>
+  import('../modules/cad/CadPage').then((m) => ({ default: m.CadPage })),
+);
 
 /** Minimal fallback shown while the chunk is loading (<200 ms on fast connections). */
 const PageLoader: React.FC = () => (
@@ -46,6 +49,8 @@ export const AppRoutes: React.FC = () => {
         <DotPage />
       ) : activeModule === 'cyber' ? (
         <CyberPage />
+      ) : activeModule === 'cad' ? (
+        <CadPage />
       ) : (
         <FlightsPage />
       )}
