@@ -3,7 +3,7 @@ import { create } from 'zustand';
 export type ThemeMode = 'eo' | 'flir' | 'crt';
 export type MapProjection = 'mercator' | 'globe';
 export type MapLayer = 'dark' | 'light' | 'street' | 'satellite';
-export type ActiveModule = 'flights' | 'maritime' | 'monitor' | 'dot' | 'cyber' | 'admin';
+export type ActiveModule = 'flights' | 'maritime' | 'monitor' | 'dot' | 'cyber' | 'cad' | 'admin';
 export type WeatherRadarProduct = 'base-reflectivity' | 'custom';
 
 interface WeatherRadarState {
@@ -16,6 +16,14 @@ interface WeatherRadarState {
   customTileUrl: string;
 }
 
+export interface OlympusShellSessionState {
+  mode?: ThemeMode;
+  mapProjection?: MapProjection;
+  mapLayer?: MapLayer;
+  activeModule?: ActiveModule;
+  weatherRadar?: Partial<WeatherRadarState>;
+}
+
 interface ThemeState {
   mode: ThemeMode;
   setMode: (mode: ThemeMode) => void;
@@ -26,6 +34,8 @@ interface ThemeState {
   activeModule: ActiveModule;
   setActiveModule: (module: ActiveModule) => void;
   weatherRadar: WeatherRadarState;
+  hydrateShellSession: (session: OlympusShellSessionState) => void;
+  getShellSession: () => OlympusShellSessionState;
   setWeatherRadarEnabled: (enabled: boolean) => void;
   setWeatherRadarProduct: (product: WeatherRadarProduct) => void;
   setWeatherRadarOpacity: (opacity: number) => void;
@@ -34,7 +44,13 @@ interface ThemeState {
   setWeatherRadarCustomTileUrl: (customTileUrl: string) => void;
 }
 
-export const useThemeStore = create<ThemeState>((set) => ({
+const validModules: ActiveModule[] = ['flights', 'maritime', 'monitor', 'dot', 'cyber', 'cad', 'admin'];
+const validModes: ThemeMode[] = ['eo', 'flir', 'crt'];
+const validProjections: MapProjection[] = ['mercator', 'globe'];
+const validLayers: MapLayer[] = ['dark', 'light', 'street', 'satellite'];
+const validRadarProducts: WeatherRadarProduct[] = ['base-reflectivity', 'custom'];
+
+export const useThemeStore = create<ThemeState>((set, get) => ({
   mode: 'eo',
   setMode: (mode) => set({ mode }),
   mapProjection: 'mercator',
@@ -51,6 +67,39 @@ export const useThemeStore = create<ThemeState>((set) => ({
     brightnessMin: 0,
     brightnessMax: 1,
     customTileUrl: '',
+  },
+  hydrateShellSession: (session) => {
+    const patch: Partial<ThemeState> = {};
+    if (session.activeModule && validModules.includes(session.activeModule)) patch.activeModule = session.activeModule;
+    if (session.mode && validModes.includes(session.mode)) patch.mode = session.mode;
+    if (session.mapProjection && validProjections.includes(session.mapProjection)) patch.mapProjection = session.mapProjection;
+    if (session.mapLayer && validLayers.includes(session.mapLayer)) patch.mapLayer = session.mapLayer;
+
+    if (session.weatherRadar) {
+      const radar = session.weatherRadar;
+      patch.weatherRadar = {
+        ...get().weatherRadar,
+        ...(typeof radar.enabled === 'boolean' ? { enabled: radar.enabled } : {}),
+        ...(radar.product && validRadarProducts.includes(radar.product) ? { product: radar.product } : {}),
+        ...(typeof radar.opacity === 'number' ? { opacity: radar.opacity } : {}),
+        ...(typeof radar.contrast === 'number' ? { contrast: radar.contrast } : {}),
+        ...(typeof radar.brightnessMin === 'number' ? { brightnessMin: radar.brightnessMin } : {}),
+        ...(typeof radar.brightnessMax === 'number' ? { brightnessMax: radar.brightnessMax } : {}),
+        ...(typeof radar.customTileUrl === 'string' ? { customTileUrl: radar.customTileUrl } : {}),
+      };
+    }
+
+    set(patch);
+  },
+  getShellSession: () => {
+    const state = get();
+    return {
+      activeModule: state.activeModule,
+      mode: state.mode,
+      mapProjection: state.mapProjection,
+      mapLayer: state.mapLayer,
+      weatherRadar: state.weatherRadar,
+    };
   },
   setWeatherRadarEnabled: (enabled) =>
     set((state) => ({ weatherRadar: { ...state.weatherRadar, enabled } })),
