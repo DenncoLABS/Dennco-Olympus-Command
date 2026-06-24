@@ -52,6 +52,6 @@ export function maritimeFeedHealth(status: MaritimeFeedStatus | null, isError: b
   if (!status) return { label: 'CHECKING', className: amber, detail: 'Checking AISStream diagnostics.' };
   if (!status.configured) return { label: 'NO_KEY', className: red, detail: 'AISStream key is not configured.' };
   if (!status.isConnected || !status.subscribed) return { label: 'INACTIVE', className: red, detail: status.lastError || 'AISStream is not connected/subscribed.' };
-  if (status.totalMessagesReceived <= 0) return { label: 'NO_AIS_MESSAGES', className: amber, detail: 'Connected, but no AIS messages have been received yet.' };
+  if (status.totalMessagesReceived <= 0) return { label: 'INACTIVE', className: red, detail: 'AISStream is connected, but no AIS messages have been received yet.' };
   return { label: 'SECURE_ACTIVE', className: green, detail: `${status.vesselCount} vessels in main AIS cache.` };
 }
