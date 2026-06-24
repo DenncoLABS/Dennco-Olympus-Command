@@ -128,7 +128,6 @@ export function MonitorMap() {
           setPopup(null);
           return;
         }
-        // Use centroid coords for marker clicks, lngLat for polygon clicks
         const isMarker = feature.geometry?.type === 'Point';
         const coords = isMarker
           ? (feature.geometry as GeoJSON.Point).coordinates
@@ -190,7 +189,6 @@ export function MonitorMap() {
         <GccWatchLayer />
         <RocketAlertLayer />
 
-        {/* Popups */}
         {popup && (
           <Popup
             longitude={popup.lng}
@@ -218,13 +216,10 @@ export function MonitorMap() {
         </div>
       </div>
 
-      {/* UAE status legend */}
       <GulfWatchLegend />
     </div>
   );
 }
-
-// ── Popup sub-components ──────────────────────────────────────────────────────
 
 function PopupShell({
   accentClass,
@@ -269,15 +264,7 @@ function PopupShell({
   );
 }
 
-function Row({
-  label,
-  value,
-  valueClass = 'text-white/55',
-}: {
-  label: string;
-  value: string;
-  valueClass?: string;
-}) {
+function Row({ label, value, valueClass = 'text-white/55' }: { label: string; value: string; valueClass?: string }) {
   return (
     <div className="flex items-center justify-between text-[8px] gap-2">
       <span className="text-white/25 uppercase tracking-wider shrink-0">{label}</span>
@@ -298,29 +285,14 @@ function RocketPopupCard({ popup, onClose }: { popup: RocketPopup; onClose: () =
       onClose={onClose}
     >
       <div>
-        <p className="text-white/90 font-semibold text-[12px] leading-snug">
-          {popup.nameEn || popup.nameHe}
-        </p>
-        {popup.nameEn && popup.nameHe && (
-          <p className="text-white/30 text-[9px]" dir="rtl">
-            {popup.nameHe}
-          </p>
-        )}
+        <p className="text-white/90 font-semibold text-[12px] leading-snug">{popup.nameEn || popup.nameHe}</p>
+        {popup.nameEn && popup.nameHe && <p className="text-white/30 text-[9px]" dir="rtl">{popup.nameHe}</p>}
       </div>
-      {popup.area && (
-        <Row
-          label="Area"
-          value={`${popup.area}${popup.areaHe && popup.areaHe !== popup.area ? ' · ' + popup.areaHe : ''}`}
-        />
-      )}
+      {popup.area && <Row label="Area" value={`${popup.area}${popup.areaHe && popup.areaHe !== popup.area ? ' · ' + popup.areaHe : ''}`} />}
       {popup.countdownSec > 0 && (
         <div className="border border-amber-500/25 bg-amber-500/8 px-2 py-1 flex items-center justify-between">
-          <span className="text-[8px] text-amber-400/70 uppercase tracking-wider">
-            Time to shelter
-          </span>
-          <span className="text-[11px] font-bold text-amber-300 tabular-nums">
-            {popup.countdownSec}s
-          </span>
+          <span className="text-[8px] text-amber-400/70 uppercase tracking-wider">Time to shelter</span>
+          <span className="text-[11px] font-bold text-amber-300 tabular-nums">{popup.countdownSec}s</span>
         </div>
       )}
       <div className="border-t border-white/6 pt-1 space-y-1">
@@ -341,27 +313,12 @@ const CATEGORY_META: Record<string, { label: string; color: string; textClass: s
 function MilitaryPopupCard({ popup, onClose }: { popup: MilitaryPopup; onClose: () => void }) {
   const meta = CATEGORY_META[popup.category] ?? CATEGORY_META.hq;
   return (
-    <PopupShell
-      accentClass={meta.textClass}
-      headerBgClass="bg-white/4"
-      headerBorderClass="border-white/10"
-      dot=""
-      label={`${meta.label} · ${popup.country}`}
-      onClose={onClose}
-    >
+    <PopupShell accentClass={meta.textClass} headerBgClass="bg-white/4" headerBorderClass="border-white/10" dot="" label={`${meta.label} · ${popup.country}`} onClose={onClose}>
       <div className="flex items-start gap-1.5">
-        <span
-          className="w-2 h-2 rounded-full shrink-0 mt-0.5"
-          style={{ background: meta.color, boxShadow: `0 0 6px ${meta.color}88` }}
-        />
+        <span className="w-2 h-2 rounded-full shrink-0 mt-0.5" style={{ background: meta.color, boxShadow: `0 0 6px ${meta.color}88` }} />
         <p className="text-white/90 font-semibold text-[12px] leading-snug">{popup.name}</p>
       </div>
-      {popup.description && (
-        <p className="text-[9px] text-white/45 leading-relaxed border-l-2 border-white/10 pl-2">
-          {popup.description.slice(0, 160)}
-          {popup.description.length > 160 ? '…' : ''}
-        </p>
-      )}
+      {popup.description && <p className="text-[9px] text-white/45 leading-relaxed border-l-2 border-white/10 pl-2">{popup.description.slice(0, 160)}{popup.description.length > 160 ? '…' : ''}</p>}
       <div className="border-t border-white/6 pt-1 space-y-1">
         <Row label="Category" value={meta.label} valueClass={meta.textClass} />
         <Row label="Country" value={popup.country} />
@@ -380,15 +337,12 @@ const UAE_LEGEND = [
 
 function GulfWatchLegend() {
   return (
-    <div className="absolute bottom-8 right-3 z-10 pointer-events-none font-mono">
+    <div className="absolute top-24 right-3 z-10 pointer-events-none font-mono">
       <div className="tech-panel px-2.5 py-2 space-y-1 shadow-lg">
         <div className="text-[8px] text-white/30 uppercase tracking-widest pb-0.5">Gulf</div>
         {UAE_LEGEND.map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5">
-            <span
-              className="w-2.5 h-2.5 rounded-sm flex-shrink-0 border border-white/10"
-              style={{ background: color }}
-            />
+            <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0 border border-white/10" style={{ background: color }} />
             <span className="text-[9px] text-white/50">{label}</span>
           </div>
         ))}
@@ -411,23 +365,10 @@ function GulfPopupCard({ popup, onClose }: { popup: GulfPopup; onClose: () => vo
     >
       <div>
         <p className="text-white/90 font-semibold text-[12px] leading-snug">{popup.nameEn}</p>
-        {popup.nameAr && (
-          <p className="text-white/30 text-[9px]" dir="rtl">
-            {popup.nameAr}
-          </p>
-        )}
+        {popup.nameAr && <p className="text-white/30 text-[9px]" dir="rtl">{popup.nameAr}</p>}
       </div>
-      {popup.descriptionEn && (
-        <p className="text-[9px] text-white/50 leading-relaxed border-l-2 border-orange-500/30 pl-2">
-          {popup.descriptionEn.slice(0, 120)}
-          {popup.descriptionEn.length > 120 ? '…' : ''}
-        </p>
-      )}
-      <Row
-        label="Severity"
-        value={popup.alertSeverity.toUpperCase()}
-        valueClass={isWarning ? 'text-red-400' : 'text-orange-400'}
-      />
+      {popup.descriptionEn && <p className="text-[9px] text-white/50 leading-relaxed border-l-2 border-orange-500/30 pl-2">{popup.descriptionEn.slice(0, 120)}{popup.descriptionEn.length > 120 ? '…' : ''}</p>}
+      <Row label="Severity" value={popup.alertSeverity.toUpperCase()} valueClass={isWarning ? 'text-red-400' : 'text-orange-400'} />
       {popup.sourceCount > 0 && <Row label="Sources" value={String(popup.sourceCount)} />}
       <div className="border-t border-white/6 pt-1 space-y-1">
         <Row label="Started" value={fmt(popup.startedAt)} />
