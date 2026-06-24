@@ -31,6 +31,7 @@ export interface RuntimeSettings {
   cad: {
     mode: string;
     resgridUrl: string;
+    serviceUrl: string;
     repositoryUrl: string;
   };
   dotFeeds: {
@@ -94,6 +95,7 @@ const fallbackSettings: RuntimeSettings = {
   cad: {
     mode: 'embedded-resgrid',
     resgridUrl: '/cad/',
+    serviceUrl: 'http://127.0.0.1:5050/',
     repositoryUrl: 'https://github.com/DenncoLABS/Resgrid',
   },
   dotFeeds: {
