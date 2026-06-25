@@ -1,0 +1,7 @@
+Full width Olympus Dock wave trigger.
+
+Changes:
+- Dock spans full width without changing the dark/cyan styling language.
+- Dock buttons are uniform icon-only buttons.
+- Button text is hidden until hover and appears as a tooltip above the icon.
+- Dock icons enlarge on hover with neighboring wave animation similar to macOS Dock behavior.
