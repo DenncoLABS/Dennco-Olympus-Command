@@ -14,23 +14,23 @@ section[class*='z-[4200]'] > div[class*='flex'][class*='h-full'] > div:nth-child
 }
 
 section[class*='z-[4200]'] div[class*='border-t'][class*='bg-black/65'] {
-  height: 156px !important;
-  min-height: 156px !important;
-  margin-top: -34px !important;
-  padding-top: 64px !important;
-  padding-bottom: 10px !important;
+  height: 104px !important;
+  min-height: 104px !important;
+  margin-top: -10px !important;
+  padding-top: 24px !important;
+  padding-bottom: 16px !important;
   z-index: 900 !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] {
-  height: 136px !important;
-  min-height: 136px !important;
+  height: 86px !important;
+  min-height: 86px !important;
   overflow: visible !important;
   overflow-x: visible !important;
   overflow-y: visible !important;
   align-items: flex-end !important;
-  padding-top: 58px !important;
-  padding-bottom: 16px !important;
+  padding-top: 20px !important;
+  padding-bottom: 10px !important;
   z-index: 950 !important;
 }
 
@@ -38,23 +38,35 @@ section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'
   overflow: visible !important;
   transform-origin: bottom center !important;
   z-index: 10 !important;
+  width: 64px !important;
+  height: 64px !important;
+  min-width: 64px !important;
+  flex-basis: 64px !important;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button[class*='border-cyan-300/60']::before {
+  bottom: -12px !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover {
-  transform: translateY(-26px) scale(1.22) !important;
+  transform: translateY(-28px) scale(1.22) !important;
   z-index: 1000 !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:has(+ button:hover),
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover + button {
-  transform: translateY(-15px) scale(1.11) !important;
+  transform: translateY(-15px) scale(1.1) !important;
   z-index: 900 !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:has(+ button + button:hover),
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover + button + button {
-  transform: translateY(-7px) scale(1.05) !important;
+  transform: translateY(-7px) scale(1.04) !important;
   z-index: 800 !important;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button > span:first-child {
+  font-size: 2rem !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button > span:last-child {
