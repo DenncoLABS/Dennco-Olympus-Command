@@ -14,6 +14,7 @@ import dotRouter from './routes/dot';
 import intelMapsRouter from './routes/intelmaps';
 import zabbixRouter from './routes/zabbix';
 import filesRouter from './routes/files';
+import proxmoxLabRouter from './routes/proxmoxLab';
 import { requireAdminAccess } from './core/accessGate';
 import { aircraftDb } from './core/aircraft_db';
 import { aisStreamService } from './core/source/aisstream';
@@ -83,6 +84,7 @@ app.use('/api/dot', dotRouter);
 app.use('/api/intel-maps', intelMapsRouter);
 app.use('/api/zabbix', zabbixRouter);
 app.use('/api/files', filesRouter);
+app.use('/api/proxmox-lab', proxmoxLabRouter);
 app.use('/cad', cadRouter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
@@ -118,4 +120,3 @@ function shutdown() {
 }
 process.once('SIGUSR2', shutdown); // nodemon restart
 process.once('SIGTERM', shutdown); // container stop
-process.once('SIGINT', shutdown); // Ctrl-C
