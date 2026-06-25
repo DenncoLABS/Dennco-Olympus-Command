@@ -1,0 +1,6 @@
+Blank tile screens trigger.
+
+Change:
+- Removes Command Tiles from the default screening area.
+- Core route now displays an empty tile-screen workspace only.
+- Apps/maps should appear in the screening area only after opened through Olympus controls.
