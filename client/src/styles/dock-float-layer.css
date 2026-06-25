@@ -1,27 +1,36 @@
-/* Compact stable Dock panel above footer. */
+/* Restored Olympus Dock layout.
+   Dock is visually separate from Desk and pinned above the company footer.
+   Existing Dock widgets are preserved. */
+
 .olympus-shell-root{height:100vh!important;max-height:100vh!important;overflow:hidden!important}
 .olympus-shell-main{min-height:0!important}
 .olympus-shell-footer{height:28px!important;min-height:28px!important;max-height:28px!important;flex:0 0 28px!important;position:relative!important;z-index:4300!important;overflow:hidden!important}
-.olympus-powered-desk{position:relative!important;overflow:visible!important;contain:none!important;transition:height 360ms ease!important;z-index:4200!important}
+
+/* Closed Desk becomes only the latch strip; open Desk still expands normally. */
+.olympus-powered-desk{position:relative!important;overflow:visible!important;contain:none!important;transition:height 280ms ease!important;z-index:4200!important;background:rgba(0,0,0,.82)!important}
 .olympus-powered-desk[data-hatch-state='opening'],.olympus-powered-desk[data-hatch-state='open']{height:min(500px,62vh)!important;min-height:380px!important;flex:0 0 min(500px,62vh)!important}
-.olympus-powered-desk[data-hatch-state='latched'],.olympus-powered-desk[data-hatch-state='closing']{height:78px!important;min-height:78px!important;max-height:78px!important;flex:0 0 78px!important}
-.olympus-powered-desk>div{position:relative!important;height:78px!important;min-height:78px!important;max-height:78px!important;overflow:visible!important;contain:none!important}
-.olympus-powered-desk[data-hatch-state='opening']>div,.olympus-powered-desk[data-hatch-state='open']>div{height:100%!important;min-height:0!important;max-height:none!important}
-.olympus-hatch-latch{top:0!important;left:34px!important;bottom:auto!important;transform:none!important;height:13px!important;width:220px!important;border-radius:0 0 7px 7px!important;font-size:7px!important;line-height:11px!important;z-index:180!important}
+.olympus-powered-desk[data-hatch-state='latched'],.olympus-powered-desk[data-hatch-state='closing']{height:18px!important;min-height:18px!important;max-height:18px!important;flex:0 0 18px!important}
+.olympus-powered-desk>div{position:relative!important;height:100%!important;min-height:0!important;max-height:none!important;overflow:visible!important;contain:none!important}
+.olympus-hatch-latch{top:0!important;left:0!important;bottom:auto!important;transform:none!important;height:16px!important;width:170px!important;border-radius:0 0 7px 0!important;font-size:7px!important;line-height:14px!important;z-index:4400!important}
 .olympus-powered-desk .olympus-desk-body{overflow:hidden!important}
-.olympus-powered-desk[data-hatch-state='latched'] .olympus-dock-row,.olympus-powered-desk[data-hatch-state='closing'] .olympus-dock-row{position:absolute!important;left:0!important;right:0!important;top:0!important;bottom:auto!important;margin-top:0!important;transform:none!important}
-.olympus-powered-desk .olympus-dock-row{height:78px!important;min-height:78px!important;max-height:78px!important;padding:12px 16px 10px!important;overflow:visible!important;contain:none!important;background:rgba(0,0,0,.72)!important;z-index:120!important}
-.olympus-powered-desk .olympus-dock-track{height:56px!important;min-height:56px!important;max-height:56px!important;width:fit-content!important;max-width:calc(100vw - 80px)!important;overflow:visible!important;align-items:center!important;justify-content:center!important;padding:6px 14px!important;gap:8px!important;border-radius:22px!important;border:1px solid rgba(34,211,238,.28)!important;background:linear-gradient(180deg,rgba(5,12,16,.95),rgba(2,4,6,.92))!important;box-shadow:0 0 22px rgba(34,211,238,.14),inset 0 1px 0 rgba(255,255,255,.06)!important;isolation:isolate!important}
-.olympus-powered-desk .olympus-dock-label{display:flex!important;height:44px!important;min-height:44px!important;min-width:190px!important;max-width:190px!important;align-self:center!important;justify-content:center!important;opacity:1!important;visibility:visible!important}
+
+/* Dock is restored as its own bottom layer above the company information. */
+.olympus-powered-desk .olympus-dock-row{position:fixed!important;left:0!important;right:0!important;bottom:28px!important;height:86px!important;min-height:86px!important;max-height:86px!important;margin:0!important;padding:10px 16px 10px!important;overflow:visible!important;contain:none!important;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.78) 32%,rgba(0,0,0,.9))!important;border-top:1px solid rgba(34,211,238,.2)!important;z-index:4400!important;display:flex!important;align-items:center!important;justify-content:center!important;pointer-events:auto!important}
+.olympus-powered-desk .olympus-dock-track{height:66px!important;min-height:66px!important;max-height:66px!important;width:fit-content!important;max-width:calc(100vw - 64px)!important;overflow:visible!important;align-items:center!important;justify-content:center!important;padding:8px 18px!important;gap:8px!important;border-radius:26px!important;border:1px solid rgba(34,211,238,.28)!important;background:linear-gradient(180deg,rgba(5,12,16,.96),rgba(2,4,6,.94))!important;box-shadow:0 0 24px rgba(34,211,238,.14),inset 0 1px 0 rgba(255,255,255,.06)!important;isolation:isolate!important}
+
+/* Restore the Olympus Dock label receiver. */
+.olympus-powered-desk .olympus-dock-label{display:flex!important;height:50px!important;min-height:50px!important;min-width:190px!important;max-width:190px!important;align-self:center!important;justify-content:center!important;opacity:1!important;visibility:visible!important}
 .olympus-powered-desk .olympus-dock-label span:first-child{display:block!important;color:rgb(103,232,249)!important;font-weight:700!important;text-shadow:0 0 10px rgba(34,211,238,.35)!important}
 .olympus-powered-desk .olympus-dock-label span:last-child{display:block!important;color:rgba(255,255,255,.42)!important}
-.olympus-dock-widget-lane{display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;height:44px!important;min-height:44px!important;overflow:visible!important;contain:none!important;isolation:isolate!important}
-.olympus-dock-widget{position:relative!important;width:42px!important;height:42px!important;min-width:42px!important;flex:0 0 42px!important;overflow:visible!important;z-index:220!important;transition:transform 140ms ease!important;cursor:grab!important}
-.olympus-dock-widget>button{width:42px!important;height:42px!important;min-width:42px!important;overflow:visible!important;border-radius:12px!important;padding:0!important;transform:none!important}
-.olympus-dock-widget:hover{transform:translateY(-6px) scale(1.1)!important;z-index:520!important}
+
+/* Existing Dock widgets stay intact. */
+.olympus-dock-widget-lane{display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;height:50px!important;min-height:50px!important;overflow:visible!important;contain:none!important;isolation:isolate!important}
+.olympus-dock-widget{position:relative!important;width:46px!important;height:46px!important;min-width:46px!important;flex:0 0 46px!important;overflow:visible!important;z-index:220!important;transition:transform 140ms ease!important;cursor:grab!important}
+.olympus-dock-widget>button{width:46px!important;height:46px!important;min-width:46px!important;overflow:visible!important;border-radius:13px!important;padding:0!important;transform:none!important}
+.olympus-dock-widget:hover{transform:translateY(-8px) scale(1.12)!important;z-index:520!important}
 .olympus-dock-widget:has(+ .olympus-dock-widget:hover),.olympus-dock-widget:hover+.olympus-dock-widget{transform:translateY(-3px) scale(1.04)!important;z-index:450!important}
-.olympus-dock-widget>button[class*='border-cyan-300/60']::before{bottom:3px!important;width:5px!important;height:5px!important;z-index:260!important}
-.olympus-dock-widget .dock-widget-icon{font-size:1.32rem!important;line-height:1!important}
-.olympus-dock-widget .dock-widget-label{position:absolute!important;left:50%!important;bottom:calc(100% + 7px)!important;transform:translateX(-50%) translateY(5px) scale(.95)!important;opacity:0!important;pointer-events:none!important;white-space:nowrap!important;z-index:700!important;border-radius:14px!important;background:linear-gradient(180deg,rgba(70,70,70,.95),rgba(20,20,20,.95))!important;color:rgba(255,255,255,.96)!important;padding:5px 10px!important;font-size:11px!important;line-height:1!important;text-transform:none!important;transition:opacity 120ms ease,transform 120ms ease!important}
+.olympus-dock-widget>button[class*='border-cyan-300/60']::before{bottom:4px!important;width:5px!important;height:5px!important;z-index:260!important}
+.olympus-dock-widget .dock-widget-icon{font-size:1.42rem!important;line-height:1!important}
+.olympus-dock-widget .dock-widget-label{position:absolute!important;left:50%!important;bottom:calc(100% + 8px)!important;transform:translateX(-50%) translateY(5px) scale(.95)!important;opacity:0!important;pointer-events:none!important;white-space:nowrap!important;z-index:700!important;border-radius:14px!important;background:linear-gradient(180deg,rgba(70,70,70,.95),rgba(20,20,20,.95))!important;color:rgba(255,255,255,.96)!important;padding:5px 10px!important;font-size:11px!important;line-height:1!important;text-transform:none!important;transition:opacity 120ms ease,transform 120ms ease!important}
 .olympus-dock-widget:hover .dock-widget-label{opacity:1!important;transform:translateX(-50%) translateY(0) scale(1)!important}
 @keyframes olympusDeskHatchFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
