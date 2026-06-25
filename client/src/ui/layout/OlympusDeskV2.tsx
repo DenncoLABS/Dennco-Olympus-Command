@@ -3,28 +3,54 @@ import { useRuntimeSettings } from '../../admin/runtimeSettings';
 import type { ActiveModule } from '../theme/theme.store';
 import { MonitorDeskWorkspace } from '../../modules/monitor/widgets/MonitorDeskWorkspace';
 
-type DeskView = 'core' | 'apps' | 'files' | 'architecture' | 'terminal' | 'flight' | 'maritime' | 'monitor' | 'dot' | 'cad' | 'admin' | 'settings';
+type DeskView = 'core' | 'apps' | 'files' | 'architecture' | 'terminal' | 'services' | 'packages' | 'flight' | 'maritime' | 'monitor' | 'dot' | 'cad' | 'admin' | 'settings';
 type DockPlacement = 'left' | 'center' | 'right';
-type DeskItem = { id: string; label: string; icon: string; view: DeskView; module?: ActiveModule };
+type DeskItem = { id: string; label: string; icon: string; view: DeskView; module?: ActiveModule; group?: string; description?: string; status?: 'active' | 'planned' | 'protected' };
+type FileEntry = { path: string; type: string; role: string; status: 'active' | 'planned' | 'protected' };
 
 const HEIGHT_KEY = 'olympus.desk.v2.height';
 const DOCK_KEY = 'olympus.desk.v2.dock';
 const VIEW_KEY = 'olympus.desk.v2.view';
 
 const deskItems: DeskItem[] = [
-  { id: 'core', label: 'Core', icon: 'Ω', view: 'core' },
-  { id: 'apps', label: 'Apps', icon: '▦', view: 'apps' },
-  { id: 'files', label: 'Files', icon: '▣', view: 'files' },
-  { id: 'architecture', label: 'Architecture', icon: '⌬', view: 'architecture' },
-  { id: 'terminal', label: 'Terminal', icon: '⌁', view: 'terminal' },
-  { id: 'flights', label: 'Flight', icon: '✈', view: 'flight', module: 'flights' },
-  { id: 'maritime', label: 'Maritime', icon: '⛴', view: 'maritime', module: 'maritime' },
-  { id: 'monitor', label: 'Monitor', icon: '◉', view: 'monitor', module: 'monitor' },
-  { id: 'dot', label: 'DOT', icon: '◆', view: 'dot', module: 'dot' },
-  { id: 'cad', label: 'CAD', icon: '☷', view: 'cad', module: 'cad' },
-  { id: 'admin', label: 'Admin', icon: '⚙', view: 'admin', module: 'admin' },
-  { id: 'settings', label: 'Settings', icon: '◎', view: 'settings' },
+  { id: 'core', label: 'Core', icon: 'Ω', view: 'core', group: 'OS', status: 'active', description: 'Olympus Core system overview and Debian/GNOME shell plan.' },
+  { id: 'apps', label: 'Apps', icon: '▦', view: 'apps', group: 'OS', status: 'active', description: 'App browser and launcher for all Olympus modules.' },
+  { id: 'files', label: 'Files', icon: '▣', view: 'files', group: 'OS', status: 'active', description: 'Hard-coded file browser for Olympus system paths.' },
+  { id: 'architecture', label: 'Architecture', icon: '⌬', view: 'architecture', group: 'OS', status: 'active', description: 'Visual system architecture map.' },
+  { id: 'terminal', label: 'Terminal', icon: '⌁', view: 'terminal', group: 'OS', status: 'active', description: 'Controlled terminal workspace placeholder.' },
+  { id: 'services', label: 'Services', icon: '◫', view: 'services', group: 'System', status: 'planned', description: 'Systemd services and health controls.' },
+  { id: 'packages', label: 'Packages', icon: '⬡', view: 'packages', group: 'System', status: 'planned', description: 'Debian package and apt repo controls.' },
+  { id: 'flights', label: 'Flight', icon: '✈', view: 'flight', module: 'flights', group: 'Operational', status: 'active', description: 'Aircraft, emergencies, aviation infrastructure, and weather overlays.' },
+  { id: 'maritime', label: 'Maritime', icon: '⛴', view: 'maritime', module: 'maritime', group: 'Operational', status: 'active', description: 'AIS vessels, vessel dossiers, maritime state, and Mayday context.' },
+  { id: 'monitor', label: 'Monitor', icon: '◉', view: 'monitor', module: 'monitor', group: 'Operational', status: 'active', description: 'Global monitor map and saved intelligence widgets.' },
+  { id: 'dot', label: 'DOT', icon: '◆', view: 'dot', module: 'dot', group: 'Operational', status: 'active', description: 'Traffic events, CCTV, road flow, and DOT feeds.' },
+  { id: 'cad', label: 'CAD', icon: '☷', view: 'cad', module: 'cad', group: 'Operational', status: 'active', description: 'Dispatch, calls, units, personnel, logs, reports, trainings, inventory.' },
+  { id: 'admin', label: 'Admin', icon: '⚙', view: 'admin', module: 'admin', group: 'System', status: 'protected', description: 'Runtime settings, branding, API keys, and feature toggles.' },
+  { id: 'settings', label: 'Settings', icon: '◎', view: 'settings', group: 'OS', status: 'planned', description: 'Desk, Dock, GNOME, and shell settings.' },
 ];
+
+const fileEntries: FileEntry[] = [
+  { path: '/opt/dennco/olympus-command', type: 'directory', role: 'Installed Olympus application root', status: 'active' },
+  { path: '/opt/dennco/olympus-command/client', type: 'directory', role: 'React interface bundle and client assets', status: 'active' },
+  { path: '/opt/dennco/olympus-command/server', type: 'directory', role: 'Express API, routes, provider services, diagnostics', status: 'active' },
+  { path: '/opt/dennco/olympus-command/ops/cad/olympus-cad', type: 'directory', role: 'Local CAD service and persistent CAD GUI', status: 'active' },
+  { path: '/etc/dennco/olympus-command/olympus-command.env', type: 'config', role: 'Runtime settings, API keys, admin access, provider configuration', status: 'protected' },
+  { path: '/var/lib/dennco/olympus-cad/cad-state.json', type: 'state', role: 'Persistent CAD calls, units, personnel, logs, reports, inventory', status: 'active' },
+  { path: '/var/lib/dennco/olympus-cad/calls', type: 'directory', role: 'CAD incident folders and call artifacts', status: 'active' },
+  { path: '/usr/share/applications/olympus-command.desktop', type: 'desktop', role: 'GNOME application launcher target', status: 'planned' },
+  { path: '/etc/xdg/autostart/olympus-command.desktop', type: 'desktop', role: 'GNOME autostart target', status: 'planned' },
+  { path: '/usr/share/icons/hicolor/256x256/apps/olympus-command.png', type: 'icon', role: 'GNOME launcher icon target', status: 'planned' },
+];
+
+const architectureNodes = [
+  ['Debian Base', 'Host OS packages, apt repository, systemd, local state directories'],
+  ['GNOME Shell', 'Desktop launcher, autostart entry, future kiosk/session integration'],
+  ['Olympus Core GUI', 'TopNav, Earth screen, full-width Desk, Dock launcher'],
+  ['Earth Screen', 'Operational map canvas for Flight, Maritime, Monitor, DOT, CAD widgets'],
+  ['Olympus Desk', 'Apps, Files, Architecture, Terminal, Services, Packages, Settings'],
+  ['API Layer', 'Express routes, diagnostics, provider normalization, local CAD service'],
+  ['State/Data', 'Runtime settings, CAD state, caches, folders, future file actions'],
+] as const;
 
 function savedNumber(key: string, fallback: number) {
   const value = Number(localStorage.getItem(key));
@@ -52,13 +78,11 @@ export const OlympusDeskV2: React.FC = () => {
   const [view, setView] = useState<DeskView>(() => savedView());
   const [dock, setDock] = useState<DockPlacement>(() => savedDock());
   const resizeRef = useRef<{ pointerId: number; startY: number; startHeight: number } | null>(null);
-
   const launchers = useMemo(() => deskItems.filter((item) => !item.module || settings.featureToggles[item.module] !== false), [settings.featureToggles]);
 
   useEffect(() => { localStorage.setItem(HEIGHT_KEY, String(height)); }, [height]);
   useEffect(() => { localStorage.setItem(VIEW_KEY, view); }, [view]);
   useEffect(() => { localStorage.setItem(DOCK_KEY, dock); }, [dock]);
-
   useEffect(() => {
     const onResize = () => setHeight((current) => clampHeight(current));
     window.addEventListener('resize', onResize);
@@ -69,40 +93,25 @@ export const OlympusDeskV2: React.FC = () => {
     resizeRef.current = { pointerId: event.pointerId, startY: event.clientY, startHeight: height };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
-
   const moveResize = (event: React.PointerEvent<HTMLDivElement>) => {
     const state = resizeRef.current;
     if (!state || state.pointerId !== event.pointerId) return;
     setHeight(clampHeight(state.startHeight + state.startY - event.clientY));
   };
-
   const stopResize = (event: React.PointerEvent<HTMLDivElement>) => {
     const state = resizeRef.current;
     if (!state || state.pointerId !== event.pointerId) return;
     resizeRef.current = null;
     try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* noop */ }
   };
-
   const dockClass = dock === 'left' ? 'justify-start' : dock === 'right' ? 'justify-end' : 'justify-center';
 
   return (
     <section className="relative z-[4200] w-full shrink-0 border-t border-cyan-300/25 bg-black/90 font-mono text-white shadow-[0_-16px_40px_rgba(0,0,0,0.82)]" style={{ height: `${open ? height : 44}px` }}>
-      <div
-        className="absolute left-1/2 top-0 z-20 h-4 w-48 -translate-x-1/2 cursor-ns-resize rounded-b border-x border-b border-cyan-300/25 bg-cyan-300/10 text-center text-[8px] uppercase tracking-[0.24em] text-cyan-200/65"
-        onPointerDown={startResize}
-        onPointerMove={moveResize}
-        onPointerUp={stopResize}
-        onPointerCancel={stopResize}
-      >
-        Drag Desk
-      </div>
-
+      <div className="absolute left-1/2 top-0 z-20 h-4 w-48 -translate-x-1/2 cursor-ns-resize rounded-b border-x border-b border-cyan-300/25 bg-cyan-300/10 text-center text-[8px] uppercase tracking-[0.24em] text-cyan-200/65" onPointerDown={startResize} onPointerMove={moveResize} onPointerUp={stopResize} onPointerCancel={stopResize}>Drag Desk</div>
       <div className="flex h-full flex-col overflow-hidden">
         <div className="flex h-11 items-center justify-between border-b border-white/10 px-4 pt-2">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.26em] text-cyan-300">Olympus Desk</div>
-            <div className="text-[9px] uppercase tracking-[0.16em] text-white/40">Full-width OS workspace</div>
-          </div>
+          <div><div className="text-[10px] uppercase tracking-[0.26em] text-cyan-300">Olympus Desk</div><div className="text-[9px] uppercase tracking-[0.16em] text-white/40">Full-width OS workspace · Apps Browser · File Browser · Core GUI</div></div>
           <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/45">
             <button onClick={() => setDock('left')} className={`border px-2 py-1 ${dock === 'left' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Left</button>
             <button onClick={() => setDock('center')} className={`border px-2 py-1 ${dock === 'center' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Center</button>
@@ -111,56 +120,53 @@ export const OlympusDeskV2: React.FC = () => {
           </div>
         </div>
 
-        {open && (
-          <>
-            <div className="min-h-0 flex-1 overflow-hidden px-4 py-3">
-              <DeskApp view={view} />
-            </div>
-            <div className={`flex border-t border-cyan-300/15 bg-black/65 px-3 py-2 ${dockClass}`}>
-              <div className="flex max-w-full items-end gap-2 overflow-x-auto rounded-2xl border border-cyan-300/20 bg-white/[0.03] px-3 py-2 shadow-[0_0_24px_rgba(34,211,238,0.12)]">
-                <div className="mr-2 hidden min-w-[110px] flex-col items-start border-r border-white/10 pr-3 md:flex">
-                  <span className="text-[9px] uppercase tracking-[0.22em] text-cyan-300">Olympus Dock</span>
-                  <span className="text-[8px] uppercase tracking-[0.16em] text-white/35">Launcher</span>
-                </div>
-                {launchers.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setView(item.view)}
-                    className={`group flex min-w-[58px] flex-col items-center justify-center rounded-xl border px-2 py-1.5 transition-all ${view === item.view ? 'border-cyan-300/60 bg-cyan-400/15 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.25)]' : 'border-white/10 bg-white/[0.03] text-white/55 hover:border-cyan-300/40 hover:bg-cyan-400/10 hover:text-cyan-100'}`}
-                    title={item.label}
-                  >
-                    <span className="text-lg leading-none">{item.icon}</span>
-                    <span className="mt-1 text-[8px] uppercase tracking-[0.1em]">{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
+        {open && <><div className="min-h-0 flex-1 overflow-hidden px-4 py-3"><DeskApp view={view} setView={setView} /></div><div className={`flex border-t border-cyan-300/15 bg-black/65 px-3 py-2 ${dockClass}`}><div className="flex max-w-full items-end gap-2 overflow-x-auto rounded-2xl border border-cyan-300/20 bg-white/[0.03] px-3 py-2 shadow-[0_0_24px_rgba(34,211,238,0.12)]"><div className="mr-2 hidden min-w-[110px] flex-col items-start border-r border-white/10 pr-3 md:flex"><span className="text-[9px] uppercase tracking-[0.22em] text-cyan-300">Olympus Dock</span><span className="text-[8px] uppercase tracking-[0.16em] text-white/35">Launcher</span></div>{launchers.map((item) => <button key={item.id} type="button" onClick={() => setView(item.view)} className={`group flex min-w-[58px] flex-col items-center justify-center rounded-xl border px-2 py-1.5 transition-all ${view === item.view ? 'border-cyan-300/60 bg-cyan-400/15 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.25)]' : 'border-white/10 bg-white/[0.03] text-white/55 hover:border-cyan-300/40 hover:bg-cyan-400/10 hover:text-cyan-100'}`} title={item.label}><span className="text-lg leading-none">{item.icon}</span><span className="mt-1 text-[8px] uppercase tracking-[0.1em]">{item.label}</span></button>)}</div></div></>}
       </div>
     </section>
   );
 };
 
-function DeskApp({ view }: { view: DeskView }) {
+function DeskApp({ view, setView }: { view: DeskView; setView: (view: DeskView) => void }) {
+  const title = deskItems.find((item) => item.view === view)?.label || view;
   return (
-    <div className="grid h-full grid-cols-[250px_1fr] gap-4 text-white/70">
-      <div className="rounded border border-white/10 bg-black/35 p-3">
-        <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">Desk App</div>
-        <div className="mt-2 text-2xl font-bold uppercase tracking-[0.14em] text-white">{view}</div>
-        <div className="mt-2 text-xs leading-relaxed text-white/45">This opens inside the Olympus Desk.</div>
-      </div>
-      <div className="min-h-0 overflow-auto rounded border border-cyan-300/15 bg-[#020617]/70 p-4">
-        {view === 'monitor' ? <MonitorDeskWorkspace /> : <PlaceholderView view={view} />}
-      </div>
+    <div className="grid h-full grid-cols-[270px_1fr] gap-4 text-white/70">
+      <aside className="rounded border border-white/10 bg-black/35 p-3 overflow-auto custom-scrollbar">
+        <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">Desk Window</div>
+        <div className="mt-2 text-2xl font-bold uppercase tracking-[0.14em] text-white">{title}</div>
+        <div className="mt-2 text-xs leading-relaxed text-white/45">Olympus Desk apps run inside this workspace. Earth/map remains live above the Desk.</div>
+        <div className="mt-4 space-y-1 text-[10px] uppercase tracking-[0.12em] text-white/40">
+          <button onClick={() => setView('apps')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Open Apps Browser</button>
+          <button onClick={() => setView('files')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Open File Browser</button>
+          <button onClick={() => setView('architecture')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Visualize Architecture</button>
+          <button onClick={() => setView('terminal')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Open Terminal</button>
+        </div>
+      </aside>
+      <main className="min-h-0 overflow-hidden rounded border border-cyan-300/15 bg-[#020617]/70">
+        <div className="flex h-9 items-center justify-between border-b border-white/10 bg-white/[0.03] px-3">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-cyan-300">{title} Window</span>
+          <span className="text-[9px] uppercase tracking-[0.14em] text-white/35">GNOME-style Olympus shell</span>
+        </div>
+        <div className="h-[calc(100%-36px)] overflow-auto custom-scrollbar p-4">
+          {view === 'core' && <CoreView />}
+          {view === 'apps' && <AppsView setView={setView} />}
+          {view === 'files' && <FilesView />}
+          {view === 'architecture' && <ArchitectureView />}
+          {view === 'terminal' && <TerminalView />}
+          {view === 'monitor' && <MonitorDeskWorkspace />}
+          {['flight', 'maritime', 'dot', 'cad', 'admin', 'settings'].includes(view) && <ModuleView view={view} />}
+        </div>
+      </main>
     </div>
   );
 }
 
-function PlaceholderView({ view }: { view: DeskView }) {
-  if (view === 'terminal') return <div className="h-full rounded border border-emerald-400/20 bg-black p-4 font-mono text-sm text-emerald-300 shadow-inner"><div className="text-[10px] uppercase tracking-[0.2em] text-emerald-200/60">Olympus Terminal</div><div className="mt-4">olympus:~$ <span className="animate-pulse">_</span></div></div>;
-  if (view === 'files') return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">File Browser</h3><pre className="mt-4 border border-white/10 bg-black/40 p-3 text-xs text-emerald-200">/opt/dennco/olympus-command{`\n`}/etc/dennco/olympus-command{`\n`}/var/lib/dennco</pre></div>;
-  if (view === 'architecture') return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Architecture Viewer</h3><div className="mt-3 text-xs leading-6 text-white/60"><div>Debian → GNOME → Olympus Core GUI → Desk/Dock</div><div>Client modules → Flight / Maritime / Monitor / DOT / CAD / Admin</div><div>Server routes → API providers / local services</div><div>Package layer → systemd service / apt repo / runtime config</div></div></div>;
-  return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">{view} workspace</h3><p className="mt-3 text-sm text-white/60">Desk workspace placeholder for {view}. More controls will be added here as the Olympus OS shell grows.</p></div>;
-}
+function CoreView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Core System</h3><p className="mt-3 text-sm text-white/60">Olympus Core is the OS control surface for Debian/GNOME services, package state, data folders, apps, and command modules.</p><div className="mt-4 grid grid-cols-2 gap-3 text-xs"><StatusCard title="GNOME Launcher" value="/usr/share/applications/olympus-command.desktop" status="planned" /><StatusCard title="Autostart" value="/etc/xdg/autostart/olympus-command.desktop" status="planned" /><StatusCard title="Systemd Service" value="dennco-olympus-command" status="active" /><StatusCard title="CAD Service" value="olympus-cad" status="active" /></div></div>; }
+
+function AppsView({ setView }: { setView: (view: DeskView) => void }) { const groups = ['OS', 'Operational', 'System']; return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Apps Browser</h3><p className="mt-2 text-sm text-white/55">Hard-coded Olympus app browser. Click Open to load an app inside the Desk.</p>{groups.map((group) => <section key={group} className="mt-4"><div className="text-[10px] uppercase tracking-[0.18em] text-white/35">{group}</div><div className="mt-2 grid grid-cols-2 gap-3 xl:grid-cols-3">{deskItems.filter((item) => item.group === group).map((item) => <article key={item.id} className="border border-white/10 bg-white/[0.03] p-3 hover:border-cyan-300/35"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><span className="text-xl text-cyan-200">{item.icon}</span><span className="font-bold text-white">{item.label}</span></div><span className={`text-[9px] uppercase tracking-[0.12em] ${item.status === 'active' ? 'text-emerald-300' : item.status === 'protected' ? 'text-amber-300' : 'text-white/35'}`}>{item.status}</span></div><p className="mt-2 text-xs text-white/45">{item.description}</p><button onClick={() => setView(item.view)} className="mt-3 border border-cyan-300/25 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-cyan-200 hover:bg-cyan-300/10">Open</button></article>)}</div></section>)}</div>; }
+
+function FilesView() { const [selected, setSelected] = useState<FileEntry>(fileEntries[0]); return <div className="grid h-full grid-cols-[1fr_320px] gap-4"><div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">File Browser</h3><div className="mt-3 overflow-hidden border border-white/10"><table className="w-full text-left text-xs"><thead className="bg-white/[0.04] text-white/35 uppercase tracking-[0.14em]"><tr><th className="p-2">Path</th><th className="p-2">Type</th><th className="p-2">Status</th></tr></thead><tbody>{fileEntries.map((entry) => <tr key={entry.path} onClick={() => setSelected(entry)} className={`cursor-pointer border-t border-white/5 hover:bg-cyan-300/5 ${selected.path === entry.path ? 'bg-cyan-300/10 text-cyan-100' : 'text-white/60'}`}><td className="p-2 font-mono">{entry.path}</td><td className="p-2 uppercase text-white/35">{entry.type}</td><td className="p-2 uppercase text-white/35">{entry.status}</td></tr>)}</tbody></table></div></div><aside className="border border-cyan-300/15 bg-black/35 p-3"><div className="text-[10px] uppercase tracking-[0.2em] text-cyan-300">Selected File</div><div className="mt-3 break-all font-mono text-sm text-white">{selected.path}</div><div className="mt-3 text-xs leading-relaxed text-white/55">{selected.role}</div><div className="mt-4 grid gap-2 text-[10px] uppercase tracking-[0.14em]"><button className="border border-white/10 px-2 py-1 text-white/35">Open preview later</button><button className="border border-white/10 px-2 py-1 text-white/35">Ask Olympus later</button><button className="border border-white/10 px-2 py-1 text-white/35">Visualize dependency later</button></div></aside></div>; }
+
+function ArchitectureView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Architecture Viewer</h3><div className="mt-4 grid gap-2">{architectureNodes.map(([label, detail], index) => <div key={label} className="flex items-center gap-3"><div className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-300/30 text-xs text-cyan-200">{index + 1}</div><div className="flex-1 border border-white/10 bg-white/[0.03] p-3"><div className="text-sm font-bold text-white">{label}</div><div className="text-xs text-white/45">{detail}</div></div></div>)}</div></div>; }
+function TerminalView() { return <div className="h-full rounded border border-emerald-400/20 bg-black p-4 font-mono text-sm text-emerald-300 shadow-inner"><div className="text-[10px] uppercase tracking-[0.2em] text-emerald-200/60">Olympus Terminal</div><div className="mt-4">olympus:~$ <span className="animate-pulse">_</span></div><div className="mt-3 text-xs text-emerald-300/55">Controlled backend command actions will be wired later.</div></div>; }
+function ModuleView({ view }: { view: DeskView }) { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">{view} workspace</h3><p className="mt-3 text-sm text-white/60">Desk workspace for {view}. Earth/map screen remains unchanged until a widget is intentionally placed onto it.</p></div>; }
+function StatusCard({ title, value, status }: { title: string; value: string; status: string }) { return <div className="border border-white/10 bg-white/[0.03] p-3"><div className="text-[10px] uppercase tracking-[0.18em] text-white/35">{title}</div><div className="mt-1 break-all font-mono text-white">{value}</div><div className="mt-2 text-[9px] uppercase tracking-[0.14em] text-cyan-300">{status}</div></div>; }
