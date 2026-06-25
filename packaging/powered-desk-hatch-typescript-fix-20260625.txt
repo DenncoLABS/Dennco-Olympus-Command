@@ -1,0 +1,5 @@
+Powered Desk hatch TypeScript fix trigger.
+
+Changes:
+- Fixes hatch pointer event handler types after the latch was changed to a button.
+- Restores package publish trigger after failed workflow runs.
