@@ -22,6 +22,20 @@ section[class*='z-[4200]'] div[class*='border-t'][class*='bg-black/65'] {
   z-index: 900 !important;
 }
 
+section[class*='z-[4200]'][data-desk-latched='true'] {
+  height: 112px !important;
+  min-height: 112px !important;
+  max-height: 112px !important;
+}
+
+section[class*='z-[4200]'][data-desk-latched='true'] div[class*='border-t'][class*='bg-black/65'] {
+  height: 98px !important;
+  min-height: 98px !important;
+  margin-top: 14px !important;
+  padding-top: 12px !important;
+  padding-bottom: 8px !important;
+}
+
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] {
   height: 86px !important;
   min-height: 86px !important;
@@ -32,6 +46,13 @@ section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'
   padding-top: 20px !important;
   padding-bottom: 10px !important;
   z-index: 950 !important;
+}
+
+section[class*='z-[4200]'][data-desk-latched='true'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] {
+  height: 78px !important;
+  min-height: 78px !important;
+  padding-top: 12px !important;
+  padding-bottom: 8px !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button {
@@ -46,6 +67,10 @@ section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button[class*='border-cyan-300/60']::before {
   bottom: -12px !important;
+}
+
+section[class*='z-[4200]'][data-desk-latched='true'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button[class*='border-cyan-300/60']::before {
+  bottom: -8px !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover {
