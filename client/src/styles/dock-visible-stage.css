@@ -1,5 +1,5 @@
 /* Final Dock visible-stage override.
-   The Dock track must not use horizontal scrolling because that clips vertical hover animation. */
+   Keep Dock hover animation inside the latched Desk stage so it cannot be cut by the Drag Desk boundary. */
 section[class*='z-[4200]'],
 section[class*='z-[4200]'] > div,
 section[class*='z-[4200]'] > div[class*='flex'][class*='h-full'],
@@ -11,6 +11,7 @@ section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'
 
 section[class*='z-[4200]'] > div[title*='Drag up'] {
   z-index: 35 !important;
+  pointer-events: auto !important;
 }
 
 section[class*='z-[4200]'] > div[class*='flex'][class*='h-full'] > div:nth-child(2) {
@@ -18,44 +19,44 @@ section[class*='z-[4200]'] > div[class*='flex'][class*='h-full'] > div:nth-child
 }
 
 section[class*='z-[4200]'] div[class*='border-t'][class*='bg-black/65'] {
-  height: 104px !important;
-  min-height: 104px !important;
-  margin-top: -10px !important;
-  padding-top: 24px !important;
-  padding-bottom: 16px !important;
+  height: 132px !important;
+  min-height: 132px !important;
+  margin-top: -18px !important;
+  padding-top: 42px !important;
+  padding-bottom: 12px !important;
   z-index: 900 !important;
 }
 
 section[class*='z-[4200]'][data-desk-latched='true'] {
-  height: 112px !important;
-  min-height: 112px !important;
-  max-height: 112px !important;
+  height: 152px !important;
+  min-height: 152px !important;
+  max-height: 152px !important;
 }
 
 section[class*='z-[4200]'][data-desk-latched='true'] div[class*='border-t'][class*='bg-black/65'] {
-  height: 98px !important;
-  min-height: 98px !important;
-  margin-top: 14px !important;
-  padding-top: 12px !important;
-  padding-bottom: 8px !important;
+  height: 136px !important;
+  min-height: 136px !important;
+  margin-top: 12px !important;
+  padding-top: 46px !important;
+  padding-bottom: 10px !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] {
-  height: 86px !important;
-  min-height: 86px !important;
+  height: 110px !important;
+  min-height: 110px !important;
   overflow: visible !important;
   overflow-x: visible !important;
   overflow-y: visible !important;
   align-items: flex-end !important;
-  padding-top: 20px !important;
+  padding-top: 40px !important;
   padding-bottom: 10px !important;
   z-index: 950 !important;
 }
 
 section[class*='z-[4200]'][data-desk-latched='true'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] {
-  height: 78px !important;
-  min-height: 78px !important;
-  padding-top: 12px !important;
+  height: 114px !important;
+  min-height: 114px !important;
+  padding-top: 46px !important;
   padding-bottom: 8px !important;
 }
 
@@ -79,19 +80,19 @@ section[class*='z-[4200]'][data-desk-latched='true'] div[class*='rounded-2xl'][c
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover {
-  transform: translateY(-28px) scale(1.22) !important;
+  transform: translateY(-22px) scale(1.18) !important;
   z-index: 5000 !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:has(+ button:hover),
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover + button {
-  transform: translateY(-15px) scale(1.1) !important;
+  transform: translateY(-12px) scale(1.08) !important;
   z-index: 4900 !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:has(+ button + button:hover),
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover + button + button {
-  transform: translateY(-7px) scale(1.04) !important;
+  transform: translateY(-6px) scale(1.03) !important;
   z-index: 4800 !important;
 }
 
@@ -100,7 +101,7 @@ section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button > span:last-child {
-  bottom: calc(100% + 18px) !important;
+  bottom: calc(100% + 14px) !important;
   z-index: 6000 !important;
 }
 
