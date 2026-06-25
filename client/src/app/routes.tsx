@@ -2,28 +2,13 @@ import React, { Suspense, lazy } from 'react';
 import { useThemeStore } from '../ui/theme/theme.store';
 import { AdminSettingsPage } from '../admin/AdminSettingsPage';
 
-// Lazy-load each page so they ship in separate chunks.
-// Users only pay for the JS of the module they're actively viewing.
-const FlightsPage = lazy(() =>
-  import('../modules/flights/FlightsPage').then((m) => ({ default: m.FlightsPage })),
-);
-const MaritimePage = lazy(() =>
-  import('../modules/maritime/MaritimePage').then((m) => ({ default: m.MaritimePage })),
-);
-const MonitorPage = lazy(() =>
-  import('../modules/monitor/MonitorPage').then((m) => ({ default: m.MonitorPage })),
-);
-const DotPage = lazy(() =>
-  import('../modules/dot/DotPage').then((m) => ({ default: m.DotPage })),
-);
-const CyberPage = lazy(() =>
-  import('../modules/cyber/CyberPage').then((m) => ({ default: m.CyberPage })),
+const IntelMapsApp = lazy(() =>
+  import('../modules/intelmaps/IntelMapsApp').then((m) => ({ default: m.IntelMapsApp })),
 );
 const CadPage = lazy(() =>
   import('../modules/cad/CadPage').then((m) => ({ default: m.CadPage })),
 );
 
-/** Minimal fallback shown while the chunk is loading (<200 ms on fast connections). */
 const PageLoader: React.FC = () => (
   <div className="absolute inset-0 flex items-center justify-center bg-intel-bg">
     <span className="text-intel-text-light/40 text-xs font-mono tracking-widest uppercase animate-pulse">
@@ -39,21 +24,17 @@ export const AppRoutes: React.FC = () => {
     return <AdminSettingsPage />;
   }
 
+  if (activeModule === 'cad') {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <CadPage />
+      </Suspense>
+    );
+  }
+
   return (
     <Suspense fallback={<PageLoader />}>
-      {activeModule === 'monitor' ? (
-        <MonitorPage />
-      ) : activeModule === 'maritime' ? (
-        <MaritimePage />
-      ) : activeModule === 'dot' ? (
-        <DotPage />
-      ) : activeModule === 'cyber' ? (
-        <CyberPage />
-      ) : activeModule === 'cad' ? (
-        <CadPage />
-      ) : (
-        <FlightsPage />
-      )}
+      <IntelMapsApp />
     </Suspense>
   );
 };
