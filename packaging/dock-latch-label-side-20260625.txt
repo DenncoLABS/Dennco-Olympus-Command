@@ -1,0 +1,8 @@
+Dock latch label-side layout trigger.
+
+Changes:
+- Moves the Power Hatch latch to the Olympus Dock label side.
+- Keeps the latch as part of the Desk while visually locking into the Dock receiver area.
+- Constrains the raised button layer to the actual app/logout button row.
+- Slims the Dock back down.
+- Adjusts indicator dots so they stay visible above the footer.
