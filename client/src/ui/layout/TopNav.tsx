@@ -15,7 +15,15 @@ export const TopNav: React.FC = () => {
           {logoSrc ? (
             <img src={logoSrc} alt="" className="h-7 w-7 object-contain" />
           ) : (
-            <div className="w-2 h-2 bg-intel-accent animate-pulse shadow-[0_0_8px_var(--color-intel-accent)]"></div>
+            <div className="olympus-providence-mark" aria-hidden="true">
+              <svg viewBox="0 0 100 100" role="img" focusable="false">
+                <circle cx="50" cy="52" r="43" />
+                <path d="M50 9 91 82H9L50 9Z" />
+                <path d="M22 59C30 47 39 41 50 41s20 6 28 18c-8 12-17 18-28 18s-20-6-28-18Z" />
+                <circle cx="50" cy="59" r="10" />
+                <path d="M33 34h34M29 74h42M37 24h26M39 85h22" />
+              </svg>
+            </div>
           )}
           <h1 className="text-intel-text-light font-mono font-bold text-2xl tracking-[0.2em] shrink-0 drop-shadow-[0_0_8px_rgba(224,242,254,0.5)]">
             {settings.branding.shortName}
