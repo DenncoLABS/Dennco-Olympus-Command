@@ -1,0 +1,7 @@
+[data-desk-latched] { overflow: visible !important; contain: none !important; }
+[data-desk-latched] > div { overflow: visible !important; contain: none !important; }
+[data-desk-latched] div[class*='bg-black'] { position: fixed !important; left: 0 !important; right: 0 !important; bottom: 28px !important; height: 82px !important; min-height: 82px !important; margin: 0 !important; padding: 6px 12px 8px !important; z-index: 9000 !important; overflow: visible !important; contain: none !important; }
+[data-desk-latched] div[class*='rounded-2xl'] { height: 70px !important; min-height: 70px !important; max-height: 70px !important; overflow: visible !important; padding-top: 6px !important; padding-bottom: 6px !important; z-index: 9500 !important; }
+[data-desk-latched] div[class*='rounded-2xl'] > button { position: relative !important; width: 58px !important; height: 58px !important; min-width: 58px !important; flex-basis: 58px !important; overflow: visible !important; transform-origin: bottom center !important; }
+[data-desk-latched] div[class*='rounded-2xl'] > button:hover { transform: translateY(-22px) scale(1.18) !important; z-index: 20000 !important; }
+[data-desk-latched] div[class*='rounded-2xl'] > button > span:last-child { bottom: calc(100% + 12px) !important; z-index: 22000 !important; }
