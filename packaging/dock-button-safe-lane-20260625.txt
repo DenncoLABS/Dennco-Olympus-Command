@@ -1,0 +1,8 @@
+Dock button safe lane trigger.
+
+Changes:
+- Moves the Power Hatch latch fully over the Olympus Dock label side.
+- Keeps latch out of the app button hover layer.
+- Adds a safe lane for app/logout Dock buttons.
+- Slims Dock track while preserving clearance for hover and active blue indicators.
+- Moves active dots inside Dock/footer clearance to prevent bottom clipping.
