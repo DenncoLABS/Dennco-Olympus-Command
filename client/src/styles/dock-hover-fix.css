@@ -1,26 +1,46 @@
 /* Olympus Dock hover fixes: keep icons from clipping and place labels above the popped icon. */
 section[class*='z-[4200]'],
 section[class*='z-[4200]'] > div,
+section[class*='z-[4200]'] > div > div,
 section[class*='z-[4200]'] div[class*='border-t'][class*='bg-black/65'],
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] {
   overflow: visible !important;
 }
 
+section[class*='z-[4200]'] {
+  contain: none !important;
+  isolation: isolate;
+}
+
+section[class*='z-[4200]'] > div[class*='flex'][class*='h-full'] {
+  overflow: visible !important;
+}
+
+section[class*='z-[4200]'] > div[class*='flex'][class*='h-full'] > div:first-child,
+section[class*='z-[4200]'] > div[class*='flex'][class*='h-full'] > div:nth-child(2) {
+  overflow: hidden !important;
+}
+
 section[class*='z-[4200]'] div[class*='border-t'][class*='bg-black/65'] {
   position: relative !important;
-  z-index: 40 !important;
-  min-height: 118px !important;
-  padding-top: 30px !important;
+  z-index: 90 !important;
+  min-height: 132px !important;
+  height: 132px !important;
+  margin-top: -18px !important;
+  padding-top: 42px !important;
   padding-bottom: 8px !important;
+  pointer-events: auto;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] {
-  min-height: 104px !important;
-  height: 104px !important;
+  position: relative !important;
+  z-index: 100 !important;
+  min-height: 116px !important;
+  height: 116px !important;
   align-items: flex-end !important;
   overflow-x: auto !important;
   overflow-y: visible !important;
-  padding-top: 36px !important;
+  padding-top: 46px !important;
   padding-bottom: 12px !important;
   scrollbar-width: none;
 }
@@ -30,6 +50,7 @@ section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button {
+  position: relative !important;
   width: 74px !important;
   height: 74px !important;
   min-width: 74px !important;
@@ -40,20 +61,20 @@ section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover {
-  transform: translateY(-26px) scale(1.28) !important;
-  z-index: 50 !important;
+  transform: translateY(-24px) scale(1.24) !important;
+  z-index: 150 !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:has(+ button:hover),
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover + button {
-  transform: translateY(-15px) scale(1.14) !important;
-  z-index: 40 !important;
+  transform: translateY(-14px) scale(1.12) !important;
+  z-index: 130 !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:has(+ button + button:hover),
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover + button + button {
   transform: translateY(-7px) scale(1.06) !important;
-  z-index: 30 !important;
+  z-index: 120 !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button > span:first-child {
@@ -65,12 +86,12 @@ section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button > span:last-child {
   position: absolute !important;
   left: 50% !important;
-  bottom: calc(100% + 14px) !important;
+  bottom: calc(100% + 16px) !important;
   transform: translateX(-50%) translateY(8px) scale(0.92) !important;
   opacity: 0 !important;
   pointer-events: none !important;
   white-space: nowrap !important;
-  z-index: 80 !important;
+  z-index: 200 !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-radius: 18px !important;
   background: linear-gradient(180deg, rgba(70, 70, 70, 0.94), rgba(22, 22, 22, 0.94)) !important;
