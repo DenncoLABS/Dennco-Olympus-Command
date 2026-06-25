@@ -1,0 +1,6 @@
+Trigger apt publish for widget window.
+
+Changes:
+- Adds widget windows.
+- Adds close control.
+- Adds task and restore behavior.
