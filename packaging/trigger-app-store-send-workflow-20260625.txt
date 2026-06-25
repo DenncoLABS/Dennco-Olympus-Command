@@ -1,0 +1,6 @@
+Trigger apt publish for app store send workflow.
+
+Changes already staged:
+- App Store style Apps browser.
+- App cards open workspace surfaces.
+- Zabbix app surface fix.
