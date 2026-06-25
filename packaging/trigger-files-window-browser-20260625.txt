@@ -1,0 +1,7 @@
+Trigger apt publish for Files window browser.
+
+Changes:
+- Adds backend machine file browser routes.
+- Mounts /api/files routes.
+- Replaces the Files info panel with an in-window filesystem browser.
+- Lets Files browse directories and preview small text files.
