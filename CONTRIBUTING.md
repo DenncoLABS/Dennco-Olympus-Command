@@ -1,265 +1,82 @@
-# Contributing to Radar
+# Contributing to Dennco Olympus Command
 
-Thank you for your interest in contributing to Radar! This document provides guidelines and instructions for contributing.
+## Staff-only contribution policy
 
-## Table of Contents
+Dennco Olympus Command is a privately maintained Dennco Information Systems project. Contributions are limited to authorized staff, approved contractors, and specifically invited collaborators.
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [Making Changes](#making-changes)
-- [Submitting Changes](#submitting-changes)
-- [Code Style](#code-style)
-- [Testing](#testing)
-- [Documentation](#documentation)
+This repository does not accept unsolicited public contributions, public feature requests, public pull requests, public forks for redistribution, or outside governance proposals unless Dennco Information Systems has approved that participation in writing.
 
-## Code of Conduct
+## Authorized contributors
 
-This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+Authorized contributors must:
 
-## Getting Started
+- Work from approved branches or approved pull requests.
+- Keep all project details confidential unless cleared for release.
+- Avoid committing credentials, API keys, customer information, private logs, production environment files, or deployment secrets.
+- Preserve Dennco ownership notices, security notices, branding controls, and runtime configuration controls.
+- Use only approved third-party code, data sources, assets, and dependencies.
+- Avoid reintroducing upstream demo branding, starter-project icons, confusing product names, or non-Dennco public identity into the deployed interface.
 
-1. **Fork the repository** on GitHub
-2. **Clone your fork** locally:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/Radar.git
-   cd Radar
-   ```
-3. **Add upstream remote**:
-   ```bash
-   git remote add upstream https://github.com/ORIGINAL_OWNER/Radar.git
-   ```
+## Branch and change process
 
-## Development Setup
+Internal branches should use clear operational naming:
 
-### Prerequisites
+```text
+feature/<short-description>
+fix/<short-description>
+docs/<short-description>
+ops/<short-description>
+security/<short-description>
+```
 
-- Node.js v18 or later
-- npm v9 or later
+Commits should describe the operational intent clearly:
 
-### Installation
+```text
+Add Olympus Desk package status panel
+Fix DOT camera marker rendering
+Update CAD persistent call folders
+```
+
+## Pull request expectations
+
+Internal pull requests should include:
+
+- What changed.
+- Why it changed.
+- Any files, services, or package paths affected.
+- Deployment or restart steps.
+- Security or configuration impact.
+- Screenshots for user-interface changes when practical.
+
+## Testing expectations
+
+Before packaging or deployment, authorized contributors should run the relevant build or test path:
 
 ```bash
-# Install all dependencies
-npm run install:all
-
-# Copy environment files
-cp server/.env.example server/.env
-cp client/.env.example client/.env
-
-# Configure your API keys in server/.env
+npm run build
 ```
 
-### Running Locally
+For server-only changes, verify the service starts cleanly:
 
 ```bash
-# Start development servers
-npm run dev
+systemctl restart dennco-olympus-command
+systemctl status dennco-olympus-command --no-pager
 ```
 
-This starts:
+For package changes, verify install behavior on a test host before production use when possible.
 
-- Frontend at http://localhost:5173
-- Backend at http://localhost:3001
+## Documentation expectations
 
-## Making Changes
+Documentation updates should use Dennco Olympus Command terminology and should not reference upstream starter brands, upstream demo names, or unrelated product identity. Public documentation should avoid revealing sensitive infrastructure, credentials, private customer information, or operationally sensitive deployment details.
 
-### Branch Naming
+## Security and confidentiality
 
-Use descriptive branch names:
+All contributors are bound by the repository Security Policy and any applicable employment, contractor, NDA, or staff confidentiality agreement. Do not disclose repository contents, non-public plans, vulnerabilities, data-source keys, customer information, logs, deployment information, or operational details without written authorization from Dennco Information Systems.
 
-- `feature/add-satellite-tracking` - New features
-- `fix/maritime-connection-timeout` - Bug fixes
-- `docs/update-api-reference` - Documentation
-- `refactor/optimize-flight-cache` - Code refactoring
-- `test/add-maritime-unit-tests` - Test additions
+## External requests
 
-### Commit Messages
+External parties who want access, partnership, licensing, integration, or review rights must contact Dennco Information Systems through approved business channels. GitHub issues and pull requests are not an approval path.
 
-Follow conventional commits:
+## All rights reserved
 
-```
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
-```
-
-**Types:**
-
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting, etc.)
-- `refactor`: Code refactoring
-- `test`: Test additions or modifications
-- `chore`: Build process or auxiliary tool changes
-
-**Examples:**
-
-```
-feat(flights): add aircraft altitude filtering
-
-Implement min/max altitude filters in the flights panel
-to allow users to filter visible aircraft by altitude range.
-
-Closes #123
-```
-
-```
-fix(maritime): prevent vessel state memory leak
-
-Properly clean up vessel history when vessels go stale
-to prevent unbounded memory growth.
-
-Fixes #456
-```
-
-## Submitting Changes
-
-### Pull Request Process
-
-1. **Update your fork** with upstream changes:
-
-   ```bash
-   git fetch upstream
-   git rebase upstream/main
-   ```
-
-2. **Run tests** locally:
-
-   ```bash
-   cd client && npm run test
-   cd ../server && npm run test
-   ```
-
-3. **Lint your code**:
-
-   ```bash
-   cd client && npm run lint
-   ```
-
-4. **Push to your fork**:
-
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-5. **Create a Pull Request** on GitHub with:
-   - Clear title describing the change
-   - Detailed description of what and why
-   - Link to related issues
-   - Screenshots/GIFs for UI changes
-   - Test plan or results
-
-### PR Checklist
-
-- [ ] Code follows the project's style guidelines
-- [ ] Self-review completed
-- [ ] Comments added for complex logic
-- [ ] Documentation updated (if needed)
-- [ ] Tests added/updated
-- [ ] All tests pass
-- [ ] No new warnings
-- [ ] Responsive design (for UI changes)
-- [ ] API keys/secrets not committed
-
-## Code Style
-
-### TypeScript/JavaScript
-
-- Use TypeScript for all new code
-- Follow existing ESLint configuration
-- Use functional components with hooks (React)
-- Prefer `const` over `let`
-- Use descriptive variable names
-- Add JSDoc comments for public APIs
-
-### React Components
-
-```typescript
-// Good
-interface FlightCardProps {
-  flight: AircraftState;
-  onSelect: (icao24: string) => void;
-}
-
-export function FlightCard({ flight, onSelect }: FlightCardProps) {
-  // Component logic
-}
-```
-
-### File Organization
-
-```
-module-name/
-├── ModulePage.tsx           # Main page component
-├── components/              # UI components
-│   ├── ModuleSidebar.tsx
-│   └── ModuleMap.tsx
-├── hooks/                   # Custom React hooks
-│   └── useModuleData.ts
-├── lib/                     # Business logic
-│   ├── module.types.ts
-│   └── module.utils.ts
-└── state/                   # State management
-    └── module.store.ts
-```
-
-## Testing
-
-### Frontend Tests (Vitest)
-
-```bash
-cd client
-npm run test
-```
-
-### Writing Tests
-
-```typescript
-import { describe, it, expect } from 'vitest';
-
-describe('calculateDistance', () => {
-  it('should calculate distance between two points', () => {
-    const result = calculateDistance(0, 0, 0, 1);
-    expect(result).toBeCloseTo(111.32, 1);
-  });
-});
-```
-
-### Coverage Goals
-
-- Aim for >80% code coverage
-- Test all business logic
-- Test edge cases and error conditions
-- Mock external APIs
-
-## Documentation
-
-### Code Documentation
-
-- Add JSDoc comments for functions/classes
-- Explain the "why", not just the "what"
-- Document complex algorithms
-- Include usage examples
-
-### README Updates
-
-Update the README.md if you:
-
-- Add new features
-- Change installation steps
-- Add new dependencies
-- Modify API endpoints
-
-## Questions?
-
-- Open a [GitHub Discussion](https://github.com/Syntax-Error-1337/Radar/discussions)
-- Join our community chat (if available)
-- Email the maintainers
-
-## License
-
-By contributing, you agree that your contributions will be licensed under the MIT License.
+No public license, contribution right, redistribution right, trademark right, service right, deployment right, or derivative-work right is granted by this file. All rights are reserved by Dennco Information Systems unless separately granted in writing.
