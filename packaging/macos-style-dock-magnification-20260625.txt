@@ -1,0 +1,9 @@
+macOS-style Dock magnification trigger.
+
+Changes:
+- Applies hover magnification like the provided macOS Dock screen recording.
+- Hovered button rises and scales prominently.
+- Adjacent buttons rise/scale with a smaller wave.
+- Label bubble floats above the magnified icon.
+- Dock remains compact, rounded, and separated from the company footer.
+- Latch remains in the left Dock receiver and outside the button magnification lane.
