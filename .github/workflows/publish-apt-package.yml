@@ -1,0 +1,39 @@
+name: Publish Apt Package
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'client/**'
+      - 'server/**'
+      - 'packaging/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/publish-apt-package.yml'
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Debian tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev fakeroot
+
+      - name: Build Debian package
+        run: bash packaging/build-deb.sh
+
+      - name: Upload Debian package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dennco-olympus-command-deb
+          path: dist/deb/*.deb
