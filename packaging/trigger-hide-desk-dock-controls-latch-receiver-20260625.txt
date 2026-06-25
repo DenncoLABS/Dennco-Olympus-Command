@@ -1,0 +1,7 @@
+Trigger apt publish for Desk header controls and latch receiver alignment.
+
+Changes:
+- Hides Dock Left / Dock Center / Dock Right / Reset Dock from the Desk header.
+- Leaves the Latch button in the Desk header.
+- Widens and shifts the Desk hatch/latch so text is not clipped.
+- Raises the Dock receiver bar behind the Dock so the Desk appears to latch into a visible bar behind the Dock capsule.
