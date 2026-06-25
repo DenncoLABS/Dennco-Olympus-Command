@@ -1,0 +1,6 @@
+Monitor Desk runtime fix trigger.
+
+Fix:
+- Stabilizes Monitor dock workspace after user reported the screen disappears when opening Monitor from the Olympus Dock.
+- Avoids Map icon shadowing and uses a crash-proof Desk staging surface.
+- Live Monitor widget bodies can be reconnected after the shell verifies stable in the deployed apt package.
