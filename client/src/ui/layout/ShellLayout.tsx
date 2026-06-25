@@ -19,11 +19,11 @@ export const ShellLayout: React.FC<ShellLayoutProps> = ({ children }) => {
   const { settings } = useRuntimeSettings();
 
   return (
-    <div className={clsx('flex flex-col h-screen w-screen overflow-hidden', `theme-${mode}`)}>
+    <div className={clsx('olympus-shell-root flex flex-col h-screen w-screen overflow-hidden', `theme-${mode}`)}>
       <TopNav />
-      <main className="flex-1 min-h-0 relative bg-intel-bg overflow-hidden">{children}</main>
+      <main className="olympus-shell-main flex-1 min-h-0 relative bg-intel-bg overflow-hidden">{children}</main>
       <OlympusDeskV2 />
-      <footer className="flex items-center justify-center gap-4 px-4 py-1.5 bg-black/70 border-t border-white/10 text-[10px] text-white/40 shrink-0">
+      <footer className="olympus-shell-footer flex items-center justify-center gap-4 px-4 py-1.5 bg-black/70 border-t border-white/10 text-[10px] text-white/40 shrink-0">
         <span className="font-bold tracking-[0.2em] text-white/70 uppercase text-[11px]">
           {settings.branding.shortName}
         </span>
