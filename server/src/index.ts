@@ -11,6 +11,7 @@ import adminRouter from './routes/admin';
 import sessionRouter from './routes/session';
 import cadRouter from './routes/cad';
 import dotRouter from './routes/dot';
+import intelMapsRouter from './routes/intelmaps';
 import { requireAdminAccess } from './core/accessGate';
 import { aircraftDb } from './core/aircraft_db';
 import { aisStreamService } from './core/source/aisstream';
@@ -77,6 +78,7 @@ app.use('/api/geo', geoRouter);
 app.use('/api/monitor', monitorRouter);
 app.use('/api/cyber', cyberRouter);
 app.use('/api/dot', dotRouter);
+app.use('/api/intel-maps', intelMapsRouter);
 app.use('/cad', cadRouter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
