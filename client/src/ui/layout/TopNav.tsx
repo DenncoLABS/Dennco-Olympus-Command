@@ -1,52 +1,15 @@
-import React, { useMemo, useState } from 'react';
-import { useThemeStore, type ActiveModule } from '../theme/theme.store';
+import React from 'react';
+import { useThemeStore } from '../theme/theme.store';
 import { useRuntimeSettings } from '../../admin/runtimeSettings';
 import { logoutAdmin } from '../../admin/LoginGate';
-
-const intelModules: Array<{ id: ActiveModule; label: string }> = [
-  { id: 'flights', label: 'Flights' },
-  { id: 'maritime', label: 'Maritime' },
-  { id: 'monitor', label: 'Monitor' },
-  { id: 'dot', label: 'DOT' },
-  { id: 'cyber', label: 'Cyber' },
-];
 
 export const TopNav: React.FC = () => {
   const mode = useThemeStore((s) => s.mode);
   const setMode = useThemeStore((s) => s.setMode);
   const mapProjection = useThemeStore((s) => s.mapProjection);
   const setMapProjection = useThemeStore((s) => s.setMapProjection);
-  const activeModule = useThemeStore((s) => s.activeModule);
-  const setActiveModule = useThemeStore((s) => s.setActiveModule);
   const { settings } = useRuntimeSettings();
   const logoSrc = settings.branding.logoDataUrl || settings.branding.logoUrl;
-  const [intelOpen, setIntelOpen] = useState(false);
-
-  const enabledIntelModules = useMemo(
-    () => intelModules.filter((module) => settings.featureToggles[module.id] !== false),
-    [settings.featureToggles],
-  );
-  const activeIntelModule = enabledIntelModules.find((module) => module.id === activeModule);
-  const intelActive = Boolean(activeIntelModule);
-  const cadEnabled = settings.featureToggles.cad !== false;
-  const activeAppLabel = activeModule === 'core'
-    ? 'Core'
-    : activeModule === 'cad'
-      ? 'CAD'
-      : activeModule === 'admin'
-        ? 'Admin'
-        : activeIntelModule?.label || activeModule;
-  const canCloseApp = activeModule !== 'core';
-
-  const openIntelModule = (module: ActiveModule) => {
-    setActiveModule(module);
-    setIntelOpen(false);
-  };
-
-  const closeActiveApp = () => {
-    setIntelOpen(false);
-    setActiveModule('core');
-  };
 
   return (
     <header className="h-14 bg-intel-bg border-b border-intel-accent/40 shadow-[0_4px_20px_rgba(0,229,255,0.1)] flex items-center px-6 justify-between z-[5000] relative box-border overflow-visible">
@@ -66,89 +29,6 @@ export const TopNav: React.FC = () => {
             <span>Dennco Information Systems</span>
           </div>
         </div>
-
-        <nav className="flex gap-4 h-full pt-4 overflow-visible">
-          <div className="relative h-full overflow-visible">
-            <button
-              onClick={() => setIntelOpen((open) => !open)}
-              className={`px-4 h-full border-b-2 font-mono text-sm tracking-widest uppercase transition-all ${
-                intelActive
-                  ? 'border-intel-accent text-intel-accent drop-shadow-[0_0_8px_var(--color-intel-accent)] bg-gradient-to-t from-intel-accent/10 to-transparent'
-                  : 'border-transparent text-intel-text hover:text-intel-text-light hover:border-intel-text/50 opacity-70 hover:opacity-100'
-              }`}
-              aria-haspopup="menu"
-              aria-expanded={intelOpen}
-            >
-              INTEL
-              <span className="ml-2 text-[10px] opacity-60">{activeIntelModule ? activeIntelModule.label : 'Screens'} ▾</span>
-            </button>
-
-            {intelOpen && (
-              <div
-                className="absolute left-0 top-full min-w-[240px] border border-intel-accent/40 bg-[#05070b] shadow-[0_22px_45px_rgba(0,0,0,0.92)] backdrop-blur z-[9999] py-2 pointer-events-auto"
-                role="menu"
-              >
-                <div className="px-3 pb-2 text-[9px] uppercase tracking-[0.18em] text-white/35 font-mono">
-                  Intel Screens
-                </div>
-                {enabledIntelModules.map((module) => (
-                  <button
-                    key={module.id}
-                    type="button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => openIntelModule(module.id)}
-                    className={`block w-full text-left px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] border-l-2 transition-all pointer-events-auto ${
-                      activeModule === module.id
-                        ? 'border-intel-accent bg-intel-accent/10 text-intel-accent'
-                        : 'border-transparent text-intel-text-light/75 hover:text-intel-text-light hover:bg-white/8 hover:border-white/25'
-                    }`}
-                    role="menuitem"
-                  >
-                    {module.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {cadEnabled && (
-            <button
-              onClick={() => setActiveModule('cad')}
-              className={`px-4 h-full border-b-2 font-mono text-sm tracking-widest uppercase transition-all ${
-                activeModule === 'cad'
-                  ? 'border-intel-accent text-intel-accent drop-shadow-[0_0_8px_var(--color-intel-accent)] bg-gradient-to-t from-intel-accent/10 to-transparent'
-                  : 'border-transparent text-intel-text hover:text-intel-text-light hover:border-intel-text/50 opacity-70 hover:opacity-100'
-              }`}
-            >
-              CAD
-            </button>
-          )}
-
-          <button
-            onClick={() => setActiveModule('admin')}
-            className={`px-4 h-full border-b-2 font-mono text-sm tracking-widest uppercase transition-all ${
-              activeModule === 'admin'
-                ? 'border-intel-accent text-intel-accent drop-shadow-[0_0_8px_var(--color-intel-accent)] bg-gradient-to-t from-intel-accent/10 to-transparent'
-                : 'border-transparent text-intel-text hover:text-intel-text-light hover:border-intel-text/50 opacity-70 hover:opacity-100'
-            }`}
-          >
-            Admin
-          </button>
-
-          <div className="flex h-full items-center gap-2 border-l border-white/10 pl-3 pb-3">
-            <span className="text-[9px] uppercase tracking-[0.16em] text-white/35">App: {activeAppLabel}</span>
-            {canCloseApp && (
-              <button
-                type="button"
-                onClick={closeActiveApp}
-                className="border border-red-400/35 bg-red-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-red-200 hover:bg-red-500/20 hover:border-red-300"
-                title="Close active app"
-              >
-                × Close
-              </button>
-            )}
-          </div>
-        </nav>
       </div>
 
       <div className="flex gap-4 items-center h-full text-intel-text font-mono text-xs tracking-wider">
