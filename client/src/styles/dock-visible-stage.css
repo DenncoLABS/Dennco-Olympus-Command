@@ -1,5 +1,5 @@
 /* Final Dock visible-stage override.
-   Keep Dock hover animation inside the latched Desk stage so it cannot be cut by the Drag Desk boundary. */
+   Latched Dock should sit snug above footer while keeping open indicators visible. */
 section[class*='z-[4200]'],
 section[class*='z-[4200]'] > div,
 section[class*='z-[4200]'] > div[class*='flex'][class*='h-full'],
@@ -19,45 +19,45 @@ section[class*='z-[4200]'] > div[class*='flex'][class*='h-full'] > div:nth-child
 }
 
 section[class*='z-[4200]'] div[class*='border-t'][class*='bg-black/65'] {
-  height: 132px !important;
-  min-height: 132px !important;
-  margin-top: -18px !important;
-  padding-top: 42px !important;
-  padding-bottom: 12px !important;
+  height: 104px !important;
+  min-height: 104px !important;
+  margin-top: -10px !important;
+  padding-top: 24px !important;
+  padding-bottom: 14px !important;
   z-index: 900 !important;
 }
 
 section[class*='z-[4200]'][data-desk-latched='true'] {
-  height: 152px !important;
-  min-height: 152px !important;
-  max-height: 152px !important;
+  height: 118px !important;
+  min-height: 118px !important;
+  max-height: 118px !important;
 }
 
 section[class*='z-[4200]'][data-desk-latched='true'] div[class*='border-t'][class*='bg-black/65'] {
-  height: 136px !important;
-  min-height: 136px !important;
-  margin-top: 12px !important;
-  padding-top: 46px !important;
-  padding-bottom: 10px !important;
+  height: 96px !important;
+  min-height: 96px !important;
+  margin-top: 20px !important;
+  padding-top: 12px !important;
+  padding-bottom: 14px !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] {
-  height: 110px !important;
-  min-height: 110px !important;
+  height: 84px !important;
+  min-height: 84px !important;
   overflow: visible !important;
   overflow-x: visible !important;
   overflow-y: visible !important;
   align-items: flex-end !important;
-  padding-top: 40px !important;
-  padding-bottom: 10px !important;
+  padding-top: 14px !important;
+  padding-bottom: 14px !important;
   z-index: 950 !important;
 }
 
 section[class*='z-[4200]'][data-desk-latched='true'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] {
-  height: 114px !important;
-  min-height: 114px !important;
-  padding-top: 46px !important;
-  padding-bottom: 8px !important;
+  height: 76px !important;
+  min-height: 76px !important;
+  padding-top: 8px !important;
+  padding-bottom: 12px !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button,
@@ -65,44 +65,57 @@ section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'
   overflow: visible !important;
   transform-origin: bottom center !important;
   z-index: 10 !important;
-  width: 64px !important;
-  height: 64px !important;
-  min-width: 64px !important;
-  flex-basis: 64px !important;
+  width: 58px !important;
+  height: 58px !important;
+  min-width: 58px !important;
+  flex-basis: 58px !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button[class*='border-cyan-300/60']::before {
-  bottom: -12px !important;
+  bottom: -10px !important;
 }
 
 section[class*='z-[4200]'][data-desk-latched='true'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button[class*='border-cyan-300/60']::before {
-  bottom: -8px !important;
+  bottom: -9px !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover {
-  transform: translateY(-22px) scale(1.18) !important;
+  transform: translateY(-14px) scale(1.13) !important;
   z-index: 5000 !important;
+}
+
+section[class*='z-[4200]'][data-desk-latched='true'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover {
+  transform: translateY(-10px) scale(1.1) !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:has(+ button:hover),
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover + button {
-  transform: translateY(-12px) scale(1.08) !important;
+  transform: translateY(-7px) scale(1.05) !important;
   z-index: 4900 !important;
+}
+
+section[class*='z-[4200]'][data-desk-latched='true'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:has(+ button:hover),
+section[class*='z-[4200]'][data-desk-latched='true'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover + button {
+  transform: translateY(-5px) scale(1.035) !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:has(+ button + button:hover),
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover + button + button {
-  transform: translateY(-6px) scale(1.03) !important;
+  transform: translateY(-3px) scale(1.015) !important;
   z-index: 4800 !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button > span:first-child {
-  font-size: 2rem !important;
+  font-size: 1.85rem !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button > span:last-child {
-  bottom: calc(100% + 14px) !important;
+  bottom: calc(100% + 10px) !important;
   z-index: 6000 !important;
+}
+
+section[class*='z-[4200]'][data-desk-latched='true'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button > span:last-child {
+  bottom: calc(100% + 6px) !important;
 }
 
 section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button[data-dock-logout='true'] > span:first-child {
