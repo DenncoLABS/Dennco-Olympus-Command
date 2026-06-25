@@ -1,0 +1,6 @@
+Trigger apt publish for App Store workspace open.
+
+Changes:
+- Apps browser now uses App Store style workspace.
+- App cards open workspace surfaces inside the Apps window.
+- Zabbix opens as an app surface instead of a status card.
