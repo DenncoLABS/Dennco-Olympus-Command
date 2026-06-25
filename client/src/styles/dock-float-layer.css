@@ -1,7 +1,113 @@
-[data-desk-latched] { overflow: visible !important; contain: none !important; }
-[data-desk-latched] > div { overflow: visible !important; contain: none !important; }
-[data-desk-latched] div[class*='bg-black'] { position: fixed !important; left: 0 !important; right: 0 !important; bottom: 28px !important; height: 82px !important; min-height: 82px !important; margin: 0 !important; padding: 6px 12px 8px !important; z-index: 9000 !important; overflow: visible !important; contain: none !important; }
-[data-desk-latched] div[class*='rounded-2xl'] { height: 70px !important; min-height: 70px !important; max-height: 70px !important; overflow: visible !important; padding-top: 6px !important; padding-bottom: 6px !important; z-index: 9500 !important; }
-[data-desk-latched] div[class*='rounded-2xl'] > button { position: relative !important; width: 58px !important; height: 58px !important; min-width: 58px !important; flex-basis: 58px !important; overflow: visible !important; transform-origin: bottom center !important; }
-[data-desk-latched] div[class*='rounded-2xl'] > button:hover { transform: translateY(-22px) scale(1.18) !important; z-index: 20000 !important; }
-[data-desk-latched] div[class*='rounded-2xl'] > button > span:last-child { bottom: calc(100% + 12px) !important; z-index: 22000 !important; }
+/* Powered Olympus Desk hatch.
+   Loaded last so it overrides older Dock experiments while preserving real Desk height/drag behavior. */
+.olympus-powered-desk {
+  overflow: visible !important;
+  contain: none !important;
+  transition: height 1250ms cubic-bezier(0.18, 0.9, 0.18, 1), box-shadow 800ms ease, border-color 800ms ease;
+}
+
+.olympus-powered-desk[data-hatch-state='opening'] {
+  box-shadow: 0 -18px 54px rgba(34, 211, 238, 0.18), 0 -8px 24px rgba(0, 0, 0, 0.8) !important;
+  border-top-color: rgba(103, 232, 249, 0.65) !important;
+}
+
+.olympus-powered-desk[data-hatch-state='closing'] {
+  transition-timing-function: cubic-bezier(0.62, 0.02, 0.2, 1);
+  box-shadow: 0 -8px 26px rgba(0, 0, 0, 0.86) !important;
+}
+
+.olympus-powered-desk > div,
+.olympus-powered-desk .olympus-dock-row,
+.olympus-powered-desk .olympus-dock-track {
+  overflow: visible !important;
+  contain: none !important;
+}
+
+.olympus-hatch-latch {
+  z-index: 15000 !important;
+  transition: width 500ms ease, background-color 500ms ease, border-color 500ms ease, color 500ms ease;
+}
+
+.olympus-powered-desk[data-hatch-state='opening'] .olympus-hatch-latch,
+.olympus-powered-desk[data-hatch-state='closing'] .olympus-hatch-latch {
+  border-color: rgba(103, 232, 249, 0.55) !important;
+  background: rgba(34, 211, 238, 0.14) !important;
+  color: rgba(207, 250, 254, 0.95) !important;
+}
+
+.olympus-powered-desk .olympus-desk-header,
+.olympus-powered-desk .olympus-desk-body {
+  animation: olympusDeskHatchFade 520ms ease both;
+}
+
+.olympus-powered-desk[data-hatch-state='closing'] .olympus-desk-header,
+.olympus-powered-desk[data-hatch-state='closing'] .olympus-desk-body {
+  opacity: 0.2;
+  transform: translateY(10px);
+}
+
+.olympus-powered-desk .olympus-dock-row {
+  position: relative !important;
+  z-index: 12000 !important;
+  height: 96px !important;
+  min-height: 96px !important;
+  margin-top: auto !important;
+  padding-top: 18px !important;
+  padding-bottom: 12px !important;
+}
+
+.olympus-powered-desk .olympus-dock-track {
+  height: 72px !important;
+  min-height: 72px !important;
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  align-items: flex-end !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+.olympus-powered-desk .olympus-dock-track > button {
+  width: 58px !important;
+  height: 58px !important;
+  min-width: 58px !important;
+  flex-basis: 58px !important;
+  overflow: visible !important;
+  transform-origin: bottom center !important;
+  position: relative !important;
+}
+
+.olympus-powered-desk .olympus-dock-track > button:hover {
+  transform: translateY(-22px) scale(1.16) !important;
+  z-index: 22000 !important;
+}
+
+.olympus-powered-desk .olympus-dock-track > button:has(+ button:hover),
+.olympus-powered-desk .olympus-dock-track > button:hover + button {
+  transform: translateY(-10px) scale(1.07) !important;
+  z-index: 21000 !important;
+}
+
+.olympus-powered-desk .olympus-dock-track > button:has(+ button + button:hover),
+.olympus-powered-desk .olympus-dock-track > button:hover + button + button {
+  transform: translateY(-4px) scale(1.02) !important;
+  z-index: 20000 !important;
+}
+
+.olympus-powered-desk .olympus-dock-track > button > span:first-child {
+  font-size: 1.85rem !important;
+}
+
+.olympus-powered-desk .olympus-dock-track > button > span:last-child {
+  bottom: calc(100% + 12px) !important;
+  z-index: 24000 !important;
+}
+
+.olympus-powered-desk .olympus-dock-track > button[class*='border-cyan-300/60']::before {
+  bottom: -9px !important;
+}
+
+@keyframes olympusDeskHatchFade {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
