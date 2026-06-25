@@ -1,0 +1,7 @@
+Trigger apt publish for paged Tile screens.
+
+Changes:
+- Adds horizontally paged Tile screens.
+- Saves active tile index and tile screen count in localStorage.
+- Adds bottom-right Dock-area previous/next controls.
+- Adds + Tile button to deploy more Tile workspaces.
