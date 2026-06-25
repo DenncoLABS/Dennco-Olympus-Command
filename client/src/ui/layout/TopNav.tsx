@@ -6,8 +6,6 @@ import { logoutAdmin } from '../../admin/LoginGate';
 export const TopNav: React.FC = () => {
   const mode = useThemeStore((s) => s.mode);
   const setMode = useThemeStore((s) => s.setMode);
-  const mapProjection = useThemeStore((s) => s.mapProjection);
-  const setMapProjection = useThemeStore((s) => s.setMapProjection);
   const { settings } = useRuntimeSettings();
   const logoSrc = settings.branding.logoDataUrl || settings.branding.logoUrl;
 
@@ -36,16 +34,6 @@ export const TopNav: React.FC = () => {
           <span>Purpose:</span>
           <span className="text-white/70">Operational Awareness Support</span>
         </div>
-        <div className="flex items-center gap-2 border-r border-intel-accent/30 pr-4 h-8">
-          <span className="opacity-50">PROJECTION:</span>
-          <button
-            onClick={() => setMapProjection(mapProjection === 'mercator' ? 'globe' : 'mercator')}
-            className="px-3 py-1 bg-intel-bg border border-intel-accent/50 text-intel-accent hover:bg-intel-accent/10 hover:shadow-[0_0_8px_var(--color-intel-accent)] transition-all uppercase"
-          >
-            {mapProjection}
-          </button>
-        </div>
-
         <div className="flex items-center gap-2 h-8">
           <span className="opacity-50">SENSOR:</span>
           {(['eo', 'flir', 'crt'] as const).map((m) => (
