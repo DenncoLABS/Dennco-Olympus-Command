@@ -1,0 +1,7 @@
+Trigger apt publish for NASA Code Apps Directory.
+
+Changes:
+- Adds NASA Code Apps Directory UI.
+- Mounts NASA Code directory outside the Dock.
+- Adds NASA Code catalog installer helper.
+- Adds Publish Apt Package workflow.
