@@ -5,6 +5,7 @@ APP_USER="olympus"
 APP_GROUP="olympus"
 APP_DIR="/opt/dennco/olympus-command"
 ENV_DIR="/etc/dennco/olympus-command"
+INTEL_MAPS_DIR="/var/lib/dennco/olympus-command/intel-maps"
 
 if ! getent group "$APP_GROUP" >/dev/null 2>&1; then
   addgroup --system "$APP_GROUP" >/dev/null
@@ -14,14 +15,14 @@ if ! id "$APP_USER" >/dev/null 2>&1; then
   adduser --system --ingroup "$APP_GROUP" --home "$APP_DIR" --no-create-home --disabled-login "$APP_USER" >/dev/null
 fi
 
-mkdir -p "$ENV_DIR"
+mkdir -p "$ENV_DIR" "$INTEL_MAPS_DIR"
 
 if [ ! -f "$ENV_DIR/olympus-command.env" ]; then
   cp /usr/share/dennco-olympus-command/olympus-command.env.example "$ENV_DIR/olympus-command.env"
   chmod 640 "$ENV_DIR/olympus-command.env"
 fi
 
-chown -R "$APP_USER:$APP_GROUP" "$APP_DIR" "$ENV_DIR"
+chown -R "$APP_USER:$APP_GROUP" "$APP_DIR" "$ENV_DIR" "$INTEL_MAPS_DIR"
 
 systemctl daemon-reload || true
 systemctl enable dennco-olympus-command.service >/dev/null 2>&1 || true
