@@ -8,9 +8,20 @@ const DotPage = lazy(() => import('../dot/DotPage').then((m) => ({ default: m.Do
 const CyberPage = lazy(() => import('../cyber/CyberPage').then((m) => ({ default: m.CyberPage })));
 
 type IntelMapView = 'flights' | 'maritime' | 'monitor' | 'dot' | 'cyber';
+type IntelWindowKind = IntelMapView | 'custom';
+
+type CustomMapTools = {
+  title: string;
+  baseLayer: string;
+  overlay: string;
+  drawingMode: string;
+  symbology: string;
+  notes: string;
+};
 
 type WorkspaceWindow = {
-  id: IntelMapView;
+  id: string;
+  kind: IntelWindowKind;
   title: string;
   x: number;
   y: number;
@@ -18,9 +29,13 @@ type WorkspaceWindow = {
   height: number;
   z: number;
   minimized: boolean;
+  tools?: CustomMapTools;
+  savedPath?: string;
 };
 
-const STORAGE_KEY = 'olympus.intelMaps.windows.v2';
+const STORAGE_KEY = 'olympus.intelMaps.windows.v3';
+const CUSTOM_MAP_COUNTER_KEY = 'olympus.intelMaps.customCounter';
+const INTEL_MAPS_FOLDER = '/var/lib/dennco/olympus-command/intel-maps';
 
 const mapApps: Array<{ id: IntelMapView; title: string; icon: string; description: string }> = [
   { id: 'flights', title: 'Flight Map', icon: '✈', description: 'Aircraft, emergencies, aviation infrastructure.' },
@@ -44,13 +59,20 @@ function clampWindow(win: WorkspaceWindow): WorkspaceWindow {
   };
 }
 
+function normalizeWindow(win: WorkspaceWindow): WorkspaceWindow | null {
+  const legacyId = win.id as IntelMapView;
+  const kind = win.kind || (mapApps.some((app) => app.id === legacyId) ? legacyId : 'custom');
+  if (kind !== 'custom' && !mapApps.some((app) => app.id === kind)) return null;
+  return clampWindow({ ...win, kind, id: win.id || kind });
+}
+
 function readWindows(): WorkspaceWindow[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultWindows;
     const parsed = JSON.parse(raw) as WorkspaceWindow[];
     if (!Array.isArray(parsed)) return defaultWindows;
-    return parsed.filter((win) => mapApps.some((app) => app.id === win.id)).map(clampWindow);
+    return parsed.map(normalizeWindow).filter((win): win is WorkspaceWindow => Boolean(win));
   } catch {
     return defaultWindows;
   }
@@ -67,6 +89,24 @@ function mapModuleToView(module: ActiveModule): IntelMapView | null {
 
 function appFor(id: IntelMapView) {
   return mapApps.find((app) => app.id === id) || mapApps[0];
+}
+
+function nextCustomMapId() {
+  const current = Number(localStorage.getItem(CUSTOM_MAP_COUNTER_KEY));
+  const next = Number.isFinite(current) ? current + 1 : 1;
+  localStorage.setItem(CUSTOM_MAP_COUNTER_KEY, String(next));
+  return next;
+}
+
+function defaultCustomMapTools(index: number): CustomMapTools {
+  return {
+    title: `New Intel Map ${index}`,
+    baseLayer: 'Dark tactical base',
+    overlay: 'None',
+    drawingMode: 'Point markers',
+    symbology: 'Cyan operational',
+    notes: '',
+  };
 }
 
 export const IntelMapsApp: React.FC = () => {
@@ -91,6 +131,7 @@ export const IntelMapsApp: React.FC = () => {
             ...current,
             clampWindow({
               id,
+              kind: id,
               title: app.title,
               x: 32 + current.length * 26,
               y: 82 + current.length * 22,
@@ -100,6 +141,34 @@ export const IntelMapsApp: React.FC = () => {
               minimized: false,
             }),
           ];
+      writeWindows(updated);
+      return updated;
+    });
+  };
+
+  const openNewMapBuilder = () => {
+    const index = nextCustomMapId();
+    const id = `custom-${Date.now()}-${index}`;
+    const tools = defaultCustomMapTools(index);
+    const z = nextZ + 1;
+    setNextZ(z + 1);
+    setMapsMenuOpen(false);
+    setWindows((current) => {
+      const updated = [
+        ...current,
+        clampWindow({
+          id,
+          kind: 'custom',
+          title: tools.title,
+          x: 46 + current.length * 24,
+          y: 96 + current.length * 20,
+          width: 820,
+          height: 520,
+          z,
+          minimized: false,
+          tools,
+        }),
+      ];
       writeWindows(updated);
       return updated;
     });
@@ -121,7 +190,7 @@ export const IntelMapsApp: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const updateWindow = (id: IntelMapView, patch: Partial<WorkspaceWindow>) => {
+  const updateWindow = (id: string, patch: Partial<WorkspaceWindow>) => {
     setWindows((current) => {
       const next = current.map((win) => (win.id === id ? clampWindow({ ...win, ...patch }) : win));
       writeWindows(next);
@@ -129,13 +198,13 @@ export const IntelMapsApp: React.FC = () => {
     });
   };
 
-  const focusWindow = (id: IntelMapView) => {
+  const focusWindow = (id: string) => {
     const z = nextZ + 1;
     setNextZ(z + 1);
     updateWindow(id, { z });
   };
 
-  const closeWindow = (id: IntelMapView) => {
+  const closeWindow = (id: string) => {
     setWindows((current) => {
       const next = current.filter((win) => win.id !== id);
       writeWindows(next);
@@ -170,6 +239,27 @@ export const IntelMapsApp: React.FC = () => {
     writeWindows(next);
   };
 
+  const saveCustomMap = async (id: string, tools: CustomMapTools) => {
+    const payload = { name: tools.title, title: tools.title, tools, layers: [tools.baseLayer, tools.overlay].filter((item) => item !== 'None'), notes: tools.notes };
+    let savedPath = `${INTEL_MAPS_FOLDER}/${tools.title.toLowerCase().replace(/[^a-z0-9_-]+/g, '-')}.json`;
+    try {
+      const response = await fetch('/api/intel-maps/custom-maps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (typeof data.path === 'string') savedPath = data.path;
+      } else {
+        localStorage.setItem(`olympus.intelMaps.saved.${id}`, JSON.stringify(payload));
+      }
+    } catch {
+      localStorage.setItem(`olympus.intelMaps.saved.${id}`, JSON.stringify(payload));
+    }
+    updateWindow(id, { title: tools.title, tools, savedPath });
+  };
+
   const toggleProjection = () => setMapProjection(mapProjection === 'mercator' ? 'globe' : 'mercator');
 
   const visibleWindows = useMemo(() => windows.filter((win) => !win.minimized), [windows]);
@@ -199,6 +289,7 @@ export const IntelMapsApp: React.FC = () => {
               </div>
             )}
           </div>
+          <button onClick={openNewMapBuilder} className="rounded border border-emerald-300/35 bg-emerald-300/10 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-emerald-100 hover:bg-emerald-300/15">New Map</button>
           <button onClick={closeIntelMapsApp} className="rounded border border-red-400/40 bg-red-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-red-200 hover:bg-red-500/20">× Close App</button>
         </div>
       </div>
@@ -209,7 +300,7 @@ export const IntelMapsApp: React.FC = () => {
             <div className="text-center text-white/35 font-mono">
               <div className="text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">Intel Maps Workspace</div>
               <div className="mt-2 text-sm uppercase tracking-[0.16em]">No map window open</div>
-              <div className="mt-2 text-[10px] uppercase tracking-[0.12em] text-white/25">Use the Intel Maps dropdown to open Flight, Maritime, Monitor, DOT, or Cyber.</div>
+              <div className="mt-2 text-[10px] uppercase tracking-[0.12em] text-white/25">Use the Intel Maps dropdown or New Map to open map widgets.</div>
             </div>
           </div>
         )}
@@ -220,6 +311,7 @@ export const IntelMapsApp: React.FC = () => {
             onFocus={() => focusWindow(win.id)}
             onUpdate={(patch) => updateWindow(win.id, patch)}
             onClose={() => closeWindow(win.id)}
+            onSaveCustomMap={saveCustomMap}
           />
         ))}
       </div>
@@ -237,13 +329,13 @@ export const IntelMapsApp: React.FC = () => {
   );
 };
 
-function IntelMapWindow({ win, onFocus, onUpdate, onClose }: { win: WorkspaceWindow; onFocus: () => void; onUpdate: (patch: Partial<WorkspaceWindow>) => void; onClose: () => void }) {
+function IntelMapWindow({ win, onFocus, onUpdate, onClose, onSaveCustomMap }: { win: WorkspaceWindow; onFocus: () => void; onUpdate: (patch: Partial<WorkspaceWindow>) => void; onClose: () => void; onSaveCustomMap: (id: string, tools: CustomMapTools) => void }) {
   const dragRef = useRef<{ pointerId: number; dx: number; dy: number } | null>(null);
   const resizeRef = useRef<{ pointerId: number; startX: number; startY: number; width: number; height: number } | null>(null);
 
   const startDrag = (event: React.PointerEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
-    if (target.closest('button')) return;
+    if (target.closest('button, input, textarea, select')) return;
     onFocus();
     dragRef.current = { pointerId: event.pointerId, dx: event.clientX - win.x, dy: event.clientY - win.y };
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -291,20 +383,69 @@ function IntelMapWindow({ win, onFocus, onUpdate, onClose }: { win: WorkspaceWin
       <div className="flex h-9 cursor-move items-center justify-between border-b border-cyan-300/15 bg-[#05070b]/95 px-3" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
         <div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-300">{win.title}</div>
-          <div className="text-[8px] uppercase tracking-[0.14em] text-white/35">INTEL MAPS WINDOW</div>
+          <div className="text-[8px] uppercase tracking-[0.14em] text-white/35">{win.kind === 'custom' ? 'NEW MAP BUILDER' : 'INTEL MAPS WINDOW'}</div>
         </div>
         <div className="flex items-center gap-1 text-[10px]">
+          {win.kind === 'custom' && <button onClick={() => onSaveCustomMap(win.id, win.tools || defaultCustomMapTools(1))} className="border border-emerald-300/30 px-2 py-0.5 text-emerald-200 hover:bg-emerald-300/10">Save</button>}
           <button onClick={() => onUpdate({ minimized: true })} className="border border-white/10 px-2 py-0.5 text-white/55 hover:text-cyan-200">_</button>
           <button onClick={onClose} className="border border-white/10 px-2 py-0.5 text-white/55 hover:text-red-200">×</button>
         </div>
       </div>
       <div className="relative h-[calc(100%-36px)] w-full overflow-hidden bg-black">
-        <Suspense fallback={<WindowLoader />}>
-          <WindowContent id={win.id} />
-        </Suspense>
+        {win.kind === 'custom' ? (
+          <CustomMapBuilder win={win} onUpdate={onUpdate} onSave={onSaveCustomMap} />
+        ) : (
+          <Suspense fallback={<WindowLoader />}>
+            <WindowContent id={win.kind} />
+          </Suspense>
+        )}
       </div>
       <div className="absolute bottom-0 right-0 h-5 w-5 cursor-nwse-resize border-l border-t border-cyan-300/25 bg-cyan-300/10" onPointerDown={startResize} onPointerMove={moveResize} onPointerUp={endResize} onPointerCancel={endResize} />
     </section>
+  );
+}
+
+function CustomMapBuilder({ win, onUpdate, onSave }: { win: WorkspaceWindow; onUpdate: (patch: Partial<WorkspaceWindow>) => void; onSave: (id: string, tools: CustomMapTools) => void }) {
+  const tools = win.tools || defaultCustomMapTools(1);
+  const setTool = (patch: Partial<CustomMapTools>) => onUpdate({ title: patch.title || win.title, tools: { ...tools, ...patch } });
+  return (
+    <div className="grid h-full grid-cols-[300px_1fr] text-white/70">
+      <aside className="border-r border-cyan-300/15 bg-[#030812] p-3 text-xs">
+        <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-300">Map Building Tools</div>
+        <label className="mt-3 block text-[9px] uppercase tracking-[0.14em] text-white/35">Map Name</label>
+        <input value={tools.title} onChange={(event) => setTool({ title: event.target.value })} className="mt-1 w-full border border-white/10 bg-black/60 px-2 py-1 text-cyan-100 outline-none focus:border-cyan-300/50" />
+        <label className="mt-3 block text-[9px] uppercase tracking-[0.14em] text-white/35">Base Layer</label>
+        <select value={tools.baseLayer} onChange={(event) => setTool({ baseLayer: event.target.value })} className="mt-1 w-full border border-white/10 bg-black/60 px-2 py-1 text-cyan-100">
+          <option>Dark tactical base</option><option>Street operations base</option><option>Satellite planning base</option><option>Maritime chart base</option>
+        </select>
+        <label className="mt-3 block text-[9px] uppercase tracking-[0.14em] text-white/35">Overlay</label>
+        <select value={tools.overlay} onChange={(event) => setTool({ overlay: event.target.value })} className="mt-1 w-full border border-white/10 bg-black/60 px-2 py-1 text-cyan-100">
+          <option>None</option><option>Flight corridors</option><option>Ports and waterways</option><option>DOT traffic layer</option><option>Cyber network layer</option>
+        </select>
+        <label className="mt-3 block text-[9px] uppercase tracking-[0.14em] text-white/35">Drawing Tool</label>
+        <select value={tools.drawingMode} onChange={(event) => setTool({ drawingMode: event.target.value })} className="mt-1 w-full border border-white/10 bg-black/60 px-2 py-1 text-cyan-100">
+          <option>Point markers</option><option>Line routes</option><option>Polygon zones</option><option>Radius rings</option><option>Text labels</option>
+        </select>
+        <label className="mt-3 block text-[9px] uppercase tracking-[0.14em] text-white/35">Symbology</label>
+        <select value={tools.symbology} onChange={(event) => setTool({ symbology: event.target.value })} className="mt-1 w-full border border-white/10 bg-black/60 px-2 py-1 text-cyan-100">
+          <option>Cyan operational</option><option>Amber caution</option><option>Red emergency</option><option>Green logistics</option>
+        </select>
+        <label className="mt-3 block text-[9px] uppercase tracking-[0.14em] text-white/35">Notes</label>
+        <textarea value={tools.notes} onChange={(event) => setTool({ notes: event.target.value })} className="mt-1 h-20 w-full resize-none border border-white/10 bg-black/60 px-2 py-1 text-cyan-100 outline-none focus:border-cyan-300/50" />
+        <button onClick={() => onSave(win.id, tools)} className="mt-3 w-full rounded border border-emerald-300/35 bg-emerald-300/10 px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-emerald-100 hover:bg-emerald-300/15">Save to Intel Maps Folder</button>
+        <div className="mt-2 break-all text-[9px] leading-relaxed text-white/35">{win.savedPath || INTEL_MAPS_FOLDER}</div>
+      </aside>
+      <main className="relative overflow-hidden bg-[#020617]">
+        <div className="absolute inset-0 opacity-30 bg-[linear-gradient(rgba(34,211,238,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,.08)_1px,transparent_1px)] bg-[size:34px_34px]" />
+        <div className="absolute left-6 top-5 rounded border border-cyan-300/20 bg-black/65 px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-cyan-200">{tools.title}</div>
+        <div className="absolute bottom-5 left-6 right-6 grid grid-cols-4 gap-2 text-[9px] uppercase tracking-[0.12em] text-white/45">
+          <div className="border border-white/10 bg-black/55 p-2"><div className="text-cyan-300">Base</div>{tools.baseLayer}</div>
+          <div className="border border-white/10 bg-black/55 p-2"><div className="text-cyan-300">Overlay</div>{tools.overlay}</div>
+          <div className="border border-white/10 bg-black/55 p-2"><div className="text-cyan-300">Tool</div>{tools.drawingMode}</div>
+          <div className="border border-white/10 bg-black/55 p-2"><div className="text-cyan-300">Style</div>{tools.symbology}</div>
+        </div>
+      </main>
+    </div>
   );
 }
 
