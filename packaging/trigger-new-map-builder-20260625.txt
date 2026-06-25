@@ -1,0 +1,7 @@
+Trigger apt publish for Intel Maps New Map builder.
+
+Changes:
+- Adds New Map button after the Intel Maps dropdown.
+- Opens a custom map builder window with map-building tools.
+- Saves custom map JSON files through /api/intel-maps/custom-maps.
+- Creates /var/lib/dennco/olympus-command/intel-maps during package install.
