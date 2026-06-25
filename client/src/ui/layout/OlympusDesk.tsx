@@ -18,7 +18,8 @@ const HEIGHT_KEY = 'olympus.desk.height.v2';
 const DOCK_KEY = 'olympus.desk.dockPlacement.v2';
 const VIEW_KEY = 'olympus.desk.activeView.v2';
 const MONITOR_WIDGET_ORDER_KEY = 'olympus.desk.monitorWidgetOrder.v1';
-const EARTH_WIDGETS_KEY = 'olympus.earth.stagedWidgets.v1';
+const EARTH_WIDGETS_KEY = 'olympus.desk.earthStagedWidgets.v1';
+const DEFAULT_MONITOR_WIDGET_ORDER = monitorDeskWidgetManifest.map((widget) => widget.id);
 
 const deskItems: DeskItem[] = [
   { id: 'core', label: 'Core', icon: 'Ω', view: 'core' },
@@ -54,30 +55,22 @@ function readView(): DeskView {
   return deskItems.some((item) => item.view === raw) ? raw as DeskView : 'core';
 }
 
-function allMonitorWidgetIds(): MonitorDeskWidgetId[] {
-  return monitorDeskWidgetManifest.map((widget) => widget.id);
-}
-
 function readMonitorWidgetOrder(): MonitorDeskWidgetId[] {
-  const defaults = allMonitorWidgetIds();
   try {
     const raw = localStorage.getItem(MONITOR_WIDGET_ORDER_KEY);
-    if (!raw) return defaults;
-    const parsed = JSON.parse(raw) as MonitorDeskWidgetId[];
-    const valid = parsed.filter((id) => defaults.includes(id));
-    const missing = defaults.filter((id) => !valid.includes(id));
-    return [...valid, ...missing];
+    const parsed = raw ? JSON.parse(raw) as MonitorDeskWidgetId[] : [];
+    const valid = parsed.filter((id) => DEFAULT_MONITOR_WIDGET_ORDER.includes(id));
+    return [...valid, ...DEFAULT_MONITOR_WIDGET_ORDER.filter((id) => !valid.includes(id))];
   } catch {
-    return defaults;
+    return DEFAULT_MONITOR_WIDGET_ORDER;
   }
 }
 
 function readEarthWidgets(): MonitorDeskWidgetId[] {
-  const defaults = allMonitorWidgetIds();
   try {
     const raw = localStorage.getItem(EARTH_WIDGETS_KEY);
-    if (!raw) return [];
-    return (JSON.parse(raw) as MonitorDeskWidgetId[]).filter((id) => defaults.includes(id));
+    const parsed = raw ? JSON.parse(raw) as MonitorDeskWidgetId[] : [];
+    return parsed.filter((id) => DEFAULT_MONITOR_WIDGET_ORDER.includes(id));
   } catch {
     return [];
   }
