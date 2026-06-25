@@ -3,7 +3,7 @@ import { create } from 'zustand';
 export type ThemeMode = 'eo' | 'flir' | 'crt';
 export type MapProjection = 'mercator' | 'globe';
 export type MapLayer = 'dark' | 'light' | 'street' | 'satellite';
-export type ActiveModule = 'core' | 'flights' | 'maritime' | 'monitor' | 'dot' | 'cyber' | 'cad' | 'admin';
+export type ActiveModule = 'core' | 'intelmaps' | 'flights' | 'maritime' | 'monitor' | 'dot' | 'cyber' | 'cad' | 'admin';
 export type WeatherRadarProduct = 'base-reflectivity' | 'custom';
 
 interface WeatherRadarState {
@@ -44,7 +44,7 @@ interface ThemeState {
   setWeatherRadarCustomTileUrl: (customTileUrl: string) => void;
 }
 
-const validModules: ActiveModule[] = ['core', 'flights', 'maritime', 'monitor', 'dot', 'cyber', 'cad', 'admin'];
+const validModules: ActiveModule[] = ['core', 'intelmaps', 'flights', 'maritime', 'monitor', 'dot', 'cyber', 'cad', 'admin'];
 const validModes: ThemeMode[] = ['eo', 'flir', 'crt'];
 const validProjections: MapProjection[] = ['mercator', 'globe'];
 const validLayers: MapLayer[] = ['dark', 'light', 'street', 'satellite'];
