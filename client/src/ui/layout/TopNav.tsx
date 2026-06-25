@@ -1,6 +1,7 @@
 import React from 'react';
 import { useThemeStore } from '../theme/theme.store';
 import { useRuntimeSettings } from '../../admin/runtimeSettings';
+import '../../modules/intelmaps/intelMapsToolbarCollapse';
 import './tileWorkspaceScope';
 import './appsDirectoryDeskInjection';
 import '../../styles/dock-latch-visibility-override.css';
