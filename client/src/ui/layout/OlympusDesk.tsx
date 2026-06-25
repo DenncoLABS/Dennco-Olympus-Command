@@ -1,1 +1,1 @@
-export { OlympusDesktopManager as OlympusDesk } from './OlympusDesktopManager';
+export { OlympusDesktopManagerClean as OlympusDesk } from './OlympusDesktopManagerClean';
