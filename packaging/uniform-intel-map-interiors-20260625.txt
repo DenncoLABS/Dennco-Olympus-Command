@@ -1,0 +1,8 @@
+Uniform Intel Maps interiors trigger.
+
+Changes:
+- Adds global responsive styling for Intel Maps tile-window interiors.
+- Makes Flight, Maritime, Monitor, DOT, and Cyber map toolbars scale inside tiled windows.
+- Standardizes the overlay treatment toward translucent glass panels like Maritime.
+- Preserves Flight-style glowing text for map controls and stats.
+- Prevents oversized internal panels from dominating small tiled map windows.
