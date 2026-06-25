@@ -152,3 +152,97 @@ body {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* Olympus Dock macOS-style treatment for the existing launcher markup. */
+section[class*='z-[4200]'] div[class*='border-t'][class*='bg-black/65'] {
+  width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  overflow: visible !important;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 94px !important;
+  justify-content: center !important;
+  align-items: flex-end !important;
+  gap: 10px !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  border-radius: 0 !important;
+  padding: 18px 24px 10px !important;
+  backdrop-filter: blur(18px);
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > div:first-child {
+  display: none !important;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button {
+  position: relative !important;
+  width: 68px !important;
+  height: 68px !important;
+  min-width: 68px !important;
+  flex: 0 0 68px !important;
+  padding: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transform-origin: bottom center !important;
+  transition:
+    transform 170ms ease,
+    filter 170ms ease,
+    border-color 170ms ease,
+    background-color 170ms ease,
+    box-shadow 170ms ease !important;
+  will-change: transform;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover {
+  transform: translateY(-20px) scale(1.34) !important;
+  z-index: 5 !important;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:has(+ button:hover),
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover + button {
+  transform: translateY(-12px) scale(1.17) !important;
+  z-index: 4 !important;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:has(+ button + button:hover),
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover + button + button {
+  transform: translateY(-6px) scale(1.08) !important;
+  z-index: 3 !important;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button > span:first-child {
+  margin: 0 !important;
+  font-size: 2rem !important;
+  line-height: 1 !important;
+  filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.22));
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button > span:last-child {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: calc(100% + 12px) !important;
+  transform: translateX(-50%) translateY(4px) !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background: rgba(0, 0, 0, 0.84) !important;
+  padding: 4px 8px !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+  letter-spacing: 0.16em !important;
+  color: rgba(224, 242, 254, 0.9) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55) !important;
+  transition: opacity 140ms ease, transform 140ms ease !important;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover > span:last-child {
+  opacity: 1 !important;
+  transform: translateX(-50%) translateY(0) !important;
+}
