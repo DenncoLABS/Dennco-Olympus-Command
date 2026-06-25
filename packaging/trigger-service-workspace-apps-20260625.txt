@@ -1,0 +1,7 @@
+Trigger apt publish for service workspace apps.
+
+Changes:
+- Adds shared Tile workspace for remaining infrastructure apps.
+- Routes service workspaces from the Apps browser.
+- Loads service app launcher globally.
+- Keeps apps opening like Intel Maps with workspace toolbars and app windows.
