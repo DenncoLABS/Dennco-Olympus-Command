@@ -59,6 +59,7 @@ if [ -d scripts ]; then
   [ -f scripts/update-core-services.sh ] && cp scripts/update-core-services.sh "$APP_DIR/scripts/update-core-services.sh"
   [ -f scripts/install-cad-services.sh ] && cp scripts/install-cad-services.sh "$APP_DIR/scripts/install-cad-services.sh"
   [ -f scripts/install-gnome-desktop.sh ] && cp scripts/install-gnome-desktop.sh "$APP_DIR/scripts/install-gnome-desktop.sh"
+  [ -f scripts/install-ollama-ai.sh ] && cp scripts/install-ollama-ai.sh "$APP_DIR/scripts/install-ollama-ai.sh"
 fi
 
 if [ -d packaging/desktop ]; then
@@ -82,6 +83,7 @@ find "$PKG_DIR" -type f -exec chmod 0644 {} \;
 [ -f "$APP_DIR/scripts/update-core-services.sh" ] && chmod 0755 "$APP_DIR/scripts/update-core-services.sh"
 [ -f "$APP_DIR/scripts/install-cad-services.sh" ] && chmod 0755 "$APP_DIR/scripts/install-cad-services.sh"
 [ -f "$APP_DIR/scripts/install-gnome-desktop.sh" ] && chmod 0755 "$APP_DIR/scripts/install-gnome-desktop.sh"
+[ -f "$APP_DIR/scripts/install-ollama-ai.sh" ] && chmod 0755 "$APP_DIR/scripts/install-ollama-ai.sh"
 chmod 0755 "$DEBIAN_DIR/postinst" "$DEBIAN_DIR/prerm" "$DEBIAN_DIR/postrm"
 
 echo "Building .deb..."
