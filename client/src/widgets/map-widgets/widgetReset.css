@@ -1,0 +1,8 @@
+/* Temporary reset while map notifications are rebuilt as organized Olympus widgets. */
+[class*="top-[19rem]"][class*="right-16"][class*="z-[70]"][class*="w-[360px]"] {
+  display: none !important;
+}
+
+[class*="left-3"][class*="top-3"][class*="bottom-3"][class*="w-[340px]"][class*="bg-black/75"] {
+  display: none !important;
+}
