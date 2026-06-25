@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { BrainCircuit, Pin, PinOff, Rss, Sparkles } from 'lucide-react';
+import { BellRing, BrainCircuit, Camera, Pin, PinOff, Plane, Rss, Ship, Sparkles, TrafficCone } from 'lucide-react';
 import { MapLayersWidget } from '../components/widgets/MapLayersWidget';
 import { RocketAlertWidget } from '../components/widgets/RocketAlertWidget';
 import { GulfWatchCombinedWidget } from '../components/widgets/GulfWatchCombinedWidget';
@@ -8,8 +8,8 @@ import { useOsintNews } from '../../osint/hooks/useOsintNews';
 import { useIntelBrief } from '../../osint/hooks/useIntelBrief';
 import { monitorDeskWidgetManifest, type MonitorDeskWidgetId } from './monitorDeskWidgetManifest';
 
-const ORDER_KEY = 'olympus.monitorDeskWidgets.order.v1';
-const PINNED_KEY = 'olympus.monitorDeskWidgets.pinnedEarth.v1';
+const ORDER_KEY = 'olympus.monitorDeskWidgets.order.v2';
+const PINNED_KEY = 'olympus.monitorDeskWidgets.pinnedEarth.v2';
 
 const CATEGORIES = ['All', 'Politics & Society', 'Business & Economy', 'Science & Technology', 'Local News'] as const;
 const DATE_FORMATTER = new Intl.DateTimeFormat(undefined, { dateStyle: 'short' });
@@ -131,8 +131,10 @@ export const MonitorDeskWidgets: React.FC = () => {
     <div className="h-full min-h-0 overflow-auto custom-scrollbar">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Monitor Desk Widgets</h3>
-          <p className="mt-2 text-sm text-white/55">These are the Monitor widgets saved from the old bottom dashboard. Reorder them here now; pinned widgets are staged for the future Earth workspace layer.</p>
+          <h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Widget App Folder</h3>
+          <p className="mt-2 text-sm text-white/55">
+            Saved Olympus widgets live here before they become Earth-screen widgets. Reorder the cards now; use Earth to stage a widget for future map placement.
+          </p>
         </div>
         <button type="button" onClick={reset} className="shrink-0 border border-white/10 px-2 py-1 text-[9px] uppercase tracking-[0.14em] text-white/45 hover:border-cyan-300/50 hover:text-cyan-200">Reset</button>
       </div>
@@ -151,6 +153,7 @@ export const MonitorDeskWidgets: React.FC = () => {
               key={widget.id}
               draggable
               onDragStart={() => setDraggingId(widget.id)}
+              onDragEnd={() => setDraggingId(null)}
               onDragOver={(event) => event.preventDefault()}
               onDrop={() => reorderByDrop(widget.id)}
               className={`flex min-h-[240px] flex-col overflow-hidden rounded border bg-black/45 shadow-[0_10px_22px_rgba(0,0,0,0.42)] transition-all ${draggingId === widget.id ? 'border-cyan-300/70 opacity-70' : isPinned ? 'border-cyan-300/45' : 'border-white/10 hover:border-cyan-300/30'}`}
@@ -158,7 +161,7 @@ export const MonitorDeskWidgets: React.FC = () => {
               <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.03] px-3 py-2">
                 <div className="min-w-0">
                   <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-200">{widget.title}</div>
-                  <div className="mt-0.5 truncate text-[9px] uppercase tracking-[0.1em] text-white/35">Drag card to reorder · Desk widget {index + 1}</div>
+                  <div className="mt-0.5 truncate text-[9px] uppercase tracking-[0.1em] text-white/35">Drag card to reorder · Widget {index + 1}</div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1 text-[9px] uppercase tracking-[0.1em]">
                   <button type="button" onClick={() => moveWidget(widget.id, -1)} className="border border-white/10 px-1.5 py-1 text-white/45 hover:border-cyan-300/50 hover:text-cyan-200">←</button>
@@ -186,7 +189,37 @@ function WidgetBody({ id }: { id: MonitorDeskWidgetId }) {
   if (id === 'gulf-watch') return <GulfWatchCombinedWidget />;
   if (id === 'ai-synthesis') return <AiSynthesisWidget />;
   if (id === 'live-intel-feed') return <LiveIntelFeedWidget />;
-  return null;
+  if (id === 'global-notifications') return <NotificationWidget title="Global Notifications" icon={<BellRing size={18} />} tone="cyan" lines={["Cross-domain alert center", "Flight · Maritime · Monitor · DOT · CAD · System", "Current UI source: global notification store"]} />;
+  if (id === 'flight-notifications') return <NotificationWidget title="Flight Notifications" icon={<Plane size={18} />} tone="red" lines={["Aircraft emergency and event alerts", "Report / Confirm / Radio Contact / Stand Down lifecycle", "Current UI source: Flight map alert log"]} />;
+  if (id === 'maritime-notifications') return <NotificationWidget title="Maritime Notifications" icon={<Ship size={18} />} tone="amber" lines={["AIS, vessel, Mayday, and maritime incident alerts", "Vessel linking and Earth placement planned", "Current UI source: Maritime detail and future alert surfaces"]} />;
+  if (id === 'dot-traffic-notifications') return <NotificationWidget title="DOT Traffic Notifications" icon={<TrafficCone size={18} />} tone="orange" lines={["Road-event, closure, congestion, and flow alerts", "Can follow selected road corridors later", "Current UI source: DOT traffic and CCTV feeds"]} />;
+  if (id === 'dot-cctv') return <NotificationWidget title="DOT CCTV" icon={<Camera size={18} />} tone="blue" lines={["Traffic camera viewer widget", "Selected camera preview and Earth placement planned", "Current UI source: DOT camera feed layer"]} />;
+  return <NotificationWidget title="Saved Widget" icon={<BellRing size={18} />} tone="cyan" lines={["Widget body pending", "This card is saved in the Desk app folder"]} />;
+}
+
+function NotificationWidget({ title, icon, tone, lines }: { title: string; icon: React.ReactNode; tone: 'cyan' | 'red' | 'amber' | 'orange' | 'blue'; lines: string[] }) {
+  const color = {
+    cyan: 'text-cyan-200 border-cyan-300/25 bg-cyan-400/5',
+    red: 'text-red-200 border-red-400/25 bg-red-500/5',
+    amber: 'text-amber-200 border-amber-400/25 bg-amber-500/5',
+    orange: 'text-orange-200 border-orange-400/25 bg-orange-500/5',
+    blue: 'text-blue-200 border-blue-400/25 bg-blue-500/5',
+  }[tone];
+
+  return (
+    <div className={`h-full rounded border p-3 ${color}`}>
+      <div className="flex items-center gap-2">
+        {icon}
+        <div className="text-sm font-bold uppercase tracking-[0.16em]">{title}</div>
+      </div>
+      <div className="mt-4 space-y-2 text-xs text-white/60">
+        {lines.map((line) => <div key={line} className="border-l border-white/10 pl-2">{line}</div>)}
+      </div>
+      <div className="mt-4 border border-white/10 bg-black/30 px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-white/35">
+        Saved in Widget App Folder · Earth-screen drop target pending
+      </div>
+    </div>
+  );
 }
 
 function AiSynthesisWidget() {
