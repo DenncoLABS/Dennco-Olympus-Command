@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Dennco Olympus Command
+GenericName=Olympus Core GUI
+Comment=Open the Dennco Olympus Command core operating workspace
+Exec=xdg-open http://127.0.0.1:3001
+Icon=olympus-command
+Terminal=false
+Categories=Network;Utility;System;
+StartupNotify=true
