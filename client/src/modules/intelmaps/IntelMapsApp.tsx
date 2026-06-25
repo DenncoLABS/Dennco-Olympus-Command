@@ -20,7 +20,7 @@ type WorkspaceWindow = {
   minimized: boolean;
 };
 
-const STORAGE_KEY = 'olympus.intelMaps.windows.v1';
+const STORAGE_KEY = 'olympus.intelMaps.windows.v2';
 
 const mapApps: Array<{ id: IntelMapView; title: string; icon: string; description: string }> = [
   { id: 'flights', title: 'Flight Map', icon: '✈', description: 'Aircraft, emergencies, aviation infrastructure.' },
@@ -72,11 +72,15 @@ function appFor(id: IntelMapView) {
 export const IntelMapsApp: React.FC = () => {
   const activeModule = useThemeStore((state) => state.activeModule);
   const setActiveModule = useThemeStore((state) => state.setActiveModule);
+  const mapProjection = useThemeStore((state) => state.mapProjection);
+  const setMapProjection = useThemeStore((state) => state.setMapProjection);
   const [windows, setWindows] = useState<WorkspaceWindow[]>(() => readWindows());
   const [nextZ, setNextZ] = useState(() => Math.max(2, ...readWindows().map((win) => win.z + 1)));
+  const [mapsMenuOpen, setMapsMenuOpen] = useState(false);
 
   const openWindow = (id: IntelMapView) => {
     const app = appFor(id);
+    setMapsMenuOpen(false);
     setWindows((current) => {
       const existing = current.find((win) => win.id === id);
       const z = nextZ + 1;
@@ -104,10 +108,6 @@ export const IntelMapsApp: React.FC = () => {
   useEffect(() => {
     const view = mapModuleToView(activeModule);
     if (view) openWindow(view);
-    if (activeModule === 'core') {
-      setWindows([]);
-      writeWindows([]);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeModule]);
 
@@ -146,6 +146,7 @@ export const IntelMapsApp: React.FC = () => {
   const closeIntelMapsApp = () => {
     setWindows([]);
     writeWindows([]);
+    setMapsMenuOpen(false);
     setActiveModule('core');
   };
 
@@ -169,6 +170,8 @@ export const IntelMapsApp: React.FC = () => {
     writeWindows(next);
   };
 
+  const toggleProjection = () => setMapProjection(mapProjection === 'mercator' ? 'globe' : 'mercator');
+
   const visibleWindows = useMemo(() => windows.filter((win) => !win.minimized), [windows]);
   const minimizedWindows = useMemo(() => windows.filter((win) => win.minimized), [windows]);
 
@@ -177,16 +180,25 @@ export const IntelMapsApp: React.FC = () => {
       <div className="absolute inset-0 opacity-30 bg-[radial-gradient(rgba(34,211,238,0.12)_1px,transparent_1px)] bg-[size:28px_28px]" />
       <div className="absolute left-4 top-4 right-4 z-[20] flex items-center justify-between gap-3 rounded border border-cyan-300/20 bg-black/70 px-3 py-2 backdrop-blur">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.28em] text-cyan-300">INTEL MAPS</div>
-          <div className="text-[9px] uppercase tracking-[0.16em] text-white/40">Multi-purpose Earth workspace · map windows operate as widgets</div>
+          <div className="text-[10px] uppercase tracking-[0.28em] text-cyan-300">MULTI-PURPOSE EARTH WORKSPACE</div>
+          <div className="text-[9px] uppercase tracking-[0.16em] text-white/40">Intel Maps app workspace · map windows operate as tile-screen widgets</div>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          {mapApps.map((app) => (
-            <button key={app.id} onClick={() => openWindow(app.id)} className="rounded border border-white/10 bg-white/[0.03] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-white/55 hover:border-cyan-300/50 hover:text-cyan-200">
-              <span className="mr-1 text-cyan-300">{app.icon}</span>{app.title.replace(' Map', '')}
-            </button>
-          ))}
           <button onClick={tileAll} className="rounded border border-cyan-300/30 bg-cyan-300/10 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-cyan-200">Tile</button>
+          <button onClick={toggleProjection} className="rounded border border-white/10 bg-white/[0.03] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-white/60 hover:border-cyan-300/50 hover:text-cyan-200">Projection: {mapProjection}</button>
+          <div className="relative">
+            <button onClick={() => setMapsMenuOpen((open) => !open)} className="rounded border border-cyan-300/35 bg-cyan-300/10 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-cyan-100 hover:bg-cyan-300/15">Intel Maps ▾</button>
+            {mapsMenuOpen && (
+              <div className="absolute right-0 top-8 z-[40] w-64 overflow-hidden rounded border border-cyan-300/25 bg-black/95 shadow-[0_24px_80px_rgba(0,0,0,0.8)]">
+                {mapApps.map((app) => (
+                  <button key={app.id} onClick={() => openWindow(app.id)} className="block w-full border-b border-white/5 px-3 py-2 text-left hover:bg-cyan-300/10">
+                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-cyan-200"><span>{app.icon}</span>{app.title}</div>
+                    <div className="mt-1 text-[9px] leading-relaxed text-white/40">{app.description}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button onClick={closeIntelMapsApp} className="rounded border border-red-400/40 bg-red-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-red-200 hover:bg-red-500/20">× Close App</button>
         </div>
       </div>
@@ -195,9 +207,9 @@ export const IntelMapsApp: React.FC = () => {
         {visibleWindows.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="text-center text-white/35 font-mono">
-              <div className="text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">Earth Workspace</div>
-              <div className="mt-2 text-sm uppercase tracking-[0.16em]">No map app open</div>
-              <div className="mt-2 text-[10px] uppercase tracking-[0.12em] text-white/25">Use the Desk or Intel Maps bar to open a map widget.</div>
+              <div className="text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">Intel Maps Workspace</div>
+              <div className="mt-2 text-sm uppercase tracking-[0.16em]">No map window open</div>
+              <div className="mt-2 text-[10px] uppercase tracking-[0.12em] text-white/25">Use the Intel Maps dropdown to open Flight, Maritime, Monitor, DOT, or Cyber.</div>
             </div>
           </div>
         )}
