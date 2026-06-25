@@ -5,6 +5,7 @@ import { useThemeStore } from '../theme/theme.store';
 import { clsx } from 'clsx';
 import { Shield } from 'lucide-react';
 import { useRuntimeSettings } from '../../admin/runtimeSettings';
+import '../../widgets/map-widgets/widgetReset.css';
 import '../theme/crt.css';
 import '../theme/flir.css';
 import '../theme/eo.css';
