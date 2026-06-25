@@ -1,0 +1,9 @@
+Compact rounded Dock footer separation trigger.
+
+Changes:
+- Restores compact latched Desk height.
+- Restores rounded Dock capsule instead of full-width square bar.
+- Keeps Dock in normal layout flow so it cannot overlap the company footer.
+- Keeps company footer as a separate flex item below the Dock.
+- Shrinks buttons and places indicator dots inside button faces to avoid footer clipping.
+- Keeps latch in the left Dock receiver area and away from the button row.
