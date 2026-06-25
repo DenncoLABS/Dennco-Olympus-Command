@@ -1,7 +1,6 @@
 import React from 'react';
 import { useThemeStore } from '../theme/theme.store';
 import { useRuntimeSettings } from '../../admin/runtimeSettings';
-import { logoutAdmin } from '../../admin/LoginGate';
 
 export const TopNav: React.FC = () => {
   const mode = useThemeStore((s) => s.mode);
@@ -49,9 +48,6 @@ export const TopNav: React.FC = () => {
               {m}
             </button>
           ))}
-          <button onClick={logoutAdmin} className="ml-2 px-3 py-1 border border-white/15 text-white/45 hover:text-white hover:border-white/35 uppercase">
-            Logout
-          </button>
         </div>
       </div>
     </header>
