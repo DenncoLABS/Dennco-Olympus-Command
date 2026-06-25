@@ -1,0 +1,7 @@
+Dock shell overflow fix trigger.
+
+Changes:
+- Stops the Olympus Desk shell flex container from clipping Dock hover animation.
+- Lets the Dock row sit in a raised overflow-visible layer.
+- Adds more top headroom for icon pop-up and label bubble.
+- Keeps Desk app content clipped while allowing Dock animation to escape the Dock box.
