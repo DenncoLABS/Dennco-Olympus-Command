@@ -1,0 +1,6 @@
+Trigger apt publish for Dock receiver bar.
+
+Changes:
+- Adds a separate receiver bar directly behind the portal Dock.
+- Keeps the Dock capsule and widgets unchanged above the receiver layer.
+- Aligns the Desk hatch/latch visually to the receiver bar so it appears to latch behind the Dock rather than to the Dock itself.
