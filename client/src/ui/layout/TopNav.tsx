@@ -4,6 +4,7 @@ import { useRuntimeSettings } from '../../admin/runtimeSettings';
 import '../../modules/intelmaps/intelMapsToolbarCollapse';
 import './tileWorkspaceScope';
 import './appsDirectoryDeskInjection';
+import './monitoringLauncherPatch';
 import './filesDeskBrowser';
 import '../../styles/dock-latch-visibility-override.css';
 
