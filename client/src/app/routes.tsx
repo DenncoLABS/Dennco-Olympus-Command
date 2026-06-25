@@ -9,6 +9,9 @@ const IntelMapsApp = lazy(() =>
 const CadPage = lazy(() =>
   import('../modules/cad/CadPage').then((m) => ({ default: m.CadPage })),
 );
+const ZbxWorkspace = lazy(() =>
+  import('../modules/zbx/ZbxWorkspace').then((m) => ({ default: m.ZbxWorkspace })),
+);
 
 const PageLoader: React.FC = () => (
   <div className="absolute inset-0 flex items-center justify-center bg-intel-bg">
@@ -29,6 +32,14 @@ export const AppRoutes: React.FC = () => {
     return (
       <Suspense fallback={<PageLoader />}>
         <CadPage />
+      </Suspense>
+    );
+  }
+
+  if ((activeModule as string) === 'zbx') {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <ZbxWorkspace />
       </Suspense>
     );
   }
