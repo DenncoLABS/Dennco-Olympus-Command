@@ -7,6 +7,14 @@
 .olympus-shell-main{min-height:0!important}
 .olympus-shell-footer{height:28px!important;min-height:28px!important;max-height:28px!important;flex:0 0 28px!important;position:relative!important;z-index:4300!important;overflow:hidden!important;background:rgba(0,0,0,.9)!important}
 
+/* Providence mark beside OLYMPUS replaces the old pulsing square. */
+.olympus-providence-mark{width:18px;height:18px;display:grid;place-items:center;color:rgb(103,232,249);filter:drop-shadow(0 0 8px rgba(34,211,238,.7));animation:olympusProvidencePulse 1.85s ease-in-out infinite}
+.olympus-providence-mark svg{width:18px;height:18px;overflow:visible;fill:none;stroke:currentColor;stroke-width:5;stroke-linejoin:round;stroke-linecap:round;opacity:.92}
+.olympus-providence-mark svg circle:nth-of-type(1){opacity:.32;stroke-width:4}
+.olympus-providence-mark svg circle:nth-of-type(2){fill:currentColor;stroke-width:0;opacity:.9}
+.olympus-providence-mark svg path:nth-of-type(2){stroke-width:4}
+.olympus-providence-mark svg path:nth-of-type(3){opacity:.55;stroke-width:3}
+
 /* Remove Dock placement/reset controls from the Desk header; the Dock is managed by the portal Dock layer now. */
 .olympus-desk-header>div:last-child button:not(:last-child){display:none!important}
 .olympus-desk-header>div:last-child{justify-content:flex-end!important}
@@ -17,15 +25,16 @@
 .olympus-powered-desk[data-hatch-state='latched'],.olympus-powered-desk[data-hatch-state='closing']{height:24px!important;min-height:24px!important;max-height:24px!important;flex:0 0 24px!important}
 .olympus-powered-desk>div{position:relative!important;height:100%!important;min-height:0!important;max-height:none!important;overflow:visible!important;contain:none!important}
 
-/* Desk latch lives on the Desk top edge so it follows the Desk when the hatch opens. */
-.olympus-hatch-latch{position:absolute!important;top:-1px!important;left:28px!important;bottom:auto!important;transform:none!important;height:20px!important;width:272px!important;min-width:272px!important;max-width:272px!important;border-radius:0 0 8px 8px!important;font-size:7px!important;line-height:18px!important;letter-spacing:.12em!important;white-space:nowrap!important;overflow:visible!important;text-align:center!important;text-indent:0!important;padding:0 14px!important;z-index:4450!important;background:rgba(6,18,24,.96)!important;border:1px solid rgba(34,211,238,.32)!important;box-shadow:0 0 14px rgba(34,211,238,.16)!important}
+/* Desk latch follows the Desk when open, then visibly seats on the receiver bar when closed. */
+.olympus-hatch-latch{position:absolute!important;top:-1px!important;left:28px!important;bottom:auto!important;transform:none!important;height:20px!important;width:292px!important;min-width:292px!important;max-width:292px!important;border-radius:0 0 8px 8px!important;font-size:7px!important;line-height:18px!important;letter-spacing:.08em!important;white-space:nowrap!important;overflow:visible!important;text-align:center!important;text-indent:0!important;padding:0 16px!important;z-index:4450!important;background:rgba(6,18,24,.96)!important;border:1px solid rgba(34,211,238,.32)!important;box-shadow:0 0 14px rgba(34,211,238,.16)!important}
+.olympus-powered-desk[data-hatch-state='latched'] .olympus-hatch-latch,.olympus-powered-desk[data-hatch-state='closing'] .olympus-hatch-latch{position:fixed!important;top:auto!important;left:28px!important;bottom:98px!important;border-radius:8px 8px 0 0!important;z-index:4460!important}
 .olympus-powered-desk .olympus-desk-body{overflow:hidden!important}
 
 /* Portal Dock row: bottom of the shared footer zone, above company text. */
 .olympus-dock-row{position:fixed!important;left:0!important;right:0!important;bottom:28px!important;height:78px!important;min-height:78px!important;max-height:78px!important;margin:0!important;padding:10px 16px 7px!important;overflow:visible!important;contain:none!important;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.78) 42%,rgba(0,0,0,.94))!important;border-top:1px solid rgba(34,211,238,.18)!important;z-index:4400!important;display:flex!important;align-items:flex-end!important;justify-content:center!important;pointer-events:auto!important;isolation:isolate!important}
 
 /* Receiver bar behind the Dock: the Desk visually latches here, not to the Dock capsule itself. */
-.olympus-dock-row::before{content:''!important;position:absolute!important;left:0!important;right:0!important;top:-8px!important;height:30px!important;z-index:0!important;pointer-events:none!important;background:linear-gradient(180deg,rgba(5,18,24,.98),rgba(2,8,12,.92))!important;border-top:1px solid rgba(34,211,238,.46)!important;border-bottom:1px solid rgba(34,211,238,.24)!important;box-shadow:0 0 20px rgba(34,211,238,.16),inset 0 1px 0 rgba(255,255,255,.05)!important}
+.olympus-dock-row::before{content:''!important;position:absolute!important;left:0!important;right:0!important;top:-10px!important;height:32px!important;z-index:0!important;pointer-events:none!important;background:linear-gradient(180deg,rgba(5,18,24,.98),rgba(2,8,12,.92))!important;border-top:1px solid rgba(34,211,238,.5)!important;border-bottom:1px solid rgba(34,211,238,.28)!important;box-shadow:0 0 22px rgba(34,211,238,.18),inset 0 1px 0 rgba(255,255,255,.05)!important}
 .olympus-dock-row::after{content:''!important;position:absolute!important;left:0!important;right:0!important;top:21px!important;height:1px!important;z-index:0!important;pointer-events:none!important;background:linear-gradient(90deg,rgba(34,211,238,0),rgba(34,211,238,.5),rgba(34,211,238,0))!important}
 
 .olympus-dock-row .olympus-dock-track{position:relative!important;z-index:2!important;height:58px!important;min-height:58px!important;max-height:58px!important;width:fit-content!important;max-width:calc(100vw - 64px)!important;overflow:visible!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;padding:6px 16px!important;gap:8px!important;border-radius:24px!important;border:1px solid rgba(34,211,238,.28)!important;background:linear-gradient(180deg,rgba(5,12,16,.96),rgba(2,4,6,.94))!important;box-shadow:0 0 24px rgba(34,211,238,.14),inset 0 1px 0 rgba(255,255,255,.06)!important;isolation:isolate!important}
@@ -48,5 +57,6 @@
 .olympus-dock-widget .dock-widget-icon{font-size:1.32rem!important;line-height:1!important}
 .olympus-dock-widget .dock-widget-label{position:absolute!important;left:50%!important;bottom:calc(100% + 8px)!important;transform:translateX(-50%) translateY(5px) scale(.95)!important;opacity:0!important;pointer-events:none!important;white-space:nowrap!important;z-index:700!important;border-radius:14px!important;background:linear-gradient(180deg,rgba(70,70,70,.95),rgba(20,20,20,.95))!important;color:rgba(255,255,255,.96)!important;padding:5px 10px!important;font-size:11px!important;line-height:1!important;text-transform:none!important;transition:opacity 120ms ease,transform 120ms ease!important}
 .olympus-dock-widget:hover .dock-widget-label{opacity:1!important;transform:translateX(-50%) translateY(0) scale(1)!important}
+@keyframes olympusProvidencePulse{0%,100%{opacity:.72;transform:scale(.92);filter:drop-shadow(0 0 5px rgba(34,211,238,.55))}50%{opacity:1;transform:scale(1.08);filter:drop-shadow(0 0 13px rgba(34,211,238,.95))}}
 @keyframes olympusDockDotPulse{0%,100%{opacity:.72;transform:translateX(-50%) scale(.9)}50%{opacity:1;transform:translateX(-50%) scale(1.18)}}
 @keyframes olympusDeskHatchFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
