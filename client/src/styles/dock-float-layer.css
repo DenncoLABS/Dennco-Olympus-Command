@@ -1,5 +1,8 @@
 /* Compact stable Dock panel above footer. */
-.olympus-powered-desk{position:relative!important;overflow:visible!important;contain:none!important;transition:height 360ms ease!important}
+.olympus-shell-root{height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+.olympus-shell-main{min-height:0!important}
+.olympus-shell-footer{height:28px!important;min-height:28px!important;max-height:28px!important;flex:0 0 28px!important;position:relative!important;z-index:4300!important;overflow:hidden!important}
+.olympus-powered-desk{position:relative!important;overflow:visible!important;contain:none!important;transition:height 360ms ease!important;z-index:4200!important}
 .olympus-powered-desk[data-hatch-state='opening'],.olympus-powered-desk[data-hatch-state='open']{height:min(500px,62vh)!important;min-height:380px!important;flex:0 0 min(500px,62vh)!important}
 .olympus-powered-desk[data-hatch-state='latched'],.olympus-powered-desk[data-hatch-state='closing']{height:68px!important;min-height:68px!important;max-height:68px!important;flex:0 0 68px!important}
 .olympus-powered-desk>div{position:relative!important;height:68px!important;min-height:68px!important;max-height:68px!important;overflow:visible!important;contain:none!important}
