@@ -1,11 +1,29 @@
-export type MonitorDeskWidgetId = 'map-layers' | 'rocket-alerts' | 'gulf-watch' | 'ai-synthesis' | 'live-intel-feed';
+export type MonitorDeskWidgetId =
+  | 'map-layers'
+  | 'rocket-alerts'
+  | 'gulf-watch'
+  | 'ai-synthesis'
+  | 'live-intel-feed'
+  | 'global-notifications'
+  | 'flight-notifications'
+  | 'maritime-notifications'
+  | 'dot-traffic-notifications'
+  | 'dot-cctv';
+
+export type DeskWidgetSource =
+  | 'monitor-dashboard-v1'
+  | 'global-notification-system-v1'
+  | 'flight-notification-system-v1'
+  | 'maritime-notification-system-v1'
+  | 'dot-notification-system-v1'
+  | 'dot-cctv-system-v1';
 
 export interface MonitorDeskWidgetDefinition {
   id: MonitorDeskWidgetId;
   title: string;
   description: string;
   defaultDock: 'desk' | 'earth';
-  savedFrom: 'monitor-dashboard-v1';
+  savedFrom: DeskWidgetSource;
   futureUse: string;
 }
 
@@ -49,5 +67,45 @@ export const monitorDeskWidgetManifest: MonitorDeskWidgetDefinition[] = [
     defaultDock: 'desk',
     savedFrom: 'monitor-dashboard-v1',
     futureUse: 'Convert into a movable live-feed widget with saved size and position.',
+  },
+  {
+    id: 'global-notifications',
+    title: 'Global Notifications',
+    description: 'Cross-domain notification window for flight, maritime, monitor, DOT, CAD, and system events.',
+    defaultDock: 'desk',
+    savedFrom: 'global-notification-system-v1',
+    futureUse: 'Convert into a movable notification center widget that can be docked in Desk or placed on the Earth screen.',
+  },
+  {
+    id: 'flight-notifications',
+    title: 'Flight Notifications',
+    description: 'Flight emergency and aircraft-event notification log, including alert lifecycle actions and aircraft selection links.',
+    defaultDock: 'desk',
+    savedFrom: 'flight-notification-system-v1',
+    futureUse: 'Convert into a movable flight alert widget with saved placement and optional Earth-screen pinning.',
+  },
+  {
+    id: 'maritime-notifications',
+    title: 'Maritime Notifications',
+    description: 'Maritime incident, Mayday, vessel status, and AIS-related notification surface.',
+    defaultDock: 'desk',
+    savedFrom: 'maritime-notification-system-v1',
+    futureUse: 'Convert into a movable maritime alert widget with vessel linking and map placement.',
+  },
+  {
+    id: 'dot-traffic-notifications',
+    title: 'Live DOT Traffic Notifications',
+    description: 'DOT road-event, live traffic, closure, congestion, and road-flow notification surface.',
+    defaultDock: 'desk',
+    savedFrom: 'dot-notification-system-v1',
+    futureUse: 'Convert into a movable traffic alert widget that can follow selected road corridors or camera clusters.',
+  },
+  {
+    id: 'dot-cctv',
+    title: 'DOT CCTV',
+    description: 'Public traffic-camera and CCTV viewing widget for the DOT map feed layer.',
+    defaultDock: 'desk',
+    savedFrom: 'dot-cctv-system-v1',
+    futureUse: 'Convert into a movable camera viewer widget with selected-camera preview and Earth screen placement.',
   },
 ];
