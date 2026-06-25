@@ -1,0 +1,6 @@
+Trigger apt publish for Dock label and raised latch lip.
+
+Changes:
+- Raises the Desk latch/lip so the closed hatch is visible above the footer zone.
+- Places Olympus Dock / Launcher label on the same Dock capsule bar as the widgets.
+- Preserves draggable Dock widgets and dot-only active indicators.
