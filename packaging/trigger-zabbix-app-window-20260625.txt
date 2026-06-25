@@ -1,0 +1,6 @@
+Trigger apt publish for Zabbix app window.
+
+Changes:
+- Adds Zabbix status API route.
+- Mounts Zabbix API route.
+- Opens Zabbix into the existing Apps Desk window from the Apps Browser folder.
