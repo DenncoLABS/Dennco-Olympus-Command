@@ -1,0 +1,6 @@
+Trigger apt publish for Ollama OS AI app.
+
+Changes:
+- Adds Ollama as an Olympus Dock app.
+- Adds Ollama Desk surface.
+- Packages an Ollama installer helper script.
