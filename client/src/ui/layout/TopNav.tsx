@@ -29,10 +29,23 @@ export const TopNav: React.FC = () => {
   const activeIntelModule = enabledIntelModules.find((module) => module.id === activeModule);
   const intelActive = Boolean(activeIntelModule);
   const cadEnabled = settings.featureToggles.cad !== false;
+  const activeAppLabel = activeModule === 'core'
+    ? 'Core'
+    : activeModule === 'cad'
+      ? 'CAD'
+      : activeModule === 'admin'
+        ? 'Admin'
+        : activeIntelModule?.label || activeModule;
+  const canCloseApp = activeModule !== 'core';
 
   const openIntelModule = (module: ActiveModule) => {
     setActiveModule(module);
     setIntelOpen(false);
+  };
+
+  const closeActiveApp = () => {
+    setIntelOpen(false);
+    setActiveModule('core');
   };
 
   return (
@@ -121,6 +134,20 @@ export const TopNav: React.FC = () => {
           >
             Admin
           </button>
+
+          <div className="flex h-full items-center gap-2 border-l border-white/10 pl-3 pb-3">
+            <span className="text-[9px] uppercase tracking-[0.16em] text-white/35">App: {activeAppLabel}</span>
+            {canCloseApp && (
+              <button
+                type="button"
+                onClick={closeActiveApp}
+                className="border border-red-400/35 bg-red-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-red-200 hover:bg-red-500/20 hover:border-red-300"
+                title="Close active app"
+              >
+                × Close
+              </button>
+            )}
+          </div>
         </nav>
       </div>
 
