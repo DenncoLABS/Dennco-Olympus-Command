@@ -1,0 +1,6 @@
+Trigger apt publish for visible Desk latch and Dock label placement.
+
+Changes:
+- Makes the hatch/latch lip fixed and visible above the portal Dock/footer seam.
+- Forces Olympus Dock / Launcher label into the same Dock capsule row as the widgets.
+- Keeps widget behavior, dot-only active indicators, and hover-only button highlight.
