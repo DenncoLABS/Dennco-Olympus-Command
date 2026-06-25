@@ -30,9 +30,7 @@ const mapApps: Array<{ id: IntelMapView; title: string; icon: string; descriptio
   { id: 'cyber', title: 'Cyber Map', icon: '⬡', description: 'Cyber operations and internet intelligence surface.' },
 ];
 
-const defaultWindows: WorkspaceWindow[] = [
-  { id: 'flights', title: 'Flight Map', x: 24, y: 72, width: 760, height: 460, z: 1, minimized: false },
-];
+const defaultWindows: WorkspaceWindow[] = [];
 
 function clampWindow(win: WorkspaceWindow): WorkspaceWindow {
   const maxX = Math.max(0, window.innerWidth - win.width - 32);
@@ -51,7 +49,7 @@ function readWindows(): WorkspaceWindow[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultWindows;
     const parsed = JSON.parse(raw) as WorkspaceWindow[];
-    if (!Array.isArray(parsed) || parsed.length === 0) return defaultWindows;
+    if (!Array.isArray(parsed)) return defaultWindows;
     return parsed.filter((win) => mapApps.some((app) => app.id === win.id)).map(clampWindow);
   } catch {
     return defaultWindows;
@@ -73,6 +71,7 @@ function appFor(id: IntelMapView) {
 
 export const IntelMapsApp: React.FC = () => {
   const activeModule = useThemeStore((state) => state.activeModule);
+  const setActiveModule = useThemeStore((state) => state.setActiveModule);
   const [windows, setWindows] = useState<WorkspaceWindow[]>(() => readWindows());
   const [nextZ, setNextZ] = useState(() => Math.max(2, ...readWindows().map((win) => win.z + 1)));
 
@@ -105,6 +104,10 @@ export const IntelMapsApp: React.FC = () => {
   useEffect(() => {
     const view = mapModuleToView(activeModule);
     if (view) openWindow(view);
+    if (activeModule === 'core') {
+      setWindows([]);
+      writeWindows([]);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeModule]);
 
@@ -136,8 +139,14 @@ export const IntelMapsApp: React.FC = () => {
     setWindows((current) => {
       const next = current.filter((win) => win.id !== id);
       writeWindows(next);
-      return next.length > 0 ? next : defaultWindows;
+      return next;
     });
+  };
+
+  const closeIntelMapsApp = () => {
+    setWindows([]);
+    writeWindows([]);
+    setActiveModule('core');
   };
 
   const tileAll = () => {
@@ -178,10 +187,20 @@ export const IntelMapsApp: React.FC = () => {
             </button>
           ))}
           <button onClick={tileAll} className="rounded border border-cyan-300/30 bg-cyan-300/10 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-cyan-200">Tile</button>
+          <button onClick={closeIntelMapsApp} className="rounded border border-red-400/40 bg-red-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-red-200 hover:bg-red-500/20">× Close App</button>
         </div>
       </div>
 
       <div className="absolute inset-0 z-[10] pt-16">
+        {visibleWindows.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="text-center text-white/35 font-mono">
+              <div className="text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">Earth Workspace</div>
+              <div className="mt-2 text-sm uppercase tracking-[0.16em]">No map app open</div>
+              <div className="mt-2 text-[10px] uppercase tracking-[0.12em] text-white/25">Use the Desk or Intel Maps bar to open a map widget.</div>
+            </div>
+          </div>
+        )}
         {visibleWindows.map((win) => (
           <IntelMapWindow
             key={win.id}
