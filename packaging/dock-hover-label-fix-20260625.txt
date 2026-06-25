@@ -1,0 +1,7 @@
+Dock hover label fix trigger.
+
+Changes:
+- Prevents Olympus Dock buttons from being clipped when they pop up on hover.
+- Adds extra Dock headroom and visible overflow.
+- Moves labels above the enlarged icon like the macOS Dock label bubble.
+- Adds rounded dark label bubble with small pointer notch.
