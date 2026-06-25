@@ -1,0 +1,6 @@
+Trigger apt publish for Desk latch top-edge behavior.
+
+Changes:
+- Moves the hatch/latch back onto the Desk top edge so it follows the Desk when opening and closing.
+- Widens and offsets the latch so the text is not clipped.
+- Keeps the Dock receiver bar, portal Dock, widget behavior, and dot-only active indicators unchanged.
