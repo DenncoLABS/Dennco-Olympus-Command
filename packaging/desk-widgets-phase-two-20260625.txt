@@ -1,0 +1,9 @@
+Olympus Desk widgets phase two trigger.
+
+Purpose:
+- Publish apt package after Monitor Desk widgets were converted into movable cards.
+- Stage Earth widget registry placeholders for future overlay windows.
+- Expand Olympus Desk OS-style app surfaces.
+
+Manual workflow fallback:
+Actions -> Publish Apt Package -> Run workflow -> Branch main -> leave commit/SHA blank.
