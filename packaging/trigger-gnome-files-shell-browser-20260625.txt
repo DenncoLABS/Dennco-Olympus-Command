@@ -1,0 +1,5 @@
+Trigger apt publish for GNOME Files shell browser.
+
+Changes:
+- Sets the Files Dock app to GNOME Files / Nautilus as the Olympus shell file browser.
+- Adds nautilus as a Debian package dependency.
