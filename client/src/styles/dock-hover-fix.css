@@ -1,0 +1,103 @@
+/* Olympus Dock hover fixes: keep icons from clipping and place labels above the popped icon. */
+section[class*='z-[4200]'],
+section[class*='z-[4200]'] > div,
+section[class*='z-[4200]'] div[class*='border-t'][class*='bg-black/65'],
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] {
+  overflow: visible !important;
+}
+
+section[class*='z-[4200]'] div[class*='border-t'][class*='bg-black/65'] {
+  position: relative !important;
+  z-index: 40 !important;
+  min-height: 118px !important;
+  padding-top: 30px !important;
+  padding-bottom: 8px !important;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] {
+  min-height: 104px !important;
+  height: 104px !important;
+  align-items: flex-end !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  padding-top: 36px !important;
+  padding-bottom: 12px !important;
+  scrollbar-width: none;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20']::-webkit-scrollbar {
+  display: none;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button {
+  width: 74px !important;
+  height: 74px !important;
+  min-width: 74px !important;
+  flex: 0 0 74px !important;
+  overflow: visible !important;
+  transform-origin: bottom center !important;
+  z-index: 1;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover {
+  transform: translateY(-26px) scale(1.28) !important;
+  z-index: 50 !important;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:has(+ button:hover),
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover + button {
+  transform: translateY(-15px) scale(1.14) !important;
+  z-index: 40 !important;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:has(+ button + button:hover),
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover + button + button {
+  transform: translateY(-7px) scale(1.06) !important;
+  z-index: 30 !important;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button > span:first-child {
+  font-size: 2.25rem !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button > span:last-child {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: calc(100% + 14px) !important;
+  transform: translateX(-50%) translateY(8px) scale(0.92) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  white-space: nowrap !important;
+  z-index: 80 !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 18px !important;
+  background: linear-gradient(180deg, rgba(70, 70, 70, 0.94), rgba(22, 22, 22, 0.94)) !important;
+  color: rgba(255, 255, 255, 0.96) !important;
+  padding: 7px 13px !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+  transition: opacity 130ms ease, transform 130ms ease !important;
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button > span:last-child::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 11px;
+  height: 11px;
+  transform: translate(-50%, -5px) rotate(45deg);
+  background: rgba(22, 22, 22, 0.94);
+  border-right: 1px solid rgba(255, 255, 255, 0.13);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+section[class*='z-[4200]'] div[class*='rounded-2xl'][class*='border-cyan-300/20'] > button:hover > span:last-child {
+  opacity: 1 !important;
+  transform: translateX(-50%) translateY(0) scale(1) !important;
+}
