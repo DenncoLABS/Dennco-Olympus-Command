@@ -1,0 +1,7 @@
+Dock hatch full-open stability trigger.
+
+Changes:
+- Moves the Power Hatch control visually into the Dock area.
+- Forces the Desk hatch to open to a full usable height instead of a partial lift.
+- Raises the Dock row above the footer so buttons and blue indicators are visible.
+- Keeps button hover conservative so icons rise above the Dock without clipping.
