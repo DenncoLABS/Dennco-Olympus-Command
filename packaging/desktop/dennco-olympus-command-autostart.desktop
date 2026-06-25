@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Dennco Olympus Command Autostart
+Comment=Open Olympus Command Core Desk at GNOME login
+Exec=xdg-open http://127.0.0.1:3001
+Icon=dennco-olympus-command
+Terminal=false
+X-GNOME-Autostart-enabled=true
+OnlyShowIn=GNOME;Unity;XFCE;LXDE;MATE;Cinnamon;
