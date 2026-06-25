@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Dennco Olympus Command Autostart
+Comment=Launch Dennco Olympus Command in the local GNOME session
+Exec=xdg-open http://127.0.0.1:3001
+Icon=olympus-command
+Terminal=false
+X-GNOME-Autostart-enabled=true
