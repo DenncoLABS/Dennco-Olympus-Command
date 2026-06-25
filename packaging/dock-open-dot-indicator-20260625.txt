@@ -1,0 +1,7 @@
+Dock open dot indicator trigger.
+
+Changes:
+- Active/open Dock apps no longer keep the filled cyan button highlight.
+- Active/open Dock apps show a blue pulsing dot below the button instead.
+- Hover still highlights the Dock button.
+- Olympus Dock / Launcher label text is restored on the Dock.
