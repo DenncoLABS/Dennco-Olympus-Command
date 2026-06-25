@@ -1,0 +1,9 @@
+Draggable Dock widgets trigger.
+
+Changes:
+- Converts Dock app/logout buttons into individual Dock widget items.
+- Dock widgets can be dragged and dropped to reorder the Dock layout.
+- Dock order is saved locally in localStorage.
+- Adds Reset Dock control in the Desk header.
+- Moves macOS-style magnification to the widget item layer so icons can rise independently.
+- Keeps the latch receiver separate from the draggable button lane.
