@@ -1,0 +1,8 @@
+Snug Dock button layer trigger.
+
+Changes:
+- Makes Desk latch snug to the Dock.
+- Keeps the hatch latch in the left Dock label receiver.
+- Creates a button-only raised layer that starts after the label receiver and ends at the logout button.
+- Reduces Dock height and hover lift to prevent crowding/clipping.
+- Moves active blue indicators inside the button lane instead of below the Dock.
