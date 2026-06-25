@@ -12,13 +12,14 @@ SHARE_DIR="$PKG_DIR/usr/share/$PACKAGE_NAME"
 SYSTEMD_DIR="$PKG_DIR/lib/systemd/system"
 DESKTOP_DIR="$PKG_DIR/usr/share/applications"
 AUTOSTART_DIR="$PKG_DIR/etc/xdg/autostart"
+PIXMAP_DIR="$PKG_DIR/usr/share/pixmaps"
 DEBIAN_DIR="$PKG_DIR/DEBIAN"
 
 export CI=true
 export HUSKY=0
 
 rm -rf "$BUILD_DIR"
-mkdir -p "$APP_DIR" "$SHARE_DIR" "$SYSTEMD_DIR" "$DESKTOP_DIR" "$AUTOSTART_DIR" "$DEBIAN_DIR"
+mkdir -p "$APP_DIR" "$SHARE_DIR" "$SYSTEMD_DIR" "$DESKTOP_DIR" "$AUTOSTART_DIR" "$PIXMAP_DIR" "$DEBIAN_DIR"
 
 cd "$ROOT_DIR"
 
@@ -57,11 +58,13 @@ if [ -d scripts ]; then
   [ -f scripts/install-core-services.sh ] && cp scripts/install-core-services.sh "$APP_DIR/scripts/install-core-services.sh"
   [ -f scripts/update-core-services.sh ] && cp scripts/update-core-services.sh "$APP_DIR/scripts/update-core-services.sh"
   [ -f scripts/install-cad-services.sh ] && cp scripts/install-cad-services.sh "$APP_DIR/scripts/install-cad-services.sh"
+  [ -f scripts/install-gnome-desktop.sh ] && cp scripts/install-gnome-desktop.sh "$APP_DIR/scripts/install-gnome-desktop.sh"
 fi
 
 if [ -d packaging/desktop ]; then
   [ -f packaging/desktop/olympus-command.desktop ] && cp packaging/desktop/olympus-command.desktop "$DESKTOP_DIR/olympus-command.desktop"
   [ -f packaging/desktop/olympus-command-autostart.desktop ] && cp packaging/desktop/olympus-command-autostart.desktop "$AUTOSTART_DIR/olympus-command.desktop"
+  [ -f packaging/desktop/dennco-olympus-command.svg ] && cp packaging/desktop/dennco-olympus-command.svg "$PIXMAP_DIR/dennco-olympus-command.svg"
 fi
 
 cp packaging/config/olympus-command.env.example "$SHARE_DIR/olympus-command.env.example"
@@ -78,6 +81,7 @@ find "$PKG_DIR" -type f -exec chmod 0644 {} \;
 [ -f "$APP_DIR/scripts/install-core-services.sh" ] && chmod 0755 "$APP_DIR/scripts/install-core-services.sh"
 [ -f "$APP_DIR/scripts/update-core-services.sh" ] && chmod 0755 "$APP_DIR/scripts/update-core-services.sh"
 [ -f "$APP_DIR/scripts/install-cad-services.sh" ] && chmod 0755 "$APP_DIR/scripts/install-cad-services.sh"
+[ -f "$APP_DIR/scripts/install-gnome-desktop.sh" ] && chmod 0755 "$APP_DIR/scripts/install-gnome-desktop.sh"
 chmod 0755 "$DEBIAN_DIR/postinst" "$DEBIAN_DIR/prerm" "$DEBIAN_DIR/postrm"
 
 echo "Building .deb..."
