@@ -27,7 +27,7 @@ const deskItems: DeskItem[] = [
   { id: 'architecture', label: 'Architecture', icon: '⌬', view: 'architecture', group: 'OS', status: 'active', description: 'Visual system architecture map.' },
   { id: 'terminal', label: 'Terminal', icon: '⌁', view: 'terminal', group: 'OS', status: 'active', description: 'Controlled terminal workspace placeholder.' },
   { id: 'services', label: 'Services', icon: '◫', view: 'services', group: 'System', status: 'planned', description: 'Service status placeholders.' },
-  { id: 'packages', label: '⬡', icon: '⬡', view: 'packages', group: 'System', status: 'planned', description: 'Debian package controls.' },
+  { id: 'packages', label: 'Packages', icon: '⬡', view: 'packages', group: 'System', status: 'planned', description: 'Debian package controls.' },
   { id: 'intelmaps', label: 'Intel Maps', icon: '▤', view: 'intelmaps', module: 'intelmaps', group: 'Operational', status: 'active', description: 'Deploys the Intel Maps toolbar and map workspace.' },
   { id: 'monitor', label: 'Monitor', icon: '◉', view: 'monitor', module: 'monitor', group: 'Operational', status: 'active', description: 'Monitor Desk widgets and intelligence cards.' },
   { id: 'cad', label: 'CAD', icon: '☷', view: 'cad', module: 'cad', group: 'Operational', status: 'active', description: 'Dispatch, calls, units, personnel, logs, and reports.' },
@@ -123,18 +123,18 @@ export const OlympusDeskV2: React.FC = () => {
     if (hatch === 'open' || hatch === 'opening') powerClose();
     else powerOpen();
   };
-  const startResize = (event: React.PointerEvent<HTMLDivElement>) => {
+  const startResize = (event: React.PointerEvent<HTMLButtonElement>) => {
     clearHatchTimer();
     setHatch('open');
     resizeRef.current = { pointerId: event.pointerId, startY: event.clientY, startHeight: height };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
-  const moveResize = (event: React.PointerEvent<HTMLDivElement>) => {
+  const moveResize = (event: React.PointerEvent<HTMLButtonElement>) => {
     const state = resizeRef.current;
     if (!state || state.pointerId !== event.pointerId) return;
     setHeight(clampHeight(state.startHeight + state.startY - event.clientY));
   };
-  const stopResize = (event: React.PointerEvent<HTMLDivElement>) => {
+  const stopResize = (event: React.PointerEvent<HTMLButtonElement>) => {
     const state = resizeRef.current;
     if (!state || state.pointerId !== event.pointerId) return;
     resizeRef.current = null;
