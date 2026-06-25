@@ -15,6 +15,9 @@ const ZbxWorkspace = lazy(() =>
 const ServiceWorkspace = lazy(() =>
   import('../modules/services/ServiceWorkspace').then((m) => ({ default: m.ServiceWorkspace })),
 );
+const LabNodeWorkspace = lazy(() =>
+  import('../modules/labnode/LabNodeWorkspace').then((m) => ({ default: m.LabNodeWorkspace })),
+);
 
 const PageLoader: React.FC = () => (
   <div className="absolute inset-0 flex items-center justify-center bg-intel-bg">
@@ -39,7 +42,15 @@ export const AppRoutes: React.FC = () => {
     );
   }
 
-  if ((activeModule as string) === 'zbx') {
+  if (activeModule === 'labnode') {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <LabNodeWorkspace />
+      </Suspense>
+    );
+  }
+
+  if (activeModule === 'zbx') {
     return (
       <Suspense fallback={<PageLoader />}>
         <ZbxWorkspace />
@@ -47,7 +58,7 @@ export const AppRoutes: React.FC = () => {
     );
   }
 
-  if ((activeModule as string) === 'svc') {
+  if (activeModule === 'svc') {
     return (
       <Suspense fallback={<PageLoader />}>
         <ServiceWorkspace />
