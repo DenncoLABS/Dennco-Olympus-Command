@@ -1,129 +1,43 @@
-# Contributor Covenant Code of Conduct
+# Dennco Olympus Command Staff Code of Conduct
 
-## Our Pledge
+## Staff-only project notice
 
-We as members, contributors, and leaders pledge to make participation in our
-community a harassment-free experience for everyone, regardless of age, body
-size, visible or invisible disability, ethnicity, sex characteristics, gender
-identity and expression, level of experience, education, socio-economic status,
-nationality, personal appearance, race, religion, or sexual identity
-and orientation.
+Dennco Olympus Command is a privately maintained Dennco Information Systems project. Participation in this repository is limited to authorized staff, approved contractors, and specifically invited collaborators.
 
-We pledge to act and interact in ways that contribute to an open, welcoming,
-diverse, inclusive, and healthy community.
+This repository is not an open community project. Public contribution, public issue participation, unsolicited pull requests, outside governance proposals, and third-party moderation claims are not accepted unless authorized in writing by Dennco Information Systems.
 
-## Our Standards
+## Professional conduct standard
 
-Examples of behavior that contributes to a positive environment for our
-community include:
+Authorized staff and approved contributors are expected to:
 
-- Demonstrating empathy and kindness toward other people
-- Being respectful of differing opinions, viewpoints, and experiences
-- Giving and gracefully accepting constructive feedback
-- Accepting responsibility and apologizing to those affected by our mistakes,
-  and learning from the experience
-- Focusing on what is best not just for us as individuals, but for the
-  overall community
+- Protect confidential project information.
+- Follow Dennco Information Systems direction and repository procedures.
+- Keep operational, infrastructure, API, deployment, customer, and security information confidential.
+- Communicate professionally in repository issues, pull requests, reviews, commits, project boards, and private project channels.
+- Avoid public disclosure of internal plans, source behavior, vulnerabilities, credentials, operational details, customer data, or deployment information.
+- Escalate security, legal, privacy, operational, or brand concerns through internal Dennco channels.
 
-Examples of unacceptable behavior include:
+## Prohibited conduct
 
-- The use of sexualized language or imagery, and sexual attention or
-  advances of any kind
-- Trolling, insulting or derogatory comments, and personal or political attacks
-- Public or private harassment
-- Publishing others' private information, such as a physical or email
-  address, without their explicit permission
-- Other conduct which could reasonably be considered inappropriate in a
-  professional setting
+The following are prohibited:
 
-## Enforcement Responsibilities
+- Sharing confidential repository information with unauthorized parties.
+- Publishing private project details, screenshots, logs, system outputs, credentials, keys, customer information, or deployment details without authorization.
+- Using the repository for personal disputes, political advocacy, harassment, threats, or unrelated content.
+- Submitting or encouraging unauthorized code, issues, pull requests, forks, mirrors, or redistributions.
+- Removing Dennco notices, ownership notices, security notices, or access-control language.
+- Introducing third-party branding, upstream demo identity, starter-project icons, or confusing product references into the deployed interface.
 
-Community leaders are responsible for clarifying and enforcing our standards of
-acceptable behavior and will take appropriate and fair corrective action in
-response to any behavior that they deem inappropriate, threatening, offensive,
-or harmful.
+## Repository authority
 
-Community leaders have the right and responsibility to remove, edit, or reject
-comments, commits, code, wiki edits, issues, and other contributions that are
-not aligned to this Code of Conduct, and will communicate reasons for moderation
-decisions when appropriate.
+Dennco Information Systems may remove, edit, reject, close, lock, or disregard any issue, pull request, comment, branch, commit, release, or contribution that does not align with project direction, confidentiality requirements, security requirements, or repository governance.
 
-## Scope
+Dennco Information Systems may revoke access at any time.
 
-This Code of Conduct applies within all community spaces, and also applies when
-an individual is officially representing the community in public spaces.
-Examples of representing our community include using an official e-mail address,
-posting via an official social media account, or acting as an appointed
-representative at an online or offline event.
+## Reporting concerns
 
-## Enforcement
+Staff should report concerns through internal Dennco Information Systems channels. Do not report security or operational issues through public GitHub issues.
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-[INSERT CONTACT EMAIL].
+## No public rights granted
 
-All complaints will be reviewed and investigated promptly and fairly.
-
-All community leaders are obligated to respect the privacy and security of the
-reporter of any incident.
-
-## Enforcement Guidelines
-
-Community leaders will follow these Community Impact Guidelines in determining
-the consequences for any action they deem in violation of this Code of Conduct:
-
-### 1. Correction
-
-**Community Impact**: Use of inappropriate language or other behavior deemed
-unprofessional or unwelcome in the community.
-
-**Consequence**: A private, written warning from community leaders, providing
-clarity around the nature of the violation and an explanation of why the
-behavior was inappropriate. A public apology may be requested.
-
-### 2. Warning
-
-**Community Impact**: A violation through a single incident or series
-of actions.
-
-**Consequence**: A warning with consequences for continued behavior. No
-interaction with the people involved, including unsolicited interaction with
-those enforcing the Code of Conduct, for a specified period of time. This
-includes avoiding interactions in community spaces as well as external channels
-like social media. Violating these terms may lead to a temporary or
-permanent ban.
-
-### 3. Temporary Ban
-
-**Community Impact**: A serious violation of community standards, including
-sustained inappropriate behavior.
-
-**Consequence**: A temporary ban from any sort of interaction or public
-communication with the community for a specified period of time. No public or
-private interaction with the people involved, including unsolicited interaction
-with those enforcing the Code of Conduct, is allowed during this period.
-Violating these terms may lead to a permanent ban.
-
-### 4. Permanent Ban
-
-**Community Impact**: Demonstrating a pattern of violation of community
-standards, including sustained inappropriate behavior, harassment of an
-individual, or aggression toward or disparagement of classes of individuals.
-
-**Consequence**: A permanent ban from any sort of public interaction within
-the community.
-
-## Attribution
-
-This Code of Conduct is adapted from the [Contributor Covenant][homepage],
-version 2.0, available at
-https://www.contributor-covenant.org/version/2/0/code_of_conduct.html.
-
-Community Impact Guidelines were inspired by [Mozilla's code of conduct
-enforcement ladder](https://github.com/mozilla/diversity).
-
-[homepage]: https://www.contributor-covenant.org
-
-For answers to common questions about this code of conduct, see the FAQ at
-https://www.contributor-covenant.org/faq. Translations are available at
-https://www.contributor-covenant.org/translations.
+This Code of Conduct does not grant any public contribution right, license right, access right, redistribution right, or approval to use Dennco Olympus Command materials. All rights are reserved unless separately granted in writing by Dennco Information Systems.
