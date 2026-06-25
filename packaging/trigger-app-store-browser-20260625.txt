@@ -1,0 +1,5 @@
+Trigger apt publish for app store browser.
+
+Changes:
+- Restyles the Apps folder browser.
+- Adds sidebar, search, app rows, and app-card open behavior.
