@@ -13,6 +13,7 @@ import cadRouter from './routes/cad';
 import dotRouter from './routes/dot';
 import intelMapsRouter from './routes/intelmaps';
 import zabbixRouter from './routes/zabbix';
+import filesRouter from './routes/files';
 import { requireAdminAccess } from './core/accessGate';
 import { aircraftDb } from './core/aircraft_db';
 import { aisStreamService } from './core/source/aisstream';
@@ -81,6 +82,7 @@ app.use('/api/cyber', cyberRouter);
 app.use('/api/dot', dotRouter);
 app.use('/api/intel-maps', intelMapsRouter);
 app.use('/api/zabbix', zabbixRouter);
+app.use('/api/files', filesRouter);
 app.use('/cad', cadRouter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
