@@ -1,0 +1,8 @@
+Stabilized Dock hatch layout trigger.
+
+Changes:
+- Neutralizes the buggy fixed/floating Dock behavior.
+- Restores Dock row to normal Desk flow so footer/company info is not crowded.
+- Reduces hover lift and icon scale so Dock buttons no longer clip.
+- Keeps the powered Desk hatch animation lighter and more stable.
+- Keeps blue active indicators visible above the footer.
