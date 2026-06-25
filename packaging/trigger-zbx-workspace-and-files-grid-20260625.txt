@@ -1,0 +1,6 @@
+Trigger apt publish for ZBX workspace and Files grid.
+
+Changes:
+- Adds ZBX Tile workspace app.
+- Routes ZBX app workspace from Apps browser.
+- Styles Files browser as an icon-grid GNOME-like browser.
