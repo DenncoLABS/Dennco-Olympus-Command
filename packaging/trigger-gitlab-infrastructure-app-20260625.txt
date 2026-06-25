@@ -1,0 +1,5 @@
+Trigger apt publish for GitLab CE infrastructure app.
+
+Changes:
+- Adds GitLab CE to the Olympus Infrastructure Apps directory/strip.
+- Adds GitLab CE installer helper entry.
