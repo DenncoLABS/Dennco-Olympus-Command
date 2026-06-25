@@ -4,6 +4,9 @@ const TILE_SCREEN_COUNT_KEY = 'olympus.tiles.screenCount';
 const TILE_SCREEN_INDEX_KEY = 'olympus.tiles.activeIndex';
 const MIN_TILE_SCREENS = 3;
 const MAX_TILE_SCREENS = 18;
+const TILE_NAV_EVENT = 'olympus:tile-screen-nav';
+
+type TileNavDetail = { activeIndex: number; screenCount: number };
 
 function readSavedNumber(key: string, fallback: number) {
   const raw = window.localStorage.getItem(key);
@@ -29,6 +32,18 @@ export const TileScreens: React.FC = () => {
     window.localStorage.setItem(TILE_SCREEN_INDEX_KEY, String(activeIndex));
   }, [activeIndex]);
 
+  useEffect(() => {
+    const handleTileNav = (event: Event) => {
+      const detail = (event as CustomEvent<TileNavDetail>).detail;
+      if (!detail) return;
+      const nextCount = clamp(detail.screenCount, MIN_TILE_SCREENS, MAX_TILE_SCREENS);
+      setScreenCount(nextCount);
+      setActiveIndex(clamp(detail.activeIndex, 0, nextCount - 1));
+    };
+    window.addEventListener(TILE_NAV_EVENT, handleTileNav);
+    return () => window.removeEventListener(TILE_NAV_EVENT, handleTileNav);
+  }, []);
+
   const goToTile = (index: number) => {
     setActiveIndex(clamp(index, 0, screenCount - 1));
   };
@@ -45,14 +60,6 @@ export const TileScreens: React.FC = () => {
         return current + 1;
       }
       return current;
-    });
-  };
-
-  const addTile = () => {
-    setScreenCount((count) => {
-      const nextCount = clamp(count + 1, MIN_TILE_SCREENS, MAX_TILE_SCREENS);
-      setActiveIndex(nextCount - 1);
-      return nextCount;
     });
   };
 
@@ -95,39 +102,6 @@ export const TileScreens: React.FC = () => {
             </div>
           </section>
         ))}
-      </div>
-
-      <div className="olympus-tile-switcher fixed bottom-[40px] right-5 z-[4600] flex items-center gap-2 rounded-2xl border border-cyan-300/25 bg-black/80 px-2 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/55 shadow-[0_0_18px_rgba(34,211,238,0.16)] backdrop-blur">
-        <button
-          type="button"
-          onClick={previousTile}
-          disabled={activeIndex === 0}
-          className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-cyan-200 disabled:cursor-not-allowed disabled:opacity-30 hover:border-cyan-300/50 hover:bg-cyan-300/10"
-          aria-label="Previous Tile screen"
-        >
-          ‹
-        </button>
-        <div className="min-w-[92px] text-center leading-tight">
-          <div className="text-cyan-300">Tile {activeIndex + 1}</div>
-          <div className="text-[8px] text-white/35">of {screenCount}</div>
-        </div>
-        <button
-          type="button"
-          onClick={nextTile}
-          className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-cyan-200 hover:border-cyan-300/50 hover:bg-cyan-300/10"
-          aria-label="Next Tile screen"
-        >
-          ›
-        </button>
-        <button
-          type="button"
-          onClick={addTile}
-          disabled={screenCount >= MAX_TILE_SCREENS}
-          className="ml-1 h-8 rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-2 text-[9px] text-cyan-100 disabled:cursor-not-allowed disabled:opacity-30 hover:border-cyan-300/55 hover:bg-cyan-300/15"
-          aria-label="Add Tile screen"
-        >
-          + Tile
-        </button>
       </div>
     </div>
   );
