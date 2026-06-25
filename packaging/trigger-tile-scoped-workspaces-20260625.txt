@@ -1,0 +1,7 @@
+Trigger apt publish for Tile-scoped app workspaces.
+
+Changes:
+- Adds a Tile workspace scope side effect.
+- Saves the current shell workspace before switching Tile screens.
+- Restores the saved app/map workspace for the selected Tile screen.
+- New Tile screens default back to Core instead of carrying the previous Intel Maps workspace.
