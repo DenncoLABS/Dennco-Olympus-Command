@@ -13,8 +13,8 @@
 .olympus-powered-desk[data-hatch-state='latched'],.olympus-powered-desk[data-hatch-state='closing']{height:24px!important;min-height:24px!important;max-height:24px!important;flex:0 0 24px!important}
 .olympus-powered-desk>div{position:relative!important;height:100%!important;min-height:0!important;max-height:none!important;overflow:visible!important;contain:none!important}
 
-/* Visible hatch/latch lip: fixed to the receiver bar behind the portal Dock. */
-.olympus-hatch-latch{position:fixed!important;top:auto!important;left:0!important;bottom:100px!important;transform:none!important;height:18px!important;width:178px!important;border-radius:0 8px 0 0!important;font-size:7px!important;line-height:16px!important;z-index:4450!important;background:rgba(6,18,24,.96)!important;border:1px solid rgba(34,211,238,.32)!important;border-left:0!important;border-bottom:0!important;box-shadow:0 0 14px rgba(34,211,238,.16)!important}
+/* Desk latch lives on the Desk top edge so it follows the Desk when the hatch opens. */
+.olympus-hatch-latch{position:absolute!important;top:-1px!important;left:14px!important;bottom:auto!important;transform:none!important;height:20px!important;width:238px!important;min-width:238px!important;max-width:238px!important;border-radius:0 0 8px 8px!important;font-size:7px!important;line-height:18px!important;letter-spacing:.18em!important;white-space:nowrap!important;overflow:visible!important;text-indent:0!important;padding:0 10px!important;z-index:4450!important;background:rgba(6,18,24,.96)!important;border:1px solid rgba(34,211,238,.32)!important;box-shadow:0 0 14px rgba(34,211,238,.16)!important}
 .olympus-powered-desk .olympus-desk-body{overflow:hidden!important}
 
 /* Portal Dock row: bottom of the shared footer zone, above company text. */
