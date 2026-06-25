@@ -2,6 +2,7 @@ const VIEW_KEY = 'olympus.desk.v2.view';
 const ROOT_ID = 'olympus-apps-directory-inline';
 const NASA_CATALOG_URL = 'https://raw.githubusercontent.com/nasa/Open-Source-Catalog/master/catalog.json';
 const NASA_LOCAL_KEY = 'olympus.apps.directory.nasaCodeCatalog';
+const ZABBIX_GUI_URL_KEY = 'olympus.apps.zabbix.guiUrl';
 const BOOT_KEY = '__olympusAppsDirectoryDeskInjectionReady';
 
 type ScopedWindow = Window & { [BOOT_KEY]?: boolean };
@@ -54,25 +55,32 @@ function card(id: string, icon: string, title: string, text: string, command: st
   return `<article class="border border-white/10 bg-white/[0.03] p-3 hover:border-cyan-300/35"><div class="flex items-center gap-2"><span class="rounded bg-cyan-300/10 px-2 py-1 text-[9px] text-cyan-200">${icon}</span><span class="font-bold text-white">${title}</span></div><p class="mt-2 text-xs text-white/45">${text}</p><code class="mt-2 block break-all rounded bg-black/35 p-2 text-[10px] text-white/55">${command}</code><button data-infra-open="${id}" class="mt-2 border border-cyan-300/25 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-cyan-200 hover:bg-cyan-300/10">Open</button></article>`;
 }
 
+function zabbixGuiUrl() {
+  return localStorage.getItem(ZABBIX_GUI_URL_KEY) || '/zabbix/';
+}
+
 function zabbixWindow() {
+  const url = zabbixGuiUrl();
   return `
-    <div data-zabbix-app-window="true">
-      <div class="flex items-center justify-between gap-3">
+    <div data-zabbix-app-window="true" class="flex h-full min-h-[520px] flex-col">
+      <div class="flex items-center justify-between gap-3 border-b border-cyan-300/15 pb-3">
         <div>
-          <h3 class="text-cyan-200 uppercase tracking-[0.18em] text-sm">Zabbix App</h3>
-          <p class="mt-3 text-sm text-white/60">Zabbix is being built into Olympus as an infrastructure monitoring app window. This is the first native Olympus Zabbix surface.</p>
+          <h3 class="text-cyan-200 uppercase tracking-[0.18em] text-sm">Zabbix GUI</h3>
+          <p class="mt-2 text-xs text-white/50">Embedded Zabbix web console running as an Olympus app window.</p>
         </div>
-        <button data-zabbix-back="true" class="border border-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Back to Apps</button>
+        <div class="flex items-center gap-2">
+          <input data-zabbix-url="true" value="${url}" class="w-64 border border-white/10 bg-black/55 px-2 py-1 text-[10px] text-cyan-100 outline-none focus:border-cyan-300/50" />
+          <button data-zabbix-load="true" class="border border-cyan-300/25 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-cyan-200 hover:bg-cyan-300/10">Load</button>
+          <a href="${url}" target="_blank" rel="noreferrer" class="border border-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Open Tab</a>
+          <button data-zabbix-back="true" class="border border-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Back</button>
+        </div>
       </div>
-      <div class="mt-4 grid gap-3 md:grid-cols-2">
-        <div class="border border-white/10 bg-white/[0.03] p-3"><div class="text-[10px] uppercase tracking-[0.18em] text-white/35">Agent Service</div><div data-zabbix-agent="true" class="mt-1 font-mono text-white">checking...</div><div class="mt-2 text-[9px] uppercase tracking-[0.14em] text-cyan-300">zabbix-agent</div></div>
-        <div class="border border-white/10 bg-white/[0.03] p-3"><div class="text-[10px] uppercase tracking-[0.18em] text-white/35">Default Ports</div><div class="mt-1 font-mono text-white">10050 / 10051</div><div class="mt-2 text-[9px] uppercase tracking-[0.14em] text-cyan-300">agent / server</div></div>
-        <div class="border border-white/10 bg-white/[0.03] p-3"><div class="text-[10px] uppercase tracking-[0.18em] text-white/35">Install Helper</div><code class="mt-1 block break-all text-white">sudo /opt/dennco/olympus-command/scripts/install-infrastructure-apps.sh zabbix</code><div class="mt-2 text-[9px] uppercase tracking-[0.14em] text-cyan-300">packaged</div></div>
-        <div class="border border-white/10 bg-white/[0.03] p-3"><div class="text-[10px] uppercase tracking-[0.18em] text-white/35">Olympus Role</div><div class="mt-1 text-white">Infrastructure monitoring app window</div><div class="mt-2 text-[9px] uppercase tracking-[0.14em] text-cyan-300">active build</div></div>
+      <div class="mt-3 flex items-center gap-4 text-[10px] uppercase tracking-[0.14em] text-white/40">
+        <span>Default GUI path: <b class="text-cyan-300">/zabbix/</b></span>
+        <span>Agent: <b data-zabbix-agent="true" class="text-cyan-300">checking...</b></span>
+        <span>Install: <b class="text-cyan-300">install-infrastructure-apps.sh zabbix</b></span>
       </div>
-      <div class="mt-4 rounded border border-cyan-300/15 bg-black/35 p-3 text-xs leading-relaxed text-white/50">
-        Next stage: Zabbix host inventory, alerts, problems, graphs, and server API binding inside this app window.
-      </div>
+      <iframe data-zabbix-frame="true" src="${url}" class="mt-3 min-h-0 flex-1 rounded border border-cyan-300/20 bg-black" title="Zabbix GUI"></iframe>
     </div>
   `;
 }
@@ -89,17 +97,29 @@ async function loadZabbixStatus() {
   }
 }
 
-function renderZabbixApp() {
-  const content = findDeskContentRoot();
-  if (!content) return;
-  content.innerHTML = zabbixWindow();
-  loadZabbixStatus();
+function wireZabbixWindow(content: HTMLElement) {
+  const input = content.querySelector('[data-zabbix-url="true"]') as HTMLInputElement | null;
+  const frame = content.querySelector('[data-zabbix-frame="true"]') as HTMLIFrameElement | null;
+  const load = content.querySelector('[data-zabbix-load="true"]');
+  load?.addEventListener('click', () => {
+    const nextUrl = input?.value?.trim() || '/zabbix/';
+    localStorage.setItem(ZABBIX_GUI_URL_KEY, nextUrl);
+    if (frame) frame.src = nextUrl;
+  });
   content.querySelector('[data-zabbix-back="true"]')?.addEventListener('click', () => {
     content.innerHTML = '';
     const old = document.getElementById(ROOT_ID);
     if (old) old.remove();
     inject();
   });
+}
+
+function renderZabbixApp() {
+  const content = findDeskContentRoot();
+  if (!content) return;
+  content.innerHTML = zabbixWindow();
+  wireZabbixWindow(content);
+  loadZabbixStatus();
 }
 
 function nasaCard(entry: ReturnType<typeof normalize>) {
