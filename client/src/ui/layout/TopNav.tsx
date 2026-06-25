@@ -4,6 +4,7 @@ import { useRuntimeSettings } from '../../admin/runtimeSettings';
 import '../../modules/intelmaps/intelMapsToolbarCollapse';
 import './tileWorkspaceScope';
 import './appsDirectoryDeskInjection';
+import './filesDeskBrowser';
 import '../../styles/dock-latch-visibility-override.css';
 
 export const TopNav: React.FC = () => {
