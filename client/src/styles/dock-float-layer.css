@@ -1,6 +1,6 @@
 /* Stable Olympus Dock/Desk layout.
-   This file loads last and overrides earlier Dock experiments.
-   Goal: latch locks into the Dock label area, Desk opens fully, footer stays visible, buttons/dots do not clip. */
+   The Desk latches snug to the Dock. The hatch latch lives in the Dock label receiver.
+   Only the app/logout button lane rises above the Dock; it does not overlap the latch receiver. */
 
 .olympus-powered-desk {
   overflow: visible !important;
@@ -8,19 +8,18 @@
   transition: height 850ms cubic-bezier(0.2, 0.85, 0.25, 1), box-shadow 400ms ease, border-color 400ms ease !important;
 }
 
-/* Force real full-open height. Inline React height was too partial. */
 .olympus-powered-desk[data-hatch-state='opening'],
 .olympus-powered-desk[data-hatch-state='open'] {
   height: min(560px, 68vh) !important;
   min-height: 440px !important;
 }
 
-/* Snug latched state: enough room for Dock, blue indicators, and footer separation. */
+/* Snug bottom: enough clearance for Dock + company footer without crowding. */
 .olympus-powered-desk[data-hatch-state='latched'],
 .olympus-powered-desk[data-hatch-state='closing'] {
-  height: 120px !important;
-  min-height: 120px !important;
-  max-height: 120px !important;
+  height: 110px !important;
+  min-height: 110px !important;
+  max-height: 110px !important;
 }
 
 .olympus-powered-desk > div {
@@ -28,11 +27,11 @@
   contain: none !important;
 }
 
-/* The latch belongs to the Desk, but locks into the Dock label side instead of sitting over the buttons. */
+/* Latch locks into the left Dock label receiver, not over the button row. */
 .olympus-hatch-latch {
   top: auto !important;
-  left: 58px !important;
-  bottom: 86px !important;
+  left: 34px !important;
+  bottom: 76px !important;
   transform: none !important;
   z-index: 180 !important;
   pointer-events: auto !important;
@@ -46,7 +45,7 @@
 
 .olympus-powered-desk[data-hatch-state='opening'] .olympus-hatch-latch,
 .olympus-powered-desk[data-hatch-state='open'] .olympus-hatch-latch {
-  bottom: 88px !important;
+  bottom: 78px !important;
 }
 
 .olympus-powered-desk .olympus-desk-header,
@@ -58,15 +57,15 @@
   overflow: hidden !important;
 }
 
-/* Dock stays in normal flow, slimmed back down and kept clear of the footer. */
+/* Dock is snug to the Desk and above the footer. */
 .olympus-powered-desk .olympus-dock-row {
   position: relative !important;
   inset: auto !important;
   z-index: 120 !important;
-  height: 90px !important;
-  min-height: 90px !important;
+  height: 78px !important;
+  min-height: 78px !important;
   margin-top: auto !important;
-  padding: 12px 12px 20px !important;
+  padding: 8px 12px 14px !important;
   overflow: visible !important;
   contain: none !important;
   pointer-events: auto !important;
@@ -74,20 +73,20 @@
 
 .olympus-powered-desk .olympus-dock-track {
   position: relative !important;
-  height: 58px !important;
-  min-height: 58px !important;
-  max-height: 58px !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  max-height: 56px !important;
   overflow: visible !important;
   overflow-x: visible !important;
   overflow-y: visible !important;
   align-items: flex-end !important;
-  padding-top: 4px !important;
-  padding-bottom: 4px !important;
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
   gap: 8px !important;
   isolation: isolate;
 }
 
-/* The label area is the latch receiver; it stays below the latch and is not part of the hover button layer. */
+/* Latch receiver / label area. This is deliberately not part of the raised button layer. */
 .olympus-powered-desk .olympus-dock-track > div:first-child {
   height: 50px !important;
   min-height: 50px !important;
@@ -96,35 +95,36 @@
   z-index: 80 !important;
 }
 
-/* Only the actual app/logout buttons get the raised button layer. */
+/* Button-only raised layer begins after the label receiver and ends at the logout button. */
 .olympus-powered-desk .olympus-dock-track > button {
   position: relative !important;
-  width: 50px !important;
-  height: 50px !important;
-  min-width: 50px !important;
-  flex: 0 0 50px !important;
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  flex: 0 0 48px !important;
   overflow: visible !important;
   transform-origin: bottom center !important;
   z-index: 220 !important;
   transition: transform 150ms ease, border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease !important;
 }
 
-/* Active app indicator dot stays visible inside the Dock/footer clearance. */
+/* Put blue indicators inside the button lane instead of hanging below into the footer. */
 .olympus-powered-desk .olympus-dock-track > button[class*='border-cyan-300/60']::before {
-  bottom: -6px !important;
-  width: 7px !important;
-  height: 7px !important;
+  bottom: 3px !important;
+  width: 6px !important;
+  height: 6px !important;
+  z-index: 260 !important;
 }
 
-/* Conservative hover: app buttons rise above the Dock, but not over the latch receiver. */
+/* Smaller lift: above the Dock face, but not into the latch receiver or outside the safe lane. */
 .olympus-powered-desk .olympus-dock-track > button:hover {
-  transform: translateY(-10px) scale(1.1) !important;
+  transform: translateY(-7px) scale(1.075) !important;
   z-index: 420 !important;
 }
 
 .olympus-powered-desk .olympus-dock-track > button:has(+ button:hover),
 .olympus-powered-desk .olympus-dock-track > button:hover + button {
-  transform: translateY(-4px) scale(1.035) !important;
+  transform: translateY(-3px) scale(1.025) !important;
   z-index: 350 !important;
 }
 
@@ -135,12 +135,12 @@
 }
 
 .olympus-powered-desk .olympus-dock-track > button > span:first-child {
-  font-size: 1.62rem !important;
+  font-size: 1.55rem !important;
   line-height: 1 !important;
 }
 
 .olympus-powered-desk .olympus-dock-track > button > span:last-child {
-  bottom: calc(100% + 7px) !important;
+  bottom: calc(100% + 6px) !important;
   z-index: 520 !important;
   font-size: 12px !important;
 }
