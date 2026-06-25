@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRuntimeSettings } from '../../admin/runtimeSettings';
+import { logoutAdmin } from '../../admin/LoginGate';
 import { useThemeStore, type ActiveModule } from '../theme/theme.store';
 import { MonitorDeskWorkspace } from '../../modules/monitor/widgets/MonitorDeskWorkspace';
 
@@ -123,7 +124,14 @@ export const OlympusDeskV2: React.FC = () => {
           </div>
         </div>}
         {open && <div className="min-h-0 flex-1 overflow-hidden px-4 py-3"><DeskApp view={view} setView={setView} dock={dock} setDock={setDock} height={height} setHeight={setHeight} /></div>}
-        <div className={`flex border-t border-cyan-300/15 bg-black/65 px-3 py-2 ${dockClass}`}><div className="flex max-w-full items-end gap-2 overflow-x-auto rounded-2xl border border-cyan-300/20 bg-white/[0.03] px-3 py-2 shadow-[0_0_24px_rgba(34,211,238,0.12)]"><div className="mr-2 hidden min-w-[110px] flex-col items-start border-r border-white/10 pr-3 md:flex"><span className="text-[9px] uppercase tracking-[0.22em] text-cyan-300">Olympus Dock</span><span className="text-[8px] uppercase tracking-[0.16em] text-white/35">Launcher</span></div>{launchers.map((item) => <button key={item.id} type="button" onClick={() => openDockItem(item)} className={`group flex min-w-[58px] flex-col items-center justify-center rounded-xl border px-2 py-1.5 transition-all ${view === item.view ? 'border-cyan-300/60 bg-cyan-400/15 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.25)]' : 'border-white/10 bg-white/[0.03] text-white/55 hover:border-cyan-300/40 hover:bg-cyan-400/10 hover:text-cyan-100'}`} title={item.label}><span className="text-lg leading-none">{item.icon}</span><span className="mt-1 text-[8px] uppercase tracking-[0.1em]">{item.label}</span></button>)}</div></div>
+        <div className={`flex border-t border-cyan-300/15 bg-black/65 px-3 py-2 ${dockClass}`}>
+          <div className="flex max-w-full items-end gap-2 overflow-x-auto rounded-2xl border border-cyan-300/20 bg-white/[0.03] px-3 py-2 shadow-[0_0_24px_rgba(34,211,238,0.12)]">
+            <div className="mr-2 hidden min-w-[110px] flex-col items-start border-r border-white/10 pr-3 md:flex"><span className="text-[9px] uppercase tracking-[0.22em] text-cyan-300">Olympus Dock</span><span className="text-[8px] uppercase tracking-[0.16em] text-white/35">Launcher</span></div>
+            {launchers.map((item) => <button key={item.id} type="button" onClick={() => openDockItem(item)} className={`group flex min-w-[58px] flex-col items-center justify-center rounded-xl border px-2 py-1.5 transition-all ${view === item.view ? 'border-cyan-300/60 bg-cyan-400/15 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.25)]' : 'border-white/10 bg-white/[0.03] text-white/55 hover:border-cyan-300/40 hover:bg-cyan-400/10 hover:text-cyan-100'}`} title={item.label}><span className="text-lg leading-none">{item.icon}</span><span className="mt-1 text-[8px] uppercase tracking-[0.1em]">{item.label}</span></button>)}
+            <div className="mx-2 h-14 w-px shrink-0 bg-white/10" />
+            <button type="button" data-dock-logout="true" onClick={logoutAdmin} className="group flex min-w-[58px] flex-col items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-2 py-1.5 text-white/55 transition-all hover:border-cyan-300/40 hover:bg-cyan-400/10 hover:text-cyan-100" title="Logout"><span className="text-lg leading-none">⏻</span><span className="mt-1 text-[8px] uppercase tracking-[0.1em]">Logout</span></button>
+          </div>
+        </div>
       </div>
     </section>
   );
