@@ -1,0 +1,6 @@
+Trigger apt publish for inline Apps directory.
+
+Changes:
+- Removes the floating Apps Directory window from TopNav.
+- Injects infrastructure and NASA app entries into the existing Desk Apps Browser panel.
+- Keeps all app files and entries under Apps instead of creating more GUI windows.
