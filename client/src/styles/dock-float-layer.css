@@ -1,11 +1,12 @@
 /* Compact stable Dock panel above footer. */
 .olympus-powered-desk{position:relative!important;overflow:visible!important;contain:none!important;transition:height 360ms ease!important}
-.olympus-powered-desk[data-hatch-state='opening'],.olympus-powered-desk[data-hatch-state='open']{height:min(500px,62vh)!important;min-height:380px!important}
-.olympus-powered-desk[data-hatch-state='latched'],.olympus-powered-desk[data-hatch-state='closing']{height:68px!important;min-height:68px!important;max-height:68px!important}
-.olympus-powered-desk>div{position:relative!important;height:100%!important;overflow:visible!important;contain:none!important}
+.olympus-powered-desk[data-hatch-state='opening'],.olympus-powered-desk[data-hatch-state='open']{height:min(500px,62vh)!important;min-height:380px!important;flex:0 0 min(500px,62vh)!important}
+.olympus-powered-desk[data-hatch-state='latched'],.olympus-powered-desk[data-hatch-state='closing']{height:68px!important;min-height:68px!important;max-height:68px!important;flex:0 0 68px!important}
+.olympus-powered-desk>div{position:relative!important;height:68px!important;min-height:68px!important;max-height:68px!important;overflow:visible!important;contain:none!important}
+.olympus-powered-desk[data-hatch-state='opening']>div,.olympus-powered-desk[data-hatch-state='open']>div{height:100%!important;min-height:0!important;max-height:none!important}
 .olympus-hatch-latch{top:0!important;left:34px!important;bottom:auto!important;transform:none!important;height:13px!important;width:220px!important;border-radius:0 0 7px 7px!important;font-size:7px!important;line-height:11px!important;z-index:180!important}
 .olympus-powered-desk .olympus-desk-body{overflow:hidden!important}
-.olympus-powered-desk[data-hatch-state='latched'] .olympus-dock-row,.olympus-powered-desk[data-hatch-state='closing'] .olympus-dock-row{position:absolute!important;left:0!important;right:0!important;top:0!important;bottom:auto!important;margin-top:0!important}
+.olympus-powered-desk[data-hatch-state='latched'] .olympus-dock-row,.olympus-powered-desk[data-hatch-state='closing'] .olympus-dock-row{position:absolute!important;left:0!important;right:0!important;top:0!important;bottom:auto!important;margin-top:0!important;transform:none!important}
 .olympus-powered-desk .olympus-dock-row{height:68px!important;min-height:68px!important;max-height:68px!important;padding:13px 16px 7px!important;overflow:visible!important;contain:none!important;background:rgba(0,0,0,.72)!important;z-index:120!important}
 .olympus-powered-desk .olympus-dock-track{height:48px!important;min-height:48px!important;max-height:48px!important;max-width:calc(100vw - 48px)!important;overflow:visible!important;align-items:center!important;justify-content:center!important;padding:4px 11px!important;gap:8px!important;border-radius:18px!important;isolation:isolate!important}
 .olympus-powered-desk .olympus-dock-label{height:40px!important;min-height:40px!important;min-width:205px!important;max-width:205px!important;align-self:center!important;justify-content:center!important}
