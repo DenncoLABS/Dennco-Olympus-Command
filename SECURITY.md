@@ -1,132 +1,66 @@
-# Security Policy
+# Security, Non-Disclosure, and Reserved Rights Policy
 
-## Supported Versions
+## Private security policy
 
-We release patches for security vulnerabilities. Which versions are eligible for receiving such patches depends on the CVSS v3.0 Rating:
+Dennco Olympus Command is a privately maintained Dennco Information Systems platform. Security reports, operational concerns, vulnerability information, infrastructure information, access-control details, deployment details, logs, credentials, API keys, customer information, and non-public technical information must not be disclosed publicly.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+Do not open public GitHub issues for vulnerabilities, deployment behavior, production configuration, credentials, infrastructure paths, operational incidents, or suspected security issues.
 
-## Reporting a Vulnerability
+## Non-disclosure requirement
 
-**Please do not report security vulnerabilities through public GitHub issues.**
+Repository access is limited to authorized staff, approved contractors, and specifically invited collaborators. Access to this repository is conditioned on confidentiality. By accessing this repository, you agree that all non-public project materials are confidential and must not be copied, distributed, disclosed, published, mirrored, transferred, or used outside authorized Dennco Information Systems work without written authorization.
 
-Instead, please report them via email to [INSERT SECURITY EMAIL].
+Confidential materials include, but are not limited to:
 
-You should receive a response within 48 hours. If for some reason you do not, please follow up via email to ensure we received your original message.
+- Source code and private branches.
+- Security reports and vulnerability details.
+- System architecture and operational workflows.
+- Package, deployment, service, and infrastructure details.
+- Runtime settings, environment variables, API keys, and credentials.
+- Customer, staff, contractor, or partner information.
+- Logs, screenshots, diagnostics, and incident details.
+- Product plans, private roadmaps, and internal strategy.
 
-Please include the following information in your report:
+## Reporting security issues
 
-- Type of issue (e.g., buffer overflow, SQL injection, cross-site scripting, etc.)
-- Full paths of source file(s) related to the manifestation of the issue
-- The location of the affected source code (tag/branch/commit or direct URL)
-- Any special configuration required to reproduce the issue
-- Step-by-step instructions to reproduce the issue
-- Proof-of-concept or exploit code (if possible)
-- Impact of the issue, including how an attacker might exploit the issue
+Authorized staff should report security concerns through internal Dennco Information Systems channels. If a private external report path has been provided to a specific partner or contractor, that approved path may be used.
 
-This information will help us triage your report more quickly.
+Do not include exploit details, credentials, private logs, API keys, customer details, or production configuration in public GitHub comments, public issues, public pull requests, public forks, or public discussions.
 
-## Preferred Languages
+## Handling vulnerabilities
 
-We prefer all communications to be in English.
+Authorized maintainers may:
 
-## Disclosure Policy
+1. Restrict or revoke repository access.
+2. Close, lock, redact, or remove public disclosures.
+3. Patch the affected code or configuration.
+4. Rotate credentials or invalidate exposed keys.
+5. Update package releases and deployment notes.
+6. Notify affected internal stakeholders through approved channels.
 
-When we receive a security bug report, we will:
+## Deployment security expectations
 
-1. Confirm the problem and determine the affected versions
-2. Audit code to find any similar problems
-3. Prepare fixes for all supported releases
-4. Release patches as soon as possible
+Production and test deployments should follow these requirements:
 
-## Comments on this Policy
+- Use HTTPS and an approved reverse proxy for exposed deployments.
+- Keep API keys server-side only.
+- Never commit production `.env` files or credentials.
+- Restrict administrative access.
+- Review third-party data-source terms before integration.
+- Avoid exposing operationally sensitive system behavior in public documentation.
+- Keep package publishing and signing keys protected.
+- Keep uploaded branding assets under Dennco/Olympus control.
 
-If you have suggestions on how this process could be improved, please submit a pull request.
+## Data and source limitations
 
-## Security Best Practices for Users
+Olympus Command integrates public and configured data sources. Contributors must not add classified information, unlawfully obtained data, private personal data, unauthorized surveillance feeds, stolen credentials, or restricted customer information.
 
-### API Keys
+## No public disclosure license
 
-- **NEVER** commit API keys to the repository
-- Always use `.env` files (included in `.gitignore`)
-- Rotate API keys regularly
-- Use environment-specific keys (dev/staging/prod)
+No permission is granted to publicly disclose vulnerabilities, copy source code, redistribute packages, publish derivative works, reproduce private documentation, mirror this repository, use Dennco branding, or represent this project externally unless Dennco Information Systems grants that permission in writing.
 
-### Environment Variables
+## All rights reserved
 
-```bash
-# Good - Use .env files
-cp server/.env.example server/.env
-# Then edit server/.env with your actual keys
+Dennco Olympus Command, related source code, documentation, configuration, branding, packaging, service files, workflows, and operational materials are proprietary to Dennco Information Systems unless a separate written agreement states otherwise.
 
-# Bad - Never do this
-export AISSTREAM_API_KEY=your_real_key_here
-git commit -am "Add API key"  # ❌ NEVER!
-```
-
-### Deployment
-
-- Use HTTPS in production
-- Enable CORS restrictions
-- Implement rate limiting
-- Use secure headers (helmet.js)
-- Keep dependencies updated
-- Run security audits regularly:
-  ```bash
-  npm audit
-  npm audit fix
-  ```
-
-### Data Privacy
-
-This application processes publicly available data only:
-
-- ADS-B aircraft positions (public broadcasts)
-- AIS maritime data (public broadcasts)
-- RSS news feeds (public sources)
-
-No personal or classified data should be processed.
-
-## Known Security Considerations
-
-### Client-Side API Keys
-
-The Vite frontend may expose some API configuration. Never put sensitive keys in `VITE_*` environment variables as they are bundled into the client JavaScript.
-
-### Rate Limiting
-
-Implement rate limiting on the backend to prevent abuse:
-
-- ADSB.lol API calls (currently 3-second cache)
-- AISStream WebSocket reconnections (currently 5-second backoff)
-
-### WebSocket Security
-
-The AISStream WebSocket connection:
-
-- Authenticates via API key (kept server-side only)
-- Automatically reconnects on disconnect
-- Should be monitored for unusual traffic patterns
-
-## Dependencies
-
-We use automated tools to monitor dependencies:
-
-- `npm audit` - Regular security audits
-- Dependabot (if enabled) - Automated updates
-- Manual review of dependency changes
-
-## Responsible Disclosure
-
-We kindly ask that you:
-
-- Allow us reasonable time to address the vulnerability
-- Avoid public disclosure until a fix is available
-- Make a good faith effort to avoid privacy violations and disruption
-
-## Recognition
-
-We appreciate the security research community and will acknowledge your contribution (unless you prefer to remain anonymous).
+All rights are reserved. No license, copyright permission, trademark permission, patent license, redistribution right, sublicensing right, commercial-use right, deployment right, or derivative-work right is granted by this repository, by access to this repository, or by any contribution policy unless explicitly granted in writing by Dennco Information Systems.
