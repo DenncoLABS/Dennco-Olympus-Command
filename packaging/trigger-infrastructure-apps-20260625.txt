@@ -1,0 +1,6 @@
+Trigger apt publish for Olympus infrastructure apps.
+
+Changes:
+- Adds Zabbix, Agent DVR, RadioConsole2, FreePBX, NethServer 8, and Proxmox 8 as Olympus infrastructure apps.
+- Mounts an Infrastructure Apps Dock strip.
+- Adds a packaged install helper for supported infrastructure integrations.
