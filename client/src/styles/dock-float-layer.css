@@ -1,12 +1,11 @@
-/* Final compact Olympus Dock/Desk layout.
-   This file loads last. It restores the slim rounded Dock capsule and keeps the footer separate.
-   Dock buttons are now draggable widgets. Magnification is applied to widget items, not the whole Dock.
-*/
+/* Final restored Olympus Dock/Desk layout.
+   Keep draggable widgets, but restore the Dock as a compact panel above the company footer.
+   The footer never overlaps the Dock, and Dock indicators stay inside the Dock panel. */
 
 .olympus-powered-desk {
   overflow: visible !important;
   contain: none !important;
-  transition: height 650ms cubic-bezier(0.2, 0.85, 0.25, 1), box-shadow 300ms ease, border-color 300ms ease !important;
+  transition: height 520ms cubic-bezier(0.2, 0.85, 0.25, 1), box-shadow 260ms ease, border-color 260ms ease !important;
 }
 
 .olympus-powered-desk[data-hatch-state='opening'],
@@ -17,9 +16,9 @@
 
 .olympus-powered-desk[data-hatch-state='latched'],
 .olympus-powered-desk[data-hatch-state='closing'] {
-  height: 96px !important;
-  min-height: 96px !important;
-  max-height: 96px !important;
+  height: 86px !important;
+  min-height: 86px !important;
+  max-height: 86px !important;
 }
 
 .olympus-powered-desk > div {
@@ -29,88 +28,89 @@
 
 .olympus-hatch-latch {
   top: auto !important;
-  left: 42px !important;
-  bottom: 67px !important;
+  left: 38px !important;
+  bottom: 60px !important;
   transform: none !important;
   z-index: 180 !important;
   pointer-events: auto !important;
-  height: 15px !important;
-  width: 228px !important;
+  height: 14px !important;
+  width: 224px !important;
   border-radius: 7px 7px 0 0 !important;
   background: rgba(6, 18, 24, 0.94) !important;
   border: 1px solid rgba(34, 211, 238, 0.28) !important;
-  box-shadow: 0 0 12px rgba(34, 211, 238, 0.08) !important;
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.08) !important;
   font-size: 7px !important;
-  line-height: 13px !important;
+  line-height: 12px !important;
 }
 
 .olympus-powered-desk[data-hatch-state='opening'] .olympus-hatch-latch,
 .olympus-powered-desk[data-hatch-state='open'] .olympus-hatch-latch {
-  bottom: 69px !important;
+  bottom: 62px !important;
 }
 
 .olympus-powered-desk .olympus-desk-header,
 .olympus-powered-desk .olympus-desk-body {
-  animation: olympusDeskHatchFade 280ms ease both;
+  animation: olympusDeskHatchFade 240ms ease both;
 }
 
 .olympus-powered-desk .olympus-desk-body {
   overflow: hidden !important;
 }
 
+/* Restored Dock panel. It stays in normal document flow above the company information. */
 .olympus-powered-desk .olympus-dock-row {
   position: relative !important;
   inset: auto !important;
   z-index: 120 !important;
-  height: 74px !important;
-  min-height: 74px !important;
+  height: 66px !important;
+  min-height: 66px !important;
   margin-top: auto !important;
-  padding: 8px 14px 9px !important;
+  padding: 7px 16px 8px !important;
   overflow: visible !important;
   contain: none !important;
   pointer-events: auto !important;
-  background: rgba(0, 0, 0, 0.68) !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  border-bottom: 1px solid rgba(34, 211, 238, 0.16) !important;
 }
 
 .olympus-powered-desk .olympus-dock-track {
   position: relative !important;
   width: auto !important;
   max-width: calc(100vw - 48px) !important;
-  height: 58px !important;
-  min-height: 58px !important;
-  max-height: 58px !important;
+  height: 50px !important;
+  min-height: 50px !important;
+  max-height: 50px !important;
   overflow: visible !important;
   overflow-x: visible !important;
   overflow-y: visible !important;
-  align-items: flex-end !important;
+  align-items: center !important;
   justify-content: center !important;
-  padding: 5px 12px 6px !important;
+  padding: 4px 11px !important;
   gap: 8px !important;
-  border-radius: 20px !important;
-  border-color: rgba(34, 211, 238, 0.22) !important;
+  border-radius: 18px !important;
+  border-color: rgba(34, 211, 238, 0.24) !important;
   background: rgba(255, 255, 255, 0.035) !important;
-  box-shadow: 0 0 18px rgba(34, 211, 238, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
   isolation: isolate;
 }
 
 .olympus-powered-desk .olympus-dock-label {
-  height: 46px !important;
-  min-height: 46px !important;
-  min-width: 210px !important;
-  max-width: 210px !important;
-  align-self: flex-end !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  min-width: 205px !important;
+  max-width: 205px !important;
+  align-self: center !important;
   justify-content: center !important;
   z-index: 80 !important;
 }
 
-/* Dedicated widget lane: button animation is isolated from the latch receiver. */
 .olympus-dock-widget-lane {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 58px;
-  min-height: 58px;
+  height: 50px;
+  min-height: 50px;
   overflow: visible;
   contain: none;
   isolation: isolate;
@@ -118,14 +118,14 @@
 
 .olympus-dock-widget {
   position: relative;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  flex: 0 0 44px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  flex: 0 0 40px;
   overflow: visible;
   transform-origin: bottom center;
   z-index: 220;
-  transition: transform 180ms cubic-bezier(0.18, 0.86, 0.28, 1.18), filter 150ms ease;
+  transition: transform 160ms cubic-bezier(0.18, 0.86, 0.28, 1.1), filter 130ms ease;
   will-change: transform;
 }
 
@@ -138,34 +138,35 @@
 }
 
 .olympus-dock-widget > button {
-  width: 44px !important;
-  height: 44px !important;
-  min-width: 44px !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
   overflow: visible !important;
-  border-radius: 13px !important;
+  border-radius: 12px !important;
   padding: 0 !important;
   transform: none !important;
 }
 
+/* Smaller macOS-style hop so the Dock panel stays restored and readable. */
 .olympus-dock-widget:hover {
-  transform: translateY(-18px) scale(1.42) !important;
+  transform: translateY(-8px) scale(1.16) !important;
   z-index: 520 !important;
-  filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.62));
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.58));
 }
 
 .olympus-dock-widget:has(+ .olympus-dock-widget:hover),
 .olympus-dock-widget:hover + .olympus-dock-widget {
-  transform: translateY(-11px) scale(1.22) !important;
+  transform: translateY(-4px) scale(1.07) !important;
   z-index: 450 !important;
 }
 
 .olympus-dock-widget:has(+ .olympus-dock-widget + .olympus-dock-widget:hover),
 .olympus-dock-widget:hover + .olympus-dock-widget + .olympus-dock-widget {
-  transform: translateY(-5px) scale(1.08) !important;
+  transform: translateY(-2px) scale(1.02) !important;
   z-index: 380 !important;
 }
 
-/* Active/open indicator lives inside the widget button so the footer cannot clip it. */
+/* Active/open indicator is inside the button face, never below the Dock or into the company footer. */
 .olympus-dock-widget > button[class*='border-cyan-300/60']::before {
   bottom: 3px !important;
   width: 5px !important;
@@ -174,35 +175,35 @@
 }
 
 .olympus-dock-widget .dock-widget-icon {
-  font-size: 1.5rem !important;
+  font-size: 1.34rem !important;
   line-height: 1 !important;
-  transition: transform 180ms cubic-bezier(0.18, 0.86, 0.28, 1.18), filter 150ms ease !important;
+  transition: transform 160ms cubic-bezier(0.18, 0.86, 0.28, 1.1), filter 130ms ease !important;
 }
 
 .olympus-dock-widget:hover .dock-widget-icon {
-  transform: translateY(-1px) scale(1.08);
-  filter: drop-shadow(0 0 12px rgba(224, 242, 254, 0.32));
+  transform: translateY(-1px) scale(1.04);
+  filter: drop-shadow(0 0 10px rgba(224, 242, 254, 0.28));
 }
 
 .olympus-dock-widget .dock-widget-label {
   position: absolute !important;
   left: 50% !important;
-  bottom: calc(100% + 11px) !important;
-  transform: translateX(-50%) translateY(8px) scale(0.92) !important;
+  bottom: calc(100% + 8px) !important;
+  transform: translateX(-50%) translateY(6px) scale(0.94) !important;
   opacity: 0 !important;
   pointer-events: none !important;
   white-space: nowrap !important;
   z-index: 700 !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  border-radius: 16px !important;
+  border-radius: 15px !important;
   background: linear-gradient(180deg, rgba(70, 70, 70, 0.95), rgba(20, 20, 20, 0.95)) !important;
   color: rgba(255, 255, 255, 0.96) !important;
-  padding: 6px 11px !important;
-  font-size: 12px !important;
+  padding: 5px 10px !important;
+  font-size: 11px !important;
   line-height: 1 !important;
   letter-spacing: 0.01em !important;
   text-transform: none !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.68), inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
   transition: opacity 130ms ease, transform 130ms ease !important;
 }
 
@@ -216,8 +217,8 @@
   position: absolute;
   left: 50%;
   top: 100%;
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   transform: translate(-50%, -5px) rotate(45deg);
   background: rgba(20, 20, 20, 0.95);
   border-right: 1px solid rgba(255, 255, 255, 0.13);
@@ -229,7 +230,7 @@
 }
 
 .olympus-powered-desk[data-hatch-state='opening'] {
-  box-shadow: 0 -12px 32px rgba(34, 211, 238, 0.1), 0 -6px 20px rgba(0, 0, 0, 0.72) !important;
+  box-shadow: 0 -12px 30px rgba(34, 211, 238, 0.1), 0 -6px 18px rgba(0, 0, 0, 0.72) !important;
   border-top-color: rgba(103, 232, 249, 0.5) !important;
 }
 
