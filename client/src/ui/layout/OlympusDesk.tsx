@@ -3,9 +3,8 @@ import { useRuntimeSettings } from '../../admin/runtimeSettings';
 import type { ActiveModule } from '../theme/theme.store';
 import { MonitorDeskWidgets } from '../../modules/monitor/widgets/MonitorDeskWidgets';
 
-type DeskView = 'core' | 'apps' | 'files' | 'architecture' | 'terminal' | 'flight' | 'maritime' | 'monitor' | 'dot' | 'cad' | 'admin' | 'settings';
+type DeskView = 'core' | 'apps' | 'files' | 'architecture' | 'terminal' | 'services' | 'packages' | 'flight' | 'maritime' | 'monitor' | 'dot' | 'cad' | 'admin' | 'settings';
 type DockPlacement = 'left' | 'center' | 'right';
-
 type DeskItem = { id: string; label: string; icon: string; module?: ActiveModule; view: DeskView };
 
 const HEIGHT_KEY = 'olympus.desk.height.v2';
@@ -18,6 +17,8 @@ const deskItems: DeskItem[] = [
   { id: 'files', label: 'Files', icon: '▣', view: 'files' },
   { id: 'architecture', label: 'Architecture', icon: '⌬', view: 'architecture' },
   { id: 'terminal', label: 'Terminal', icon: '⌁', view: 'terminal' },
+  { id: 'services', label: 'Services', icon: '◫', view: 'services' },
+  { id: 'packages', label: 'Packages', icon: '⬡', view: 'packages' },
   { id: 'flights', label: 'Flight', icon: '✈', view: 'flight', module: 'flights' },
   { id: 'maritime', label: 'Maritime', icon: '⛴', view: 'maritime', module: 'maritime' },
   { id: 'monitor', label: 'Monitor', icon: '◉', view: 'monitor', module: 'monitor' },
@@ -55,7 +56,6 @@ export const OlympusDesk: React.FC = () => {
   const [isOpen, setIsOpen] = useState(true);
   const [dockPlacement, setDockPlacement] = useState<DockPlacement>(() => readPlacement());
   const dragRef = useRef<{ pointerId: number; startY: number; startHeight: number } | null>(null);
-
   const enabledItems = useMemo(() => deskItems.filter((item) => !item.module || settings.featureToggles[item.module] !== false), [settings.featureToggles]);
 
   useEffect(() => { localStorage.setItem(HEIGHT_KEY, String(deskHeight)); }, [deskHeight]);
@@ -80,9 +80,8 @@ export const OlympusDesk: React.FC = () => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     dragRef.current = null;
-    try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* browser may release capture first */ }
+    try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* released by browser */ }
   };
-
   const visibleHeight = isOpen ? deskHeight : 44;
 
   return (
@@ -106,13 +105,15 @@ export const OlympusDesk: React.FC = () => {
 
 function DeskAppView({ view }: { view: DeskView }) {
   const title = view.toUpperCase();
-  return <div className="grid h-full grid-cols-[260px_1fr] gap-4 text-white/70"><div className="rounded border border-white/10 bg-black/35 p-3"><div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">Desk App</div><div className="mt-2 text-2xl font-bold uppercase tracking-[0.14em] text-white">{title}</div><div className="mt-2 text-xs leading-relaxed text-white/45">This opens inside the Olympus Desk. It does not change the Earth/map screen until a widget is intentionally placed onto the Earth workspace.</div></div><div className="min-h-0 overflow-auto rounded border border-cyan-300/15 bg-[#020617]/70 p-4">{view === 'core' && <CoreView />}{view === 'apps' && <AppsView />}{view === 'files' && <FilesView />}{view === 'architecture' && <ArchitectureView />}{view === 'terminal' && <TerminalView />}{view === 'settings' && <SettingsView />}{view === 'monitor' && <MonitorDeskWidgets />}{['flight', 'maritime', 'dot', 'cad', 'admin'].includes(view) && <ModuleView view={view} />}</div></div>;
+  return <div className="grid h-full grid-cols-[260px_1fr] gap-4 text-white/70"><div className="rounded border border-white/10 bg-black/35 p-3"><div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">Desk App</div><div className="mt-2 text-2xl font-bold uppercase tracking-[0.14em] text-white">{title}</div><div className="mt-2 text-xs leading-relaxed text-white/45">This opens inside the Olympus Desk. It does not change the Earth/map screen until a widget is intentionally placed onto the Earth workspace.</div></div><div className="min-h-0 overflow-auto rounded border border-cyan-300/15 bg-[#020617]/70 p-4">{view === 'core' && <CoreView />}{view === 'apps' && <AppsView />}{view === 'files' && <FilesView />}{view === 'architecture' && <ArchitectureView />}{view === 'terminal' && <TerminalView />}{view === 'services' && <ServicesView />}{view === 'packages' && <PackagesView />}{view === 'settings' && <SettingsView />}{view === 'monitor' && <MonitorDeskWidgets />}{['flight', 'maritime', 'dot', 'cad', 'admin'].includes(view) && <ModuleView view={view} />}</div></div>;
 }
 
-function CoreView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Core system</h3><p className="mt-3 text-sm text-white/60">Olympus Core is the local OS control surface for Debian/GNOME services, package state, data folders, modules, and command apps.</p></div>; }
-function AppsView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Olympus apps</h3><div className="mt-3 grid grid-cols-2 gap-3 text-sm">{deskItems.filter((item) => item.module).map((item) => <div key={item.id} className="border border-white/10 bg-white/[0.03] p-3"><span className="mr-2 text-cyan-200">{item.icon}</span>{item.label}<div className="mt-1 text-xs text-white/35">Desk-contained app launcher. Earth integration later.</div></div>)}</div></div>; }
+function CoreView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Core system</h3><p className="mt-3 text-sm text-white/60">Olympus Core is the local OS control surface for Debian/GNOME services, package state, data folders, modules, and command apps.</p><div className="mt-4 grid grid-cols-2 gap-3 text-xs"><div className="border border-white/10 bg-white/[0.03] p-3">GNOME launcher target: /usr/share/applications/olympus-command.desktop</div><div className="border border-white/10 bg-white/[0.03] p-3">Autostart target: /etc/xdg/autostart/olympus-command.desktop</div></div></div>; }
+function AppsView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Olympus apps</h3><div className="mt-3 grid grid-cols-2 gap-3 text-sm">{deskItems.filter((item) => item.module || ['services', 'packages', 'files', 'architecture', 'terminal'].includes(item.id)).map((item) => <div key={item.id} className="border border-white/10 bg-white/[0.03] p-3"><span className="mr-2 text-cyan-200">{item.icon}</span>{item.label}<div className="mt-1 text-xs text-white/35">Desk-contained app surface.</div></div>)}</div></div>; }
 function FilesView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">File browser</h3><p className="mt-3 text-sm text-white/60">Hard-coded file selection surface placeholder. Next we will wire safe server-side browsing for Olympus paths and selected-file actions.</p><pre className="mt-4 border border-white/10 bg-black/40 p-3 text-xs text-emerald-200">/opt/dennco/olympus-command{`\n`}/etc/dennco/olympus-command{`\n`}/var/lib/dennco</pre></div>; }
 function ArchitectureView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Architecture viewer</h3><div className="mt-3 text-xs leading-6 text-white/60"><div>Debian → GNOME → Olympus Core GUI → Desk/Dock → Apps/Files/Architecture</div><div>Client modules → Flight / Maritime / Monitor / DOT / CAD / Admin</div><div>Server routes → API providers / diagnostics / local services</div><div>Package layer → systemd service / apt repo / runtime config</div></div></div>; }
 function TerminalView() { return <div className="h-full rounded border border-emerald-400/20 bg-black p-4 font-mono text-sm text-emerald-300 shadow-inner"><div className="text-[10px] uppercase tracking-[0.2em] text-emerald-200/60">Olympus Terminal</div><div className="mt-4">root@olympus:~# <span className="animate-pulse">_</span></div><div className="mt-3 text-xs text-emerald-300/55">Terminal surface placeholder. Commands will be wired through controlled backend actions later.</div></div>; }
-function SettingsView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Desk settings</h3><p className="mt-3 text-sm text-white/60">Dock placement and Desk height are saved locally. More runtime customizations will attach here.</p></div>; }
+function ServicesView() { const services = ['dennco-olympus-command', 'olympus-cad', 'postgresql', 'redis-server', 'gnome-session']; return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Core services</h3><div className="mt-3 grid grid-cols-2 gap-3 text-xs">{services.map((service) => <div key={service} className="border border-white/10 bg-white/[0.03] p-3"><div className="text-white font-bold">{service}</div><div className="mt-1 text-emerald-300/70">planned service monitor</div></div>)}</div></div>; }
+function PackagesView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Packages</h3><div className="mt-3 border border-white/10 bg-black/40 p-3 text-xs text-white/60"><div>Primary package: dennco-olympus-command</div><div>Current candidate check: apt-cache policy dennco-olympus-command</div><div>Upgrade command: apt install --reinstall dennco-olympus-command -y</div></div></div>; }
+function SettingsView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Desk settings</h3><p className="mt-3 text-sm text-white/60">Dock placement, widget order, Earth staging, and Desk height are saved locally. More runtime customizations will attach here.</p></div>; }
 function ModuleView({ view }: { view: DeskView }) { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">{view} desk app</h3><p className="mt-3 text-sm text-white/60">This is the Desk-side launcher surface for {view}. The Earth/map screen remains unchanged. Later we can drag windows from here onto the map as widgets.</p></div>; }
