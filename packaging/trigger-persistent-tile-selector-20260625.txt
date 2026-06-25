@@ -1,0 +1,7 @@
+Trigger apt publish for persistent Tile selector.
+
+Changes:
+- Removes + Tile from the Tile selector.
+- Keeps auto-deploy behavior when pressing Next at the last Tile screen.
+- Moves the Tile left/right selector into the persistent Dock portal layer so it stays visible when apps open.
+- Synchronizes TileScreens using localStorage plus a custom tile navigation event.
