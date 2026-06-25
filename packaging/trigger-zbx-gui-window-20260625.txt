@@ -1,0 +1,6 @@
+Trigger apt publish for ZBX GUI window.
+
+Changes:
+- Opens the monitoring console as an embedded app window.
+- Adds editable local console path.
+- Keeps service state in the app header.
