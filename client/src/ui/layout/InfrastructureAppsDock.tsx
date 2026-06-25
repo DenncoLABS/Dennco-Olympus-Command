@@ -6,6 +6,7 @@ const infrastructureApps = [
   { id: 'agent-dvr', label: 'Agent DVR', icon: 'DVR', role: 'Open-source camera and surveillance console', port: '8090', install: '/opt/dennco/olympus-command/scripts/install-infrastructure-apps.sh agent-dvr' },
   { id: 'rc2', label: 'RadioConsole2', icon: 'RC2', role: 'Radio console app placeholder and integration surface', port: 'local', install: '/opt/dennco/olympus-command/scripts/install-infrastructure-apps.sh rc2' },
   { id: 'freepbx', label: 'FreePBX', icon: 'PBX', role: 'Open-source PBX and telephony management', port: '80 / 443', install: '/opt/dennco/olympus-command/scripts/install-infrastructure-apps.sh freepbx' },
+  { id: 'gitlab', label: 'GitLab CE', icon: 'GL', role: 'Open-source GitLab Community Edition code hosting and DevOps platform', port: '80 / 443 / 22', install: '/opt/dennco/olympus-command/scripts/install-infrastructure-apps.sh gitlab' },
   { id: 'nethserver8', label: 'NethServer 8', icon: 'NS8', role: 'Cluster and container service administration', port: '9090', install: '/opt/dennco/olympus-command/scripts/install-infrastructure-apps.sh nethserver8' },
   { id: 'proxmox8', label: 'Proxmox 8', icon: 'PVE', role: 'Virtualization and node management console', port: '8006', install: '/opt/dennco/olympus-command/scripts/install-infrastructure-apps.sh proxmox8' },
 ];
