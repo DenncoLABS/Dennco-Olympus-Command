@@ -1,8 +1,7 @@
 import React from 'react';
 import { useThemeStore } from '../theme/theme.store';
 import { useRuntimeSettings } from '../../admin/runtimeSettings';
-import { InfrastructureAppsDock } from './InfrastructureAppsDock';
-import { NasaCodeAppsDirectory } from './NasaCodeAppsDirectory';
+import { AppsDirectoryOverlay } from './AppsDirectoryOverlay';
 import './tileWorkspaceScope';
 import '../../styles/dock-latch-visibility-override.css';
 
@@ -14,8 +13,7 @@ export const TopNav: React.FC = () => {
 
   return (
     <>
-      <InfrastructureAppsDock />
-      <NasaCodeAppsDirectory />
+      <AppsDirectoryOverlay />
       <header className="h-14 bg-intel-bg border-b border-intel-accent/40 shadow-[0_4px_20px_rgba(0,229,255,0.1)] flex items-center px-6 justify-between z-[5000] relative box-border overflow-visible">
         <div className="flex items-center gap-8 h-full overflow-visible">
           <div className="flex items-center gap-3">
