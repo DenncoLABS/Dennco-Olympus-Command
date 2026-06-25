@@ -1,0 +1,9 @@
+Powered Desk hatch trigger.
+
+Changes:
+- Olympus Desk now operates like a powered hatch with latched, opening, open, and closing states.
+- Clicking the hatch latch manually operates the Desk.
+- Dock buttons automatically unlatch and raise the Desk.
+- Desk slowly rises and slowly closes/latches.
+- Idle Desk closes and latches after a timeout.
+- Obsolete fixed Dock override was neutralized so dragging/latching remains functional.
