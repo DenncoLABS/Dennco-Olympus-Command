@@ -1,0 +1,8 @@
+Tile screens and Intel Maps workspace bar trigger.
+
+Changes:
+- Core route now opens Olympus Tile Screens instead of leaving Intel Maps open.
+- Closing Intel Maps clears all attached map windows and returns to Tile Screens.
+- Projection toggle moved out of the top nav and into the Multi-Purpose Earth Workspace bar.
+- Intel Maps bar now uses an Intel Maps dropdown for Flight, Maritime, Monitor, DOT, and Cyber maps.
+- Core Architecture now identifies item 4 as Tile Screens, not Earth Screen.
