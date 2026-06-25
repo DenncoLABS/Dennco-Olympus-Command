@@ -1,6 +1,7 @@
 import React from 'react';
 import { useThemeStore } from '../theme/theme.store';
 import { useRuntimeSettings } from '../../admin/runtimeSettings';
+import './tileWorkspaceScope';
 import '../../styles/dock-latch-visibility-override.css';
 
 export const TopNav: React.FC = () => {
