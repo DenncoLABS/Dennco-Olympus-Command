@@ -1,0 +1,7 @@
+Trigger apt publish for providence mark and visible closed latch.
+
+Changes:
+- Replaces the old Olympus pulse square with a pulsing Eye of Providence SVG mark.
+- Keeps the uploaded symbol style as a monochrome cyan system mark.
+- Makes the latch follow the Desk when open but visibly seat on the receiver bar when closed/latched.
+- Keeps Dock receiver bar, Dock capsule, widget drag behavior, hover-only highlights, and blue active dots unchanged.
