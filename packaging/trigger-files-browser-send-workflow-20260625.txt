@@ -1,0 +1,6 @@
+Trigger apt publish for Files browser workflow.
+
+Changes already staged:
+- Machine file browser backend routes.
+- Files window machine browser UI.
+- Files browser route mounted in server.
