@@ -5,7 +5,6 @@ import { AppRoutes } from './routes';
 import { AppSessionSync } from './AppSessionSync';
 import { LoginGate } from '../admin/LoginGate';
 import { RuntimeSettingsProvider } from '../admin/runtimeSettings';
-import { GlobalNotificationsPanel } from '../notifications/GlobalNotificationsPanel';
 
 const queryClient = new QueryClient();
 
@@ -18,7 +17,6 @@ export const App: React.FC = () => {
           <ShellLayout>
             <AppRoutes />
           </ShellLayout>
-          <GlobalNotificationsPanel />
         </LoginGate>
       </RuntimeSettingsProvider>
     </QueryClientProvider>
