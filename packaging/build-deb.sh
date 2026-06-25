@@ -61,6 +61,8 @@ if [ -d scripts ]; then
   [ -f scripts/install-gnome-desktop.sh ] && cp scripts/install-gnome-desktop.sh "$APP_DIR/scripts/install-gnome-desktop.sh"
   [ -f scripts/install-ollama-ai.sh ] && cp scripts/install-ollama-ai.sh "$APP_DIR/scripts/install-ollama-ai.sh"
   [ -f scripts/install-infrastructure-apps.sh ] && cp scripts/install-infrastructure-apps.sh "$APP_DIR/scripts/install-infrastructure-apps.sh"
+  [ -f scripts/olympus-lab-node.sh ] && cp scripts/olympus-lab-node.sh "$APP_DIR/scripts/olympus-lab-node.sh"
+  [ -f scripts/olympus-proxmox-lab.sh ] && cp scripts/olympus-proxmox-lab.sh "$APP_DIR/scripts/olympus-proxmox-lab.sh"
 fi
 
 if [ -d packaging/desktop ]; then
@@ -86,6 +88,8 @@ find "$PKG_DIR" -type f -exec chmod 0644 {} \;
 [ -f "$APP_DIR/scripts/install-gnome-desktop.sh" ] && chmod 0755 "$APP_DIR/scripts/install-gnome-desktop.sh"
 [ -f "$APP_DIR/scripts/install-ollama-ai.sh" ] && chmod 0755 "$APP_DIR/scripts/install-ollama-ai.sh"
 [ -f "$APP_DIR/scripts/install-infrastructure-apps.sh" ] && chmod 0755 "$APP_DIR/scripts/install-infrastructure-apps.sh"
+[ -f "$APP_DIR/scripts/olympus-lab-node.sh" ] && chmod 0755 "$APP_DIR/scripts/olympus-lab-node.sh"
+[ -f "$APP_DIR/scripts/olympus-proxmox-lab.sh" ] && chmod 0755 "$APP_DIR/scripts/olympus-proxmox-lab.sh"
 chmod 0755 "$DEBIAN_DIR/postinst" "$DEBIAN_DIR/prerm" "$DEBIAN_DIR/postrm"
 
 echo "Building .deb..."
