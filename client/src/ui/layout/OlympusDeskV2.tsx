@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRuntimeSettings } from '../../admin/runtimeSettings';
 import { logoutAdmin } from '../../admin/LoginGate';
 import { useThemeStore, type ActiveModule } from '../theme/theme.store';
@@ -18,8 +19,8 @@ const VIEW_KEY = 'olympus.desk.v2.view';
 const HATCH_KEY = 'olympus.desk.v2.hatch';
 const DOCK_ORDER_KEY = 'olympus.desk.v2.dockOrder';
 const DEFAULT_HEIGHT = 260;
-const LATCHED_HEIGHT = 112;
-const SNAP_HEIGHT = 150;
+const LATCHED_HEIGHT = 18;
+const SNAP_HEIGHT = 80;
 const HATCH_MS = 1250;
 const IDLE_CLOSE_MS = 45000;
 
@@ -188,40 +189,46 @@ export const OlympusDeskV2: React.FC = () => {
   };
   const dockClass = dock === 'left' ? 'justify-start' : dock === 'right' ? 'justify-end' : 'justify-center';
 
-  return (
-    <section data-desk-latched={latched ? 'true' : 'false'} data-hatch-state={hatch} onMouseMove={resetIdle} onClick={resetIdle} className="olympus-powered-desk relative z-[4200] w-full shrink-0 border-t border-cyan-300/25 bg-black/90 font-mono text-white shadow-[0_-16px_40px_rgba(0,0,0,0.82)]" style={{ height: `${height}px` }}>
-      <button type="button" title="Click to operate powered Desk hatch. Drag to manually position." className="olympus-hatch-latch absolute left-1/2 top-0 z-20 h-4 w-64 -translate-x-1/2 cursor-ns-resize rounded-b border-x border-b border-cyan-300/25 bg-cyan-300/10 text-center text-[8px] uppercase tracking-[0.24em] text-cyan-200/65" onClick={toggleLatch} onDoubleClick={toggleLatch} onPointerDown={startResize} onPointerMove={moveResize} onPointerUp={stopResize} onPointerCancel={stopResize}>{hatch === 'latched' ? 'Power Hatch · Latched' : hatch === 'opening' ? 'Power Hatch · Unlatching' : hatch === 'closing' ? 'Power Hatch · Closing' : 'Power Hatch · Open'}</button>
-      <div className="flex h-full flex-col overflow-visible">
-        {open && <div className="olympus-desk-header flex h-11 items-center justify-between border-b border-white/10 px-4 pt-2">
-          <div><div className="text-[10px] uppercase tracking-[0.26em] text-cyan-300">Olympus Desk</div><div className="text-[9px] uppercase tracking-[0.16em] text-white/40">Powered OS workspace · auto-closing hatch · draggable Dock widgets</div></div>
-          <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/45">
-            <button onClick={() => setDock('left')} className={`border px-2 py-1 ${dock === 'left' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Left</button>
-            <button onClick={() => setDock('center')} className={`border px-2 py-1 ${dock === 'center' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Center</button>
-            <button onClick={() => setDock('right')} className={`border px-2 py-1 ${dock === 'right' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Right</button>
-            <button onClick={() => setDockOrder([])} className="border border-white/10 px-2 py-1 text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Reset Dock</button>
-            <button onClick={powerClose} className="border border-white/10 px-2 py-1 text-cyan-200 hover:border-cyan-300/60">Latch</button>
-          </div>
-        </div>}
-        {open && <div className="olympus-desk-body min-h-0 flex-1 overflow-hidden px-4 py-3"><DeskApp view={view} setView={setView} dock={dock} setDock={setDock} height={height} setHeight={setHeight} /></div>}
-        <div className={`olympus-dock-row flex border-t border-cyan-300/15 bg-black/65 px-3 py-2 ${dockClass}`}>
-          <div className="olympus-dock-track flex max-w-full items-end gap-2 overflow-visible rounded-2xl border border-cyan-300/20 bg-white/[0.03] px-3 py-2 shadow-[0_0_24px_rgba(34,211,238,0.12)]">
-            <div className="olympus-dock-label mr-2 hidden min-w-[110px] flex-col items-start border-r border-white/10 pr-3 md:flex"><span className="text-[9px] uppercase tracking-[0.22em] text-cyan-300">Olympus Dock</span><span className="text-[8px] uppercase tracking-[0.16em] text-white/35">Launcher</span></div>
-            <div className="olympus-dock-widget-lane" aria-label="Draggable Olympus Dock widgets">
-              {dockWidgets.map((item) => (
-                <DockWidget
-                  key={item.id}
-                  item={item}
-                  active={!('action' in item) && view === item.view}
-                  draggedDockIdRef={draggedDockIdRef}
-                  onMove={moveDockWidget}
-                  onOpen={openDockItem}
-                />
-              ))}
-            </div>
-          </div>
+  const dockMarkup = (
+    <div className={`olympus-dock-row flex border-t border-cyan-300/15 bg-black/65 px-3 py-2 ${dockClass}`}>
+      <div className="olympus-dock-track flex max-w-full items-end gap-2 overflow-visible rounded-2xl border border-cyan-300/20 bg-white/[0.03] px-3 py-2 shadow-[0_0_24px_rgba(34,211,238,0.12)]">
+        <div className="olympus-dock-label mr-2 hidden min-w-[110px] flex-col items-start border-r border-white/10 pr-3 md:flex"><span className="text-[9px] uppercase tracking-[0.22em] text-cyan-300">Olympus Dock</span><span className="text-[8px] uppercase tracking-[0.16em] text-white/35">Launcher</span></div>
+        <div className="olympus-dock-widget-lane" aria-label="Draggable Olympus Dock widgets">
+          {dockWidgets.map((item) => (
+            <DockWidget
+              key={item.id}
+              item={item}
+              active={!('action' in item) && view === item.view}
+              draggedDockIdRef={draggedDockIdRef}
+              onMove={moveDockWidget}
+              onOpen={openDockItem}
+            />
+          ))}
         </div>
       </div>
-    </section>
+    </div>
+  );
+
+  return (
+    <>
+      <section data-desk-latched={latched ? 'true' : 'false'} data-hatch-state={hatch} onMouseMove={resetIdle} onClick={resetIdle} className="olympus-powered-desk relative z-[4200] w-full shrink-0 border-t border-cyan-300/25 bg-black/90 font-mono text-white shadow-[0_-16px_40px_rgba(0,0,0,0.82)]" style={{ height: `${height}px` }}>
+        <button type="button" title="Click to operate powered Desk hatch. Drag to manually position." className="olympus-hatch-latch absolute left-1/2 top-0 z-20 h-4 w-64 -translate-x-1/2 cursor-ns-resize rounded-b border-x border-b border-cyan-300/25 bg-cyan-300/10 text-center text-[8px] uppercase tracking-[0.24em] text-cyan-200/65" onClick={toggleLatch} onDoubleClick={toggleLatch} onPointerDown={startResize} onPointerMove={moveResize} onPointerUp={stopResize} onPointerCancel={stopResize}>{hatch === 'latched' ? 'Power Hatch · Latched' : hatch === 'opening' ? 'Power Hatch · Unlatching' : hatch === 'closing' ? 'Power Hatch · Closing' : 'Power Hatch · Open'}</button>
+        <div className="flex h-full flex-col overflow-visible">
+          {open && <div className="olympus-desk-header flex h-11 items-center justify-between border-b border-white/10 px-4 pt-2">
+            <div><div className="text-[10px] uppercase tracking-[0.26em] text-cyan-300">Olympus Desk</div><div className="text-[9px] uppercase tracking-[0.16em] text-white/40">Powered OS workspace · auto-closing hatch · draggable Dock widgets</div></div>
+            <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/45">
+              <button onClick={() => setDock('left')} className={`border px-2 py-1 ${dock === 'left' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Left</button>
+              <button onClick={() => setDock('center')} className={`border px-2 py-1 ${dock === 'center' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Center</button>
+              <button onClick={() => setDock('right')} className={`border px-2 py-1 ${dock === 'right' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Right</button>
+              <button onClick={() => setDockOrder([])} className="border border-white/10 px-2 py-1 text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Reset Dock</button>
+              <button onClick={powerClose} className="border border-white/10 px-2 py-1 text-cyan-200 hover:border-cyan-300/60">Latch</button>
+            </div>
+          </div>}
+          {open && <div className="olympus-desk-body min-h-0 flex-1 overflow-hidden px-4 py-3"><DeskApp view={view} setView={setView} dock={dock} setDock={setDock} height={height} setHeight={setHeight} /></div>}
+        </div>
+      </section>
+      {typeof document !== 'undefined' ? createPortal(dockMarkup, document.body) : null}
+    </>
   );
 };
 
