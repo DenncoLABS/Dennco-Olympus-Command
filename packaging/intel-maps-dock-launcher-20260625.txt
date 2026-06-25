@@ -1,0 +1,8 @@
+Intel Maps Dock launcher trigger.
+
+Changes:
+- Adds intelmaps as an active shell module.
+- Removes Flight, Maritime, and DOT from Olympus Dock.
+- Replaces separate map Dock launchers with one Intel Maps button.
+- Intel Maps Dock button deploys the Multi-Purpose Earth Workspace toolbar.
+- Individual maps open from the Intel Maps dropdown instead of the Dock.
