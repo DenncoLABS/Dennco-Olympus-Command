@@ -12,6 +12,9 @@ const CadPage = lazy(() =>
 const ZbxWorkspace = lazy(() =>
   import('../modules/zbx/ZbxWorkspace').then((m) => ({ default: m.ZbxWorkspace })),
 );
+const ServiceWorkspace = lazy(() =>
+  import('../modules/services/ServiceWorkspace').then((m) => ({ default: m.ServiceWorkspace })),
+);
 
 const PageLoader: React.FC = () => (
   <div className="absolute inset-0 flex items-center justify-center bg-intel-bg">
@@ -40,6 +43,14 @@ export const AppRoutes: React.FC = () => {
     return (
       <Suspense fallback={<PageLoader />}>
         <ZbxWorkspace />
+      </Suspense>
+    );
+  }
+
+  if ((activeModule as string) === 'svc') {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <ServiceWorkspace />
       </Suspense>
     );
   }
