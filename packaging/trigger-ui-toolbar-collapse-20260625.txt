@@ -1,0 +1,6 @@
+Trigger apt publish for UI toolbar collapse.
+
+Changes:
+- Adds compact toolbar behavior.
+- Expands controls on hover.
+- Gives map windows more vertical room.
