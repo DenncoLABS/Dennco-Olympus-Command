@@ -1,0 +1,6 @@
+Trigger apt publish for Dock portal separation.
+
+Changes:
+- Dock now renders through a portal outside the Desk section.
+- Closed Desk collapses to a latch strip only.
+- Dock widgets stay draggable and visible above the company footer.
