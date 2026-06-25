@@ -1,0 +1,7 @@
+Trigger apt publish for portal Dock footer-zone placement.
+
+Changes:
+- Styles the portal Dock directly now that it is outside OlympusDeskV2.
+- Places the Dock just above the company footer text.
+- Removes active button fill/highlight in favor of blue indicator dots.
+- Keeps hover as the only button highlight state.
