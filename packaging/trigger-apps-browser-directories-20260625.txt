@@ -1,0 +1,6 @@
+Trigger apt publish for Apps browser directories.
+
+Changes:
+- Moves infrastructure apps into the normal Apps Browser view.
+- Moves NASA Code catalog into the normal Apps Browser view.
+- Removes separate floating Infra Apps and NASA Code launchers from TopNav.
