@@ -1,0 +1,8 @@
+Restored Dock panel above footer trigger.
+
+Changes:
+- Restores the Dock as a compact panel above the company footer.
+- Keeps draggable Dock widgets.
+- Reduces widget hover hop so the Dock area is not pushed into the footer.
+- Keeps active blue indicators inside widget buttons so company information cannot clip them.
+- Keeps the company/footer strip separate below the Dock.
