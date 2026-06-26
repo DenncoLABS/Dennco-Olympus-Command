@@ -38,7 +38,7 @@ if [ -d ops/core ] || [ -d ops/cad ]; then mkdir -p "$APP_DIR/ops"; [ -d ops/cor
 
 if [ -d scripts ]; then
   mkdir -p "$APP_DIR/scripts"
-  for script in install-core-services.sh update-core-services.sh install-cad-services.sh install-gnome-desktop.sh install-ollama-ai.sh install-infrastructure-apps.sh install-system-browser.sh olympus-lab-node.sh olympus-proxmox-lab.sh; do
+  for script in install-core-services.sh update-core-services.sh install-cad-services.sh install-gnome-desktop.sh install-ollama-ai.sh install-infrastructure-apps.sh install-system-browser.sh olympus-performance-profile.sh olympus-lab-node.sh olympus-proxmox-lab.sh; do
     [ -f "scripts/$script" ] && cp "scripts/$script" "$APP_DIR/scripts/$script"
   done
 fi
