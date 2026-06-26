@@ -13,7 +13,7 @@ const profiles: Record<AppId, Profile> = {
   freepbx: { title: 'FreePBX', short: 'PBX', tools: ['Trunks', 'Extensions', 'Queues', 'Console'], note: 'PBX and telephony workspace.', urlKey: 'olympus.service.freepbx.url' },
   gitlab: { title: 'GitLab CE', short: 'GL', tools: ['Projects', 'Issues', 'Pipelines', 'Console'], note: 'Code hosting and DevOps workspace.', urlKey: 'olympus.service.gitlab.url' },
   nethserver8: { title: 'NethServer 8', short: 'NS8', tools: ['Cluster', 'Apps', 'Nodes', 'Console'], note: 'Native NethServer 8 GUI framed inside Olympus.', urlKey: 'olympus.service.ns8.url' },
-  proxmox8: { title: 'Proxmox 8', short: 'PVE', tools: ['Nodes', 'VMs', 'Storage', 'Console'], note: 'Native Proxmox 8 GUI framed inside Olympus.', urlKey: 'olympus.service.proxmox.url' },
+  proxmox8: { title: 'Proxmox 8', short: 'PVE', tools: ['Nodes', 'VMs', 'Storage', 'Console'], note: 'Internal Chromium-rendered Proxmox screen served by Olympus.', urlKey: 'olympus.service.proxmox.url' },
 };
 
 function selectedProfile(): Profile {
@@ -46,12 +46,20 @@ function normalizeUrl(value: string) {
   return `https://${trimmed}`;
 }
 
+function defaultServiceUrl(profile: Profile) {
+  if (typeof window === 'undefined') return '';
+  const host = window.location.hostname || '127.0.0.1';
+  if (profile.short === 'PVE') return `https://${host}:8006`;
+  if (profile.short === 'NS8') return `https://${host}`;
+  return '';
+}
+
 export const ServiceWorkspace: React.FC = () => {
   const setActiveModule = useThemeStore((state) => state.setActiveModule);
   const [profile] = useState<Profile>(() => selectedProfile());
   const [wins, setWins] = useState<Win[]>([]);
   const [z, setZ] = useState(4);
-  const [url, setUrl] = useState(() => localStorage.getItem(profile.urlKey) || '');
+  const [url, setUrl] = useState(() => localStorage.getItem(profile.urlKey) || defaultServiceUrl(profile));
   const isProxmox = profile.short === 'PVE';
   const isNethServer = profile.short === 'NS8';
   const isNativeFramed = isProxmox || isNethServer;
@@ -105,7 +113,7 @@ export const ServiceWorkspace: React.FC = () => {
               <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-300">{win.title}</div>
               <button onClick={() => closeWin(win.id)} className="border border-white/10 px-2 py-0.5 text-white/55">×</button>
             </div>
-            <WindowBody profile={profile} isNativeFramed={isNativeFramed} win={win} url={url} />
+            <WindowBody profile={profile} isNativeFramed={isNativeFramed} win={win} url={url || defaultServiceUrl(profile)} />
           </section>
         ))}
       </div>
@@ -121,34 +129,24 @@ function WindowBody({ profile, isNativeFramed, win, url }: { profile: Profile; i
 
 function NativeServiceGui({ profile, kind, url }: { profile: Profile; kind: WinKind; url: string }) {
   const [reloadKey, setReloadKey] = useState(0);
-  const serviceUrl = normalizeUrl(url);
+  const serviceUrl = normalizeUrl(url || defaultServiceUrl(profile));
   const section = labelForKind(kind);
   const serviceName = profile.title;
-
-  if (!serviceUrl) {
-    return (
-      <div className="flex h-[calc(100%-36px)] items-center justify-center p-8 text-center">
-        <div className="max-w-xl rounded border border-cyan-300/20 bg-white/[0.03] p-6">
-          <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-300">Native {serviceName} GUI</div>
-          <div className="mt-3 text-sm leading-relaxed text-white/60">Enter the real {serviceName} web address in the toolbar, then press Save URL and reopen this window.</div>
-        </div>
-      </div>
-    );
-  }
+  const imageUrl = profile.short === 'PVE' ? `/api/proxmox-lab/browser-screen?url=${encodeURIComponent(serviceUrl)}&r=${reloadKey}` : '';
 
   return (
     <div className="h-[calc(100%-36px)] bg-[#020617]">
       <div className="flex h-10 items-center justify-between border-b border-cyan-300/15 bg-black/70 px-3">
         <div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-300">Olympus {profile.short} Frame · {section}</div>
-          <div className="text-[8px] uppercase tracking-[0.14em] text-white/35">Native {serviceName} GUI inside an Olympus workspace window</div>
+          <div className="text-[8px] uppercase tracking-[0.14em] text-white/35">{profile.short === 'PVE' ? 'Rendered by the Olympus internal system browser' : `Native ${serviceName} GUI inside an Olympus workspace window`}</div>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setReloadKey((current) => current + 1)} className="rounded border border-cyan-300/25 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-cyan-200">Reload</button>
           <button onClick={() => window.open(serviceUrl, '_blank', 'noopener,noreferrer')} className="rounded border border-white/15 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-white/60 hover:text-cyan-100">External</button>
         </div>
       </div>
-      <iframe key={reloadKey} src={serviceUrl} className="h-[calc(100%-40px)] w-full border-0 bg-black" title={`Native ${serviceName} GUI`} />
+      {profile.short === 'PVE' ? <div className="h-[calc(100%-40px)] overflow-auto bg-black"><img key={reloadKey} src={imageUrl} className="min-h-full w-full object-contain" alt="Internal Proxmox browser screen" /></div> : <iframe key={reloadKey} src={serviceUrl} className="h-[calc(100%-40px)] w-full border-0 bg-black" title={`Native ${serviceName} GUI`} />}
     </div>
   );
 }
