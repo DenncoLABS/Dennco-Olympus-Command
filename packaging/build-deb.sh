@@ -23,46 +23,24 @@ mkdir -p "$APP_DIR" "$SHARE_DIR" "$SYSTEMD_DIR" "$DESKTOP_DIR" "$AUTOSTART_DIR" 
 
 cd "$ROOT_DIR"
 
-echo "Installing dependencies..."
 npm install --include=dev --no-audit --no-fund --foreground-scripts=false
-
-echo "Building client and server..."
 npm run build
-
-echo "Pruning development dependencies..."
 npm prune --omit=dev --no-audit --no-fund || true
 
-echo "Assembling package filesystem..."
 cp package.json "$APP_DIR/package.json"
 cp -R node_modules "$APP_DIR/node_modules"
 cp -R server/dist "$APP_DIR/dist"
 cp -R client/dist "$APP_DIR/public"
 
-if [ -f server/src/news_feeds.json ]; then
-  cp server/src/news_feeds.json "$APP_DIR/news_feeds.json"
-fi
-
-if [ -d server/src/Data ]; then
-  mkdir -p "$APP_DIR/Data"
-  cp -R server/src/Data/. "$APP_DIR/Data/"
-fi
-
-if [ -d ops/core ] || [ -d ops/cad ]; then
-  mkdir -p "$APP_DIR/ops"
-  [ -d ops/core ] && cp -R ops/core "$APP_DIR/ops/core"
-  [ -d ops/cad ] && cp -R ops/cad "$APP_DIR/ops/cad"
-fi
+if [ -f server/src/news_feeds.json ]; then cp server/src/news_feeds.json "$APP_DIR/news_feeds.json"; fi
+if [ -d server/src/Data ]; then mkdir -p "$APP_DIR/Data"; cp -R server/src/Data/. "$APP_DIR/Data/"; fi
+if [ -d ops/core ] || [ -d ops/cad ]; then mkdir -p "$APP_DIR/ops"; [ -d ops/core ] && cp -R ops/core "$APP_DIR/ops/core"; [ -d ops/cad ] && cp -R ops/cad "$APP_DIR/ops/cad"; fi
 
 if [ -d scripts ]; then
   mkdir -p "$APP_DIR/scripts"
-  [ -f scripts/install-core-services.sh ] && cp scripts/install-core-services.sh "$APP_DIR/scripts/install-core-services.sh"
-  [ -f scripts/update-core-services.sh ] && cp scripts/update-core-services.sh "$APP_DIR/scripts/update-core-services.sh"
-  [ -f scripts/install-cad-services.sh ] && cp scripts/install-cad-services.sh "$APP_DIR/scripts/install-cad-services.sh"
-  [ -f scripts/install-gnome-desktop.sh ] && cp scripts/install-gnome-desktop.sh "$APP_DIR/scripts/install-gnome-desktop.sh"
-  [ -f scripts/install-ollama-ai.sh ] && cp scripts/install-ollama-ai.sh "$APP_DIR/scripts/install-ollama-ai.sh"
-  [ -f scripts/install-infrastructure-apps.sh ] && cp scripts/install-infrastructure-apps.sh "$APP_DIR/scripts/install-infrastructure-apps.sh"
-  [ -f scripts/olympus-lab-node.sh ] && cp scripts/olympus-lab-node.sh "$APP_DIR/scripts/olympus-lab-node.sh"
-  [ -f scripts/olympus-proxmox-lab.sh ] && cp scripts/olympus-proxmox-lab.sh "$APP_DIR/scripts/olympus-proxmox-lab.sh"
+  for script in install-core-services.sh update-core-services.sh install-cad-services.sh install-gnome-desktop.sh install-ollama-ai.sh install-infrastructure-apps.sh install-system-browser.sh olympus-lab-node.sh olympus-proxmox-lab.sh; do
+    [ -f "scripts/$script" ] && cp "scripts/$script" "$APP_DIR/scripts/$script"
+  done
 fi
 
 if [ -d packaging/desktop ]; then
@@ -82,17 +60,8 @@ chmod 0755 "$DEBIAN_DIR/postinst" "$DEBIAN_DIR/prerm" "$DEBIAN_DIR/postrm"
 
 find "$PKG_DIR" -type d -exec chmod 0755 {} \;
 find "$PKG_DIR" -type f -exec chmod 0644 {} \;
-[ -f "$APP_DIR/scripts/install-core-services.sh" ] && chmod 0755 "$APP_DIR/scripts/install-core-services.sh"
-[ -f "$APP_DIR/scripts/update-core-services.sh" ] && chmod 0755 "$APP_DIR/scripts/update-core-services.sh"
-[ -f "$APP_DIR/scripts/install-cad-services.sh" ] && chmod 0755 "$APP_DIR/scripts/install-cad-services.sh"
-[ -f "$APP_DIR/scripts/install-gnome-desktop.sh" ] && chmod 0755 "$APP_DIR/scripts/install-gnome-desktop.sh"
-[ -f "$APP_DIR/scripts/install-ollama-ai.sh" ] && chmod 0755 "$APP_DIR/scripts/install-ollama-ai.sh"
-[ -f "$APP_DIR/scripts/install-infrastructure-apps.sh" ] && chmod 0755 "$APP_DIR/scripts/install-infrastructure-apps.sh"
-[ -f "$APP_DIR/scripts/olympus-lab-node.sh" ] && chmod 0755 "$APP_DIR/scripts/olympus-lab-node.sh"
-[ -f "$APP_DIR/scripts/olympus-proxmox-lab.sh" ] && chmod 0755 "$APP_DIR/scripts/olympus-proxmox-lab.sh"
+[ -d "$APP_DIR/scripts" ] && find "$APP_DIR/scripts" -type f -name '*.sh' -exec chmod 0755 {} \;
 chmod 0755 "$DEBIAN_DIR/postinst" "$DEBIAN_DIR/prerm" "$DEBIAN_DIR/postrm"
 
-echo "Building .deb..."
 dpkg-deb --build --root-owner-group "$PKG_DIR" "$BUILD_DIR/${PACKAGE_NAME}_${VERSION}_${ARCH}.deb"
-
 echo "Built $BUILD_DIR/${PACKAGE_NAME}_${VERSION}_${ARCH}.deb"
