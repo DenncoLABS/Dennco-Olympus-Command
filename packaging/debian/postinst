@@ -22,6 +22,10 @@ if [ ! -f "$ENV_DIR/olympus-command.env" ]; then
   chmod 640 "$ENV_DIR/olympus-command.env"
 fi
 
+if [ -x "$APP_DIR/scripts/map-cache-profile.sh" ]; then
+  "$APP_DIR/scripts/map-cache-profile.sh" >/dev/null 2>&1 || true
+fi
+
 chown -R "$APP_USER:$APP_GROUP" "$APP_DIR" "$ENV_DIR" "$INTEL_MAPS_DIR"
 
 systemctl daemon-reload || true
