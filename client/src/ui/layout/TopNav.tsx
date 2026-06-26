@@ -5,6 +5,7 @@ import '../../modules/intelmaps/intelMapsToolbarCollapse';
 import './tileWorkspaceScope';
 import './appsDirectoryDeskInjection';
 import './monitoringLauncherPatch';
+import './deskAiLauncher';
 import './filesDeskBrowser';
 import '../../styles/dock-latch-visibility-override.css';
 
