@@ -7,6 +7,7 @@ import '../styles/dock-visible-stage.css';
 import '../styles/dock-float-layer.css';
 import '../ui/layout/serviceWorkspaceLauncher';
 import '../ui/layout/dockLogoutConfirmPatch';
+import '../modules/intelmaps/mapTileSessionCache';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
