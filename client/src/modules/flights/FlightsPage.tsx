@@ -179,7 +179,15 @@ export const FlightsPage: React.FC = () => {
   }, [pushGlobalNotification, selectedDisplayFlight]);
 
   const onClick = useCallback((event: import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] }) => {
-    const feature = event.features?.[0];
+    const features = event.features || [];
+    const aircraftFeature = features.find((item) => item.layer?.id === 'aircraft-points' && item.properties?.icao24) || features.find((item) => item.properties?.icao24);
+    if (aircraftFeature?.properties?.icao24) {
+      setSelectedIcao24(String(aircraftFeature.properties.icao24));
+      setInfrastructurePopup(null);
+      return;
+    }
+
+    const feature = features[0];
     const layerId = feature?.layer?.id;
     if (layerId === 'radar-region-points' && feature?.properties?.id) {
       const region = RADAR_REGIONS.find((item) => item.id === String(feature.properties?.id));
@@ -198,11 +206,6 @@ export const FlightsPage: React.FC = () => {
       const p = feature?.properties as Record<string, unknown> | undefined;
       const coords = feature?.geometry?.type === 'Point' ? (feature.geometry as GeoJSON.Point).coordinates : null;
       if (p && coords) setInfrastructurePopup({ type: 'military', item: { name: String(p.name ?? ''), description: String(p.description ?? ''), country: String(p.country ?? ''), lon: coords[0], lat: coords[1] } });
-      return;
-    }
-    if (feature?.properties?.icao24) {
-      setSelectedIcao24(String(feature.properties.icao24));
-      setInfrastructurePopup(null);
       return;
     }
     setSelectedIcao24(null);
