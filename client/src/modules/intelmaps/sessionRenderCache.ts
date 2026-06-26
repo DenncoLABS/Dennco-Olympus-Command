@@ -1,3 +1,5 @@
+import '../flights/aircraftWidgetDockReturnPatch';
+
 const BOOT_KEY = '__olympusSessionRenderCacheReady';
 
 type ScopedWindow = Window & { [BOOT_KEY]?: boolean };
