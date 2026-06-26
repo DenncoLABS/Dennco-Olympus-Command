@@ -6,10 +6,7 @@ if (typeof window !== 'undefined') {
   const scopedWindow = window as ScopedWindow;
   if (!scopedWindow[BOOT_KEY]) {
     scopedWindow[BOOT_KEY] = true;
-    const nativeSetInterval = window.setInterval.bind(window);
-    window.setInterval = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) => {
-      const safeTimeout = timeout === 100 ? 650 : timeout;
-      return nativeSetInterval(handler, safeTimeout, ...args);
-    }) as typeof window.setInterval;
+    // Radar animation speed is restored. Performance now comes from cache/stability layers,
+    // not from slowing operational radar sweeps.
   }
 }
