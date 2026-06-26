@@ -1,4 +1,3 @@
-import React, { createContext, useContext } from 'react';
 import { create } from 'zustand';
 
 export type ThemeMode = 'eo' | 'flir' | 'crt';
@@ -25,7 +24,7 @@ export interface OlympusShellSessionState {
   weatherRadar?: Partial<WeatherRadarState>;
 }
 
-export interface ThemeState {
+interface ThemeState {
   mode: ThemeMode;
   setMode: (mode: ThemeMode) => void;
   mapProjection: MapProjection;
@@ -45,18 +44,13 @@ export interface ThemeState {
   setWeatherRadarCustomTileUrl: (customTileUrl: string) => void;
 }
 
-export type MapAppearanceOverride = Pick<ThemeState, 'mapProjection' | 'setMapProjection' | 'mapLayer' | 'setMapLayer' | 'weatherRadar' | 'setWeatherRadarEnabled' | 'setWeatherRadarProduct' | 'setWeatherRadarOpacity' | 'setWeatherRadarContrast' | 'setWeatherRadarBrightness' | 'setWeatherRadarCustomTileUrl'>;
-
-const MapAppearanceOverrideContext = createContext<MapAppearanceOverride | null>(null);
-export const MapAppearanceOverrideProvider: React.FC<{ value: MapAppearanceOverride; children: React.ReactNode }> = ({ value, children }) => <MapAppearanceOverrideContext.Provider value={value}>{children}</MapAppearanceOverrideContext.Provider>;
-
 const validModules: ActiveModule[] = ['core', 'intelmaps', 'flights', 'maritime', 'monitor', 'dot', 'cyber', 'cad', 'admin', 'zbx', 'svc', 'labnode'];
 const validModes: ThemeMode[] = ['eo', 'flir', 'crt'];
 const validProjections: MapProjection[] = ['mercator', 'globe'];
 const validLayers: MapLayer[] = ['dark', 'light', 'street', 'satellite'];
 const validRadarProducts: WeatherRadarProduct[] = ['base-reflectivity', 'custom'];
 
-const baseThemeStore = create<ThemeState>((set, get) => ({
+export const useThemeStore = create<ThemeState>((set, get) => ({
   mode: 'eo',
   setMode: (mode) => set({ mode }),
   mapProjection: 'mercator',
@@ -65,41 +59,58 @@ const baseThemeStore = create<ThemeState>((set, get) => ({
   setMapLayer: (mapLayer) => set({ mapLayer }),
   activeModule: 'core',
   setActiveModule: (activeModule) => set({ activeModule }),
-  weatherRadar: { enabled: false, product: 'base-reflectivity', opacity: 0.72, contrast: 0.15, brightnessMin: 0, brightnessMax: 1, customTileUrl: '' },
+  weatherRadar: {
+    enabled: false,
+    product: 'base-reflectivity',
+    opacity: 0.72,
+    contrast: 0.15,
+    brightnessMin: 0,
+    brightnessMax: 1,
+    customTileUrl: '',
+  },
   hydrateShellSession: (session) => {
     const patch: Partial<ThemeState> = {};
     if (session.activeModule && validModules.includes(session.activeModule)) patch.activeModule = session.activeModule;
     if (session.mode && validModes.includes(session.mode)) patch.mode = session.mode;
     if (session.mapProjection && validProjections.includes(session.mapProjection)) patch.mapProjection = session.mapProjection;
     if (session.mapLayer && validLayers.includes(session.mapLayer)) patch.mapLayer = session.mapLayer;
+
     if (session.weatherRadar) {
       const radar = session.weatherRadar;
-      patch.weatherRadar = { ...get().weatherRadar, ...(typeof radar.enabled === 'boolean' ? { enabled: radar.enabled } : {}), ...(radar.product && validRadarProducts.includes(radar.product) ? { product: radar.product } : {}), ...(typeof radar.opacity === 'number' ? { opacity: radar.opacity } : {}), ...(typeof radar.contrast === 'number' ? { contrast: radar.contrast } : {}), ...(typeof radar.brightnessMin === 'number' ? { brightnessMin: radar.brightnessMin } : {}), ...(typeof radar.brightnessMax === 'number' ? { brightnessMax: radar.brightnessMax } : {}), ...(typeof radar.customTileUrl === 'string' ? { customTileUrl: radar.customTileUrl } : {}) };
+      patch.weatherRadar = {
+        ...get().weatherRadar,
+        ...(typeof radar.enabled === 'boolean' ? { enabled: radar.enabled } : {}),
+        ...(radar.product && validRadarProducts.includes(radar.product) ? { product: radar.product } : {}),
+        ...(typeof radar.opacity === 'number' ? { opacity: radar.opacity } : {}),
+        ...(typeof radar.contrast === 'number' ? { contrast: radar.contrast } : {}),
+        ...(typeof radar.brightnessMin === 'number' ? { brightnessMin: radar.brightnessMin } : {}),
+        ...(typeof radar.brightnessMax === 'number' ? { brightnessMax: radar.brightnessMax } : {}),
+        ...(typeof radar.customTileUrl === 'string' ? { customTileUrl: radar.customTileUrl } : {}),
+      };
     }
+
     set(patch);
   },
   getShellSession: () => {
     const state = get();
-    return { activeModule: state.activeModule, mode: state.mode, mapProjection: state.mapProjection, mapLayer: state.mapLayer, weatherRadar: state.weatherRadar };
+    return {
+      activeModule: state.activeModule,
+      mode: state.mode,
+      mapProjection: state.mapProjection,
+      mapLayer: state.mapLayer,
+      weatherRadar: state.weatherRadar,
+    };
   },
-  setWeatherRadarEnabled: (enabled) => set((state) => ({ weatherRadar: { ...state.weatherRadar, enabled } })),
-  setWeatherRadarProduct: (product) => set((state) => ({ weatherRadar: { ...state.weatherRadar, product } })),
-  setWeatherRadarOpacity: (opacity) => set((state) => ({ weatherRadar: { ...state.weatherRadar, opacity } })),
-  setWeatherRadarContrast: (contrast) => set((state) => ({ weatherRadar: { ...state.weatherRadar, contrast } })),
-  setWeatherRadarBrightness: (brightnessMin, brightnessMax) => set((state) => ({ weatherRadar: { ...state.weatherRadar, brightnessMin, brightnessMax } })),
-  setWeatherRadarCustomTileUrl: (customTileUrl) => set((state) => ({ weatherRadar: { ...state.weatherRadar, customTileUrl } })),
+  setWeatherRadarEnabled: (enabled) =>
+    set((state) => ({ weatherRadar: { ...state.weatherRadar, enabled } })),
+  setWeatherRadarProduct: (product) =>
+    set((state) => ({ weatherRadar: { ...state.weatherRadar, product } })),
+  setWeatherRadarOpacity: (opacity) =>
+    set((state) => ({ weatherRadar: { ...state.weatherRadar, opacity } })),
+  setWeatherRadarContrast: (contrast) =>
+    set((state) => ({ weatherRadar: { ...state.weatherRadar, contrast } })),
+  setWeatherRadarBrightness: (brightnessMin, brightnessMax) =>
+    set((state) => ({ weatherRadar: { ...state.weatherRadar, brightnessMin, brightnessMax } })),
+  setWeatherRadarCustomTileUrl: (customTileUrl) =>
+    set((state) => ({ weatherRadar: { ...state.weatherRadar, customTileUrl } })),
 }));
-
-type Selector<T> = (state: ThemeState) => T;
-type UseThemeStore = typeof baseThemeStore;
-
-const scopedUseThemeStore = (<T,>(selector?: Selector<T>) => {
-  const override = useContext(MapAppearanceOverrideContext);
-  return baseThemeStore((state) => {
-    const merged = override ? ({ ...state, ...override } as ThemeState) : state;
-    return selector ? selector(merged) : (merged as unknown as T);
-  });
-}) as UseThemeStore;
-
-Object.assign(scopedUseThemeStore, baseThemeStore);
-export const useThemeStore = scopedUseThemeStore;
