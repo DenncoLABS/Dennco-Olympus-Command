@@ -1,11 +1,14 @@
 import { Router } from 'express';
+import { execFile } from 'child_process';
 import { promises as fs } from 'fs';
+import os from 'os';
 import path from 'path';
 
 const router = Router();
 const root = process.env.OLYMPUS_PVE_LAB_ROOT || '/var/lib/dennco/olympus-lab-node/proxmox';
 const objectsDir = path.join(root, 'objects');
 const overlaysDir = path.join(root, 'overlays');
+const browserBin = process.env.OLYMPUS_SYSTEM_BROWSER || '/usr/bin/chromium';
 
 type LabType = 'qm' | 'ct';
 type LabObject = { type: LabType; id: string; name: string; stage: string; ready: boolean; overlay: string; updated: string; values: Record<string, string> };
@@ -31,6 +34,13 @@ function parseEnv(raw: string): Record<string, string> {
   return out;
 }
 
+function safeUrl(value: unknown) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://${raw}`;
+}
+
 function toObject(values: Record<string, string>): LabObject {
   return {
     type: values.TYPE === 'ct' ? 'ct' : 'qm',
@@ -54,6 +64,32 @@ async function writeObject(type: LabType, id: string, values: Record<string, str
   const lines = Object.entries(values).map(([key, value]) => `${key}=${value}`);
   await fs.writeFile(objectFile(type, id), `${lines.join('\n')}\n`, 'utf8');
 }
+
+router.get('/browser-screen', async (req, res) => {
+  const url = safeUrl(req.query.url);
+  if (!url) {
+    res.status(400).json({ error: 'Missing url' });
+    return;
+  }
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'olympus-pve-browser-'));
+  const out = path.join(dir, 'screen.png');
+  execFile(browserBin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--ignore-certificate-errors', '--window-size=1440,920', `--screenshot=${out}`, url], { timeout: 20000 }, async (error) => {
+    try {
+      if (error) {
+        res.status(502).json({ error: String(error) });
+        return;
+      }
+      const png = await fs.readFile(out);
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'no-store');
+      res.send(png);
+    } catch (readError) {
+      res.status(500).json({ error: String(readError) });
+    } finally {
+      fs.rm(dir, { recursive: true, force: true }).catch(() => undefined);
+    }
+  });
+});
 
 router.get('/objects', async (_req, res) => {
   try {
@@ -104,16 +140,7 @@ router.patch('/objects/:type/:id', async (req, res) => {
 router.get('/objects/:type/:id/plan', async (req, res) => {
   try {
     const object = await readObject(req.params.type, req.params.id);
-    res.json({
-      object,
-      plan: [
-        'Review lab overlay and metadata changes.',
-        'Create final lab snapshot/checkpoint.',
-        'Schedule production maintenance window.',
-        'Use approved Proxmox or NS8 tooling for final migration.',
-        'Keep Olympus lab record for rollback notes.',
-      ],
-    });
+    res.json({ object, plan: ['Review lab overlay and metadata changes.', 'Create final lab snapshot/checkpoint.', 'Schedule production maintenance window.', 'Use approved Proxmox or NS8 tooling for final migration.', 'Keep Olympus lab record for rollback notes.'] });
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }
