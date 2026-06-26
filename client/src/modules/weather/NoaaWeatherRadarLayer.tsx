@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Source, Layer } from 'react-map-gl/maplibre';
-import { useThemeStore } from '../../ui/theme/theme.store';
 import { useFlightsStore } from '../flights/state/flights.store';
 import { useMilitaryBases } from '../monitor/hooks/useMilitaryBases';
+import { useMapAppearance } from '../intelmaps/MapInstanceContext';
 import {
   activeRadarPulseGeoJSON,
   activeRadarSweepsGeoJSON,
@@ -20,7 +20,7 @@ function clampOpacity(value: number) {
 }
 
 export const NoaaWeatherRadarLayer: React.FC = () => {
-  const weatherRadar = useThemeStore((s) => s.weatherRadar);
+  const { weatherRadar } = useMapAppearance();
   const { showAirportPins, showRadarPins, activeRadarRegionIds } = useFlightsStore();
   const { data: militaryBasesGeoJSON } = useMilitaryBases();
   const [sweepDeg, setSweepDeg] = useState(0);
@@ -38,7 +38,6 @@ export const NoaaWeatherRadarLayer: React.FC = () => {
   }, [weatherRadar.customTileUrl, weatherRadar.product]);
 
   const opacity = clampOpacity(weatherRadar.opacity);
-
   const atmosphericOpacity = useMemo(
     () =>
       [
@@ -79,109 +78,22 @@ export const NoaaWeatherRadarLayer: React.FC = () => {
   return (
     <>
       {weatherRadar.enabled && (
-        <Source
-          id="noaa-atmospheric-weather"
-          type="raster"
-          tiles={[tileUrl]}
-          tileSize={256}
-          attribution="NOAA / NWS atmospheric weather layer"
-        >
-          <Layer
-            id="noaa-atmospheric-weather-layer"
-            type="raster"
-            paint={{
-              'raster-opacity': atmosphericOpacity,
-              'raster-contrast': weatherRadar.contrast,
-              'raster-brightness-min': weatherRadar.brightnessMin,
-              'raster-brightness-max': weatherRadar.brightnessMax,
-              'raster-saturation': -0.15,
-              'raster-fade-duration': 150,
-            }}
-            metadata={{
-              'dennco:layer-role': 'atmospheric-weather-overlay',
-              'dennco:altitude-band': 'cloud/weather visualization layer; aircraft and ground infrastructure render above it',
-            }}
-          />
+        <Source id="noaa-atmospheric-weather" type="raster" tiles={[tileUrl]} tileSize={256} attribution="NOAA / NWS atmospheric weather layer">
+          <Layer id="noaa-atmospheric-weather-layer" type="raster" paint={{ 'raster-opacity': atmosphericOpacity, 'raster-contrast': weatherRadar.contrast, 'raster-brightness-min': weatherRadar.brightnessMin, 'raster-brightness-max': weatherRadar.brightnessMax, 'raster-saturation': -0.15, 'raster-fade-duration': 150 }} metadata={{ 'dennco:layer-role': 'atmospheric-weather-overlay', 'dennco:altitude-band': 'cloud/weather visualization layer; aircraft and ground infrastructure render above it' }} />
         </Source>
       )}
-
       {showRadarPins && (
         <>
-          <Source id="active-radar-zones" type="geojson" data={activeRadarZones as GeoJSON.FeatureCollection}>
-            <Layer id="active-radar-zone-fill" type="fill" paint={{ 'fill-color': '#ffffff', 'fill-opacity': 0.035 }} />
-            <Layer id="active-radar-zone-ring" type="line" paint={{ 'line-color': '#ffffff', 'line-opacity': 0.85, 'line-width': 2 }} />
-          </Source>
-          <Source id="active-radar-pulse" type="geojson" data={activeRadarPulse as GeoJSON.FeatureCollection}>
-            <Layer id="active-radar-pulse-ring" type="line" paint={{ 'line-color': '#ffffff', 'line-opacity': 0.45, 'line-width': 1.5, 'line-blur': 1 }} />
-          </Source>
-          <Source id="active-radar-sweeps" type="geojson" data={activeRadarSweeps as GeoJSON.FeatureCollection}>
-            <Layer id="active-radar-sweep-line" type="line" paint={{ 'line-color': '#ffffff', 'line-opacity': 0.95, 'line-width': 2, 'line-blur': 1 }} />
-          </Source>
-          <Source id="radar-regions" type="geojson" data={radarGeoJSON as GeoJSON.FeatureCollection}>
-            <Layer
-              id="radar-region-points"
-              type="circle"
-              paint={{
-                'circle-radius': ['case', ['boolean', ['get', 'active'], false], 8, 6],
-                'circle-color': '#ffffff',
-                'circle-stroke-color': ['case', ['boolean', ['get', 'active'], false], '#ffffff', '#94a3b8'],
-                'circle-stroke-width': ['case', ['boolean', ['get', 'active'], false], 2, 1],
-                'circle-opacity': ['case', ['boolean', ['get', 'active'], false], 1, 0.65],
-              }}
-            />
-            <Layer
-              id="radar-region-labels"
-              type="symbol"
-              layout={{ 'text-field': ['get', 'shortLabel'], 'text-size': 10, 'text-offset': [0, 1.2], 'text-allow-overlap': true }}
-              paint={{ 'text-color': '#ffffff', 'text-halo-color': '#020617', 'text-halo-width': 1 }}
-            />
-          </Source>
+          <Source id="active-radar-zones" type="geojson" data={activeRadarZones as GeoJSON.FeatureCollection}><Layer id="active-radar-zone-fill" type="fill" paint={{ 'fill-color': '#ffffff', 'fill-opacity': 0.035 }} /><Layer id="active-radar-zone-ring" type="line" paint={{ 'line-color': '#ffffff', 'line-opacity': 0.85, 'line-width': 2 }} /></Source>
+          <Source id="active-radar-pulse" type="geojson" data={activeRadarPulse as GeoJSON.FeatureCollection}><Layer id="active-radar-pulse-ring" type="line" paint={{ 'line-color': '#ffffff', 'line-opacity': 0.45, 'line-width': 1.5, 'line-blur': 1 }} /></Source>
+          <Source id="active-radar-sweeps" type="geojson" data={activeRadarSweeps as GeoJSON.FeatureCollection}><Layer id="active-radar-sweep-line" type="line" paint={{ 'line-color': '#ffffff', 'line-opacity': 0.95, 'line-width': 2, 'line-blur': 1 }} /></Source>
+          <Source id="radar-regions" type="geojson" data={radarGeoJSON as GeoJSON.FeatureCollection}><Layer id="radar-region-points" type="circle" paint={{ 'circle-radius': ['case', ['boolean', ['get', 'active'], false], 8, 6], 'circle-color': '#ffffff', 'circle-stroke-color': ['case', ['boolean', ['get', 'active'], false], '#ffffff', '#94a3b8'], 'circle-stroke-width': ['case', ['boolean', ['get', 'active'], false], 2, 1], 'circle-opacity': ['case', ['boolean', ['get', 'active'], false], 1, 0.65] }} /><Layer id="radar-region-labels" type="symbol" layout={{ 'text-field': ['get', 'shortLabel'], 'text-size': 10, 'text-offset': [0, 1.2], 'text-allow-overlap': true }} paint={{ 'text-color': '#ffffff', 'text-halo-color': '#020617', 'text-halo-width': 1 }} /></Source>
         </>
       )}
-
       {showAirportPins && (
         <>
-          <Source id="airports" type="geojson" data={airportGeoJSON as GeoJSON.FeatureCollection}>
-            <Layer
-              id="airport-points"
-              type="circle"
-              paint={{
-                'circle-radius': 4.8,
-                'circle-color': '#facc15',
-                'circle-stroke-color': '#713f12',
-                'circle-stroke-width': 1.5,
-                'circle-opacity': 0.92,
-              }}
-            />
-            <Layer
-              id="airport-labels"
-              type="symbol"
-              layout={{ 'text-field': ['get', 'code'], 'text-size': 10, 'text-offset': [0, 1.1], 'text-allow-overlap': false }}
-              paint={{ 'text-color': '#fde68a', 'text-halo-color': '#020617', 'text-halo-width': 1 }}
-            />
-          </Source>
-
-          {militaryAirbasesGeoJSON && (
-            <Source id="flight-airbases" type="geojson" data={militaryAirbasesGeoJSON as GeoJSON.FeatureCollection}>
-              <Layer
-                id="flight-airbase-points"
-                type="circle"
-                paint={{
-                  'circle-radius': 5.6,
-                  'circle-color': '#facc15',
-                  'circle-stroke-color': '#ef4444',
-                  'circle-stroke-width': 1.8,
-                  'circle-opacity': 0.94,
-                }}
-              />
-              <Layer
-                id="flight-airbase-labels"
-                type="symbol"
-                layout={{ 'text-field': ['get', 'name'], 'text-size': 9, 'text-offset': [0, 1.25], 'text-allow-overlap': false }}
-                paint={{ 'text-color': '#fef3c7', 'text-halo-color': '#020617', 'text-halo-width': 1 }}
-              />
-            </Source>
-          )}
+          <Source id="airports" type="geojson" data={airportGeoJSON as GeoJSON.FeatureCollection}><Layer id="airport-points" type="circle" paint={{ 'circle-radius': 4.8, 'circle-color': '#facc15', 'circle-stroke-color': '#713f12', 'circle-stroke-width': 1.5, 'circle-opacity': 0.92 }} /><Layer id="airport-labels" type="symbol" layout={{ 'text-field': ['get', 'code'], 'text-size': 10, 'text-offset': [0, 1.1], 'text-allow-overlap': false }} paint={{ 'text-color': '#fde68a', 'text-halo-color': '#020617', 'text-halo-width': 1 }} /></Source>
+          {militaryAirbasesGeoJSON && <Source id="flight-airbases" type="geojson" data={militaryAirbasesGeoJSON as GeoJSON.FeatureCollection}><Layer id="flight-airbase-points" type="circle" paint={{ 'circle-radius': 5.6, 'circle-color': '#facc15', 'circle-stroke-color': '#ef4444', 'circle-stroke-width': 1.8, 'circle-opacity': 0.94 }} /><Layer id="flight-airbase-labels" type="symbol" layout={{ 'text-field': ['get', 'name'], 'text-size': 9, 'text-offset': [0, 1.25], 'text-allow-overlap': false }} paint={{ 'text-color': '#fef3c7', 'text-halo-color': '#020617', 'text-halo-width': 1 }} /></Source>}
         </>
       )}
     </>
