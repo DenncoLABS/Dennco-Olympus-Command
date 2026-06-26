@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { AircraftState } from '../types/flights';
+import { aircraftDb } from '../core/aircraft_db';
 import {
   fetchStates as fetchAdsbLolStates,
   fetchTrack as fetchAdsbLolTrack,
@@ -17,10 +18,7 @@ const PROVIDER_LABEL = 'dennco-flightmesh';
 
 function parseRegionIds(value: unknown): string[] {
   if (typeof value !== 'string') return [];
-  return value
-    .split(',')
-    .map((region) => region.trim())
-    .filter((region) => /^[a-z0-9-]{2,40}$/i.test(region));
+  return value.split(',').map((region) => region.trim()).filter((region) => /^[a-z0-9-]{2,40}$/i.test(region));
 }
 
 async function fetchDenncoFlightMeshStates(regionIds: string[]): Promise<AircraftState[]> {
@@ -37,6 +35,31 @@ function shouldUseLastGood(nextCount: number, now: number, regionKey: string): b
   return nextCount < Math.floor(goodCount * SHRINK_RATIO);
 }
 
+router.get('/aircraft-db', async (req, res) => {
+  try {
+    await aircraftDb.load();
+    const q = String(req.query.q || '');
+    const limit = Number(req.query.limit || 50);
+    res.json({ info: aircraftDb.getInfo(), results: aircraftDb.search(q, limit) });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+router.get('/aircraft-db/:icao24', async (req, res) => {
+  try {
+    await aircraftDb.load();
+    const details = aircraftDb.getDetails(req.params.icao24);
+    if (!details) {
+      res.status(404).json({ error: 'Aircraft not found' });
+      return;
+    }
+    res.json({ aircraft: details, info: aircraftDb.getInfo() });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
 router.get('/snapshot', async (req, res) => {
   const now = Date.now();
   const regionIds = parseRegionIds(req.query.regions);
@@ -44,15 +67,7 @@ router.get('/snapshot', async (req, res) => {
   const providerLabel = regionIds.length ? `${PROVIDER_LABEL}-regional` : `${PROVIDER_LABEL}-no-active-radar`;
 
   if (!regionIds.length) {
-    const payload = {
-      states: [],
-      timestamp: now,
-      provider: providerLabel,
-      live: true,
-      radarRegions: [],
-      scanActive: false,
-      details: 'No radar region selected. Activate one or more radar pins, or use ALL.',
-    };
+    const payload = { states: [], timestamp: now, provider: providerLabel, live: true, radarRegions: [], scanActive: false, details: 'No radar region selected. Activate one or more radar pins, or use ALL.' };
     snapshotCache = { data: payload, ts: now, provider: providerLabel, regionKey: 'none' };
     res.setHeader('X-Cache', 'NO-ACTIVE-RADAR');
     return res.json(payload);
@@ -65,60 +80,27 @@ router.get('/snapshot', async (req, res) => {
 
   try {
     const states = await fetchDenncoFlightMeshStates(regionIds);
-
     if (shouldUseLastGood(states.length, now, regionKey)) {
-      const payload = {
-        states: lastGoodCombined!.states,
-        timestamp: now,
-        provider: `${providerLabel}-last-good`,
-        live: true,
-        radarRegions: regionIds,
-        scanActive: true,
-        staleGuard: true,
-        rejectedCount: states.length,
-      };
+      const payload = { states: lastGoodCombined!.states, timestamp: now, provider: `${providerLabel}-last-good`, live: true, radarRegions: regionIds, scanActive: true, staleGuard: true, rejectedCount: states.length };
       snapshotCache = { data: payload, ts: now, provider: providerLabel, regionKey };
       res.setHeader('X-Cache', 'LAST-GOOD');
       return res.json(payload);
     }
-
     const payload = { states, timestamp: now, provider: providerLabel, live: true, radarRegions: regionIds, scanActive: true };
     snapshotCache = { data: payload, ts: now, provider: providerLabel, regionKey };
-    if (states.length >= MIN_GOOD_COUNT) {
-      lastGoodCombined = { states, ts: now, provider: providerLabel, regionKey };
-    }
+    if (states.length >= MIN_GOOD_COUNT) lastGoodCombined = { states, ts: now, provider: providerLabel, regionKey };
     res.setHeader('X-Cache', 'MISS');
     res.json(payload);
   } catch (error: any) {
     const message = error?.message || 'Unknown flight provider error';
     console.warn(`[Flights] ${providerLabel} provider failed: ${message}`);
-
     if (lastGoodCombined && lastGoodCombined.regionKey === regionKey && now - lastGoodCombined.ts < LAST_GOOD_TTL_MS) {
-      const payload = {
-        states: lastGoodCombined.states,
-        timestamp: now,
-        provider: `${lastGoodCombined.provider}-last-good`,
-        live: false,
-        radarRegions: regionIds,
-        scanActive: true,
-        staleGuard: true,
-        details: message,
-      };
+      const payload = { states: lastGoodCombined.states, timestamp: now, provider: `${lastGoodCombined.provider}-last-good`, live: false, radarRegions: regionIds, scanActive: true, staleGuard: true, details: message };
       snapshotCache = { data: payload, ts: now, provider: providerLabel, regionKey };
       res.setHeader('X-Cache', 'LAST-GOOD-ERROR');
       return res.json(payload);
     }
-
-    res.status(502).json({
-      error: 'Live flight provider unavailable',
-      provider: providerLabel,
-      live: false,
-      radarRegions: regionIds,
-      scanActive: true,
-      states: [],
-      timestamp: now,
-      details: message,
-    });
+    res.status(502).json({ error: 'Live flight provider unavailable', provider: providerLabel, live: false, radarRegions: regionIds, scanActive: true, states: [], timestamp: now, details: message });
   }
 });
 
@@ -128,9 +110,7 @@ router.get('/track/:icao24', async (req, res) => {
     res.json(track);
   } catch (error: any) {
     console.error('Track error:', error.message);
-    if (error.message.includes('404')) {
-      return res.status(404).json({ error: 'Not Found' });
-    }
+    if (error.message.includes('404')) return res.status(404).json({ error: 'Not Found' });
     res.status(502).json({ error: 'Upstream Provider Error', details: error.message });
   }
 });
