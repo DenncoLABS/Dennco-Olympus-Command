@@ -7,6 +7,7 @@ import './appsDirectoryDeskInjection';
 import './monitoringLauncherPatch';
 import './deskAiLauncher';
 import './pveDefaultUrlPatch';
+import './mapIntervalGuard';
 import './filesDeskBrowser';
 import '../../styles/dock-latch-visibility-override.css';
 
