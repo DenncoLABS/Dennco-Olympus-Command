@@ -2,6 +2,7 @@ import React from 'react';
 import { useThemeStore } from '../theme/theme.store';
 import { useRuntimeSettings } from '../../admin/runtimeSettings';
 import '../../modules/intelmaps/intelMapsToolbarCollapse';
+import '../../modules/flights/flightsPerformancePatch';
 import './tileWorkspaceScope';
 import './appsDirectoryDeskInjection';
 import './monitoringLauncherPatch';
