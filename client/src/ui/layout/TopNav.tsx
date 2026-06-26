@@ -6,6 +6,7 @@ import './tileWorkspaceScope';
 import './appsDirectoryDeskInjection';
 import './monitoringLauncherPatch';
 import './deskAiLauncher';
+import './pveDefaultUrlPatch';
 import './filesDeskBrowser';
 import '../../styles/dock-latch-visibility-override.css';
 
