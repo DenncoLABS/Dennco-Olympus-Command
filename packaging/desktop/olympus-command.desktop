@@ -2,10 +2,10 @@
 Type=Application
 Name=Dennco Olympus Command
 GenericName=Olympus Core Desk
-Comment=Open the Dennco Olympus Command Core Desk interface
+Comment=Open the Dennco Olympus Command Core Desk
 Exec=xdg-open http://127.0.0.1:3001
 Icon=dennco-olympus-command
 Terminal=false
-Categories=Network;Utility;Office;System;
+Categories=Network;Utility;Office;
 StartupNotify=true
 X-GNOME-Autostart-enabled=false
