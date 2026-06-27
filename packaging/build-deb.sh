@@ -13,13 +13,14 @@ SYSTEMD_DIR="$PKG_DIR/lib/systemd/system"
 DESKTOP_DIR="$PKG_DIR/usr/share/applications"
 AUTOSTART_DIR="$PKG_DIR/etc/xdg/autostart"
 PIXMAP_DIR="$PKG_DIR/usr/share/pixmaps"
+BIN_DIR="$PKG_DIR/usr/bin"
 DEBIAN_DIR="$PKG_DIR/DEBIAN"
 
 export CI=true
 export HUSKY=0
 
 rm -rf "$BUILD_DIR"
-mkdir -p "$APP_DIR" "$SHARE_DIR" "$SYSTEMD_DIR" "$DESKTOP_DIR" "$AUTOSTART_DIR" "$PIXMAP_DIR" "$DEBIAN_DIR"
+mkdir -p "$APP_DIR" "$SHARE_DIR" "$SYSTEMD_DIR" "$DESKTOP_DIR" "$AUTOSTART_DIR" "$PIXMAP_DIR" "$BIN_DIR" "$DEBIAN_DIR"
 
 cd "$ROOT_DIR"
 
@@ -49,6 +50,10 @@ if [ -d packaging/desktop ]; then
   [ -f packaging/desktop/dennco-olympus-command.svg ] && cp packaging/desktop/dennco-olympus-command.svg "$PIXMAP_DIR/dennco-olympus-command.svg"
 fi
 
+if [ -d packaging/bin ]; then
+  find packaging/bin -maxdepth 1 -type f -exec cp {} "$BIN_DIR/" \;
+fi
+
 cp packaging/config/olympus-command.env.example "$SHARE_DIR/olympus-command.env.example"
 cp packaging/systemd/dennco-olympus-command.service "$SYSTEMD_DIR/dennco-olympus-command.service"
 
@@ -61,6 +66,7 @@ chmod 0755 "$DEBIAN_DIR/postinst" "$DEBIAN_DIR/prerm" "$DEBIAN_DIR/postrm"
 find "$PKG_DIR" -type d -exec chmod 0755 {} \;
 find "$PKG_DIR" -type f -exec chmod 0644 {} \;
 [ -d "$APP_DIR/scripts" ] && find "$APP_DIR/scripts" -type f -name '*.sh' -exec chmod 0755 {} \;
+[ -d "$BIN_DIR" ] && find "$BIN_DIR" -type f -exec chmod 0755 {} \;
 chmod 0755 "$DEBIAN_DIR/postinst" "$DEBIAN_DIR/prerm" "$DEBIAN_DIR/postrm"
 
 dpkg-deb --build --root-owner-group "$PKG_DIR" "$BUILD_DIR/${PACKAGE_NAME}_${VERSION}_${ARCH}.deb"
