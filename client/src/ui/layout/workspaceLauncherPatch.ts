@@ -18,6 +18,14 @@ const workspaceRoutes: WorkspaceRoute[] = [
   { label: 'CAD', view: 'cad', module: 'cad' },
   { label: 'Admin', view: 'admin', module: 'admin' },
   { label: 'Intel Maps', view: 'intelmaps', module: 'intelmaps' },
+  { label: 'Core', view: 'core', module: 'core' },
+  { label: 'Apps', view: 'apps', module: 'core' },
+  { label: 'Files', view: 'files', module: 'core' },
+  { label: 'Architecture', view: 'architecture', module: 'core' },
+  { label: 'Terminal', view: 'terminal', module: 'core' },
+  { label: 'Ollama', view: 'ollama', module: 'core' },
+  { label: 'Packages', view: 'packages', module: 'core' },
+  { label: 'Settings', view: 'settings', module: 'core' },
 ];
 
 function textForElement(element: HTMLElement) {
