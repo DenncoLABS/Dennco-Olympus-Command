@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+URL="${OLYMPUS_CORE_URL:-http://127.0.0.1:3001}"
+WAIT_SECONDS="${OLYMPUS_CORE_WAIT_SECONDS:-20}"
+
+for _ in $(seq 1 "$WAIT_SECONDS"); do
+  if command -v curl >/dev/null 2>&1 && curl -fsS "$URL" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+done
+
+if command -v xdg-open >/dev/null 2>&1; then
+  exec xdg-open "$URL"
+fi
+
+if command -v gio >/dev/null 2>&1; then
+  exec gio open "$URL"
+fi
+
+echo "Open Olympus Core Desk: $URL"
