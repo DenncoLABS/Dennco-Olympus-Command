@@ -4,7 +4,7 @@ Section: web
 Priority: optional
 Architecture: amd64
 Maintainer: DenncoLABS <support@denncolabs.com>
-Depends: nodejs (>= 20), adduser, nautilus
+Depends: nodejs (>= 20), adduser, nautilus, xdg-utils, desktop-file-utils
 Description: Dennco Olympus Command geospatial intelligence platform
  Dennco Olympus Command is an extensible geospatial intelligence command
  platform with live situational awareness, mirrors, extensions, apps,
