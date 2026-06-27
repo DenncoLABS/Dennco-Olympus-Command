@@ -7,6 +7,7 @@ import '../styles/dock-visible-stage.css';
 import '../styles/dock-float-layer.css';
 import '../ui/layout/serviceWorkspaceLauncher';
 import '../ui/layout/dockLogoutConfirmPatch';
+import '../ui/layout/workspaceLauncherPatch';
 import '../ui/desk/deskScalabilityBootstrap';
 import '../modules/intelmaps/mapTileSessionCache';
 import '../modules/intelmaps/sessionRenderCache';
