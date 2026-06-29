@@ -1,10 +1,7 @@
 import { useThemeStore, type ActiveModule } from '../theme/theme.store';
+import { publishWorkspaceEvents } from './publishWorkspaceEvents';
 import { getWorkspaceRoute } from './workspaceRoutes';
-import {
-  OLYMPUS_WORKSPACE_LAUNCH_EVENT,
-  OLYMPUS_WORKSPACE_OPENED_EVENT,
-  type OlympusWorkspaceEventDetail,
-} from './workspaceEvents';
+import type { OlympusWorkspaceEventDetail } from './workspaceEvents';
 
 const VIEW_KEY = 'olympus.desk.v2.view';
 const LAST_WORKSPACE_KEY = 'olympus.workspace.lastOpen';
@@ -32,8 +29,7 @@ export function openOlympusWorkspace(idOrViewOrLabel: string, options: OlympusWo
   localStorage.setItem(LAST_WORKSPACE_KEY, JSON.stringify(payload));
   useThemeStore.getState().setActiveModule(route.module as ActiveModule);
 
-  window.dispatchEvent(new CustomEvent(OLYMPUS_WORKSPACE_OPENED_EVENT, { detail: payload }));
-  window.dispatchEvent(new CustomEvent(OLYMPUS_WORKSPACE_LAUNCH_EVENT, { detail: payload }));
+  publishWorkspaceEvents(payload);
   return true;
 }
 
