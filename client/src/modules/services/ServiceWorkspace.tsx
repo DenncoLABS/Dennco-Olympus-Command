@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useThemeStore } from '../../ui/theme/theme.store';
+import { OlympusWorkspaceShell, type OlympusWorkspaceAction } from '../../ui/layout/OlympusWorkspaceShell';
 
 type AppId = 'agent-dvr' | 'rc2' | 'freepbx' | 'gitlab' | 'nethserver8' | 'proxmox8';
 type WinKind = 'generic' | 'nodes' | 'vms' | 'storage' | 'console' | 'web';
-type Win = { id: string; title: string; kind: WinKind; x: number; y: number; z: number };
 type Profile = { title: string; short: string; tools: string[]; note: string; urlKey: string };
+
+type Surface = {
+  title: string;
+  kind: WinKind;
+};
 
 const SERVICE_KEY = 'olympus.service.selected';
 const profiles: Record<AppId, Profile> = {
@@ -57,74 +62,85 @@ function defaultServiceUrl(profile: Profile) {
 export const ServiceWorkspace: React.FC = () => {
   const setActiveModule = useThemeStore((state) => state.setActiveModule);
   const [profile] = useState<Profile>(() => selectedProfile());
-  const [wins, setWins] = useState<Win[]>([]);
-  const [z, setZ] = useState(4);
+  const [surface, setSurface] = useState<Surface>(() => ({ title: `${selectedProfile().short} Overview`, kind: 'generic' }));
   const [url, setUrl] = useState(() => localStorage.getItem(profile.urlKey) || defaultServiceUrl(profile));
+  const [reloadKey, setReloadKey] = useState(0);
   const isProxmox = profile.short === 'PVE';
   const isNethServer = profile.short === 'NS8';
   const isNativeFramed = isProxmox || isNethServer;
 
-  const open = (title: string, kind: WinKind = 'generic') => {
-    const nextZ = z + 1;
-    setZ(nextZ + 1);
-    setWins((current) => [
-      ...current,
-      { id: `${title}-${Date.now()}`, title, kind, x: 30 + current.length * 28, y: 76 + current.length * 22, z: nextZ },
-    ]);
+  const saveUrl = () => {
+    localStorage.setItem(profile.urlKey, url.trim());
+    setReloadKey((current) => current + 1);
   };
 
-  const saveUrl = () => localStorage.setItem(profile.urlKey, url.trim());
-  const closeWin = (id: string) => setWins((current) => current.filter((item) => item.id !== id));
+  const actions: OlympusWorkspaceAction[] = useMemo(() => [
+    ...profile.tools.map((tool) => ({
+      id: tool.toLowerCase().replace(/\s+/g, '-'),
+      label: tool,
+      active: surface.title === `${profile.short} ${tool}`,
+      tone: surface.title === `${profile.short} ${tool}` ? 'primary' as const : 'default' as const,
+      onClick: () => setSurface({ title: `${profile.short} ${tool}`, kind: kindForTool(tool) }),
+    })),
+    ...(isNativeFramed ? [{ id: 'native-gui', label: 'Native GUI', tone: 'success' as const, onClick: () => setSurface({ title: `${profile.short} Native GUI`, kind: 'web' as WinKind }) }] : []),
+    { id: 'save-url', label: 'Save URL', tone: 'success' as const, onClick: saveUrl },
+    { id: 'web', label: 'Open Web', tone: 'success' as const, onClick: () => setSurface({ title: `${profile.short} Web Console`, kind: 'web' }) },
+    { id: 'reload', label: 'Reload', tone: 'primary' as const, onClick: () => setReloadKey((current) => current + 1) },
+    { id: 'close', label: '× Close App', tone: 'danger' as const, onClick: () => setActiveModule('core') },
+  ], [profile, surface.title, isNativeFramed, setActiveModule, url]);
 
   return (
-    <div className="absolute inset-0 overflow-hidden bg-[#020617] font-mono text-white">
-      <div className="absolute left-4 right-4 top-4 z-[20] flex items-center justify-between rounded border border-cyan-300/20 bg-black/70 px-3 py-2 backdrop-blur">
-        <div>
-          <div className="text-[10px] uppercase tracking-[0.28em] text-cyan-300">{profile.title} Workspace</div>
-          <div className="text-[9px] uppercase tracking-[0.16em] text-white/40">{profile.note} · app windows open on the active Tile screen</div>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {profile.tools.map((tool) => (
-            <button key={tool} onClick={() => open(`${profile.short} ${tool}`, kindForTool(tool))} className="rounded border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-cyan-100">
-              {tool}
-            </button>
-          ))}
-          {isNativeFramed ? (
-            <button onClick={() => open(`${profile.short} Native GUI`, 'web')} className="rounded border border-emerald-300/35 bg-emerald-300/10 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-emerald-100">Native GUI</button>
-          ) : null}
-          <input value={url} onChange={(event) => setUrl(event.target.value)} placeholder={isProxmox ? 'https://proxmox-host:8006' : isNethServer ? 'https://nethserver-host' : 'Real console URL'} className="w-64 rounded border border-white/10 bg-black/55 px-2 py-1 text-[10px] text-cyan-100 outline-none focus:border-cyan-300/50" />
-          <button onClick={saveUrl} className="rounded border border-emerald-300/35 bg-emerald-300/10 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-emerald-100">Save URL</button>
-          <button onClick={() => open(`${profile.short} Web Console`, 'web')} className="rounded border border-emerald-300/35 bg-emerald-300/10 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-emerald-100">Open Web</button>
-          <button onClick={() => setActiveModule('core')} className="rounded border border-red-400/40 bg-red-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-red-200">× Close App</button>
-        </div>
-      </div>
-      <div className="absolute inset-0 pt-16">
-        {wins.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center text-white/35">
-            <div className="text-center">
-              <div className="text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">{profile.title} Workspace</div>
-              <div className="mt-2 text-sm uppercase tracking-[0.16em]">No Window Open</div>
-            </div>
+    <OlympusWorkspaceShell
+      title={`${profile.title} Workspace`}
+      subtitle={`${profile.note} · shared Olympus app shell`}
+      surfaceLabel={`${profile.short} Service Surface`}
+      actions={actions}
+    >
+      <div className="flex h-full flex-col overflow-hidden bg-[#020617]">
+        <div className="flex h-10 shrink-0 items-center justify-between gap-3 border-b border-cyan-300/15 bg-[#05070b]/90 px-3">
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">{surface.title}</div>
+            <div className="truncate text-[8px] uppercase tracking-[0.14em] text-white/35">Olympus {profile.short} frame · {labelForKind(surface.kind)}</div>
           </div>
-        ) : null}
-        {wins.map((win) => (
-          <section key={win.id} className="absolute h-[620px] w-[1040px] overflow-hidden rounded border border-cyan-300/20 bg-black shadow-[0_24px_60px_rgba(0,0,0,0.86)]" style={{ left: win.x, top: win.y, zIndex: win.z }}>
-            <div className="flex h-9 items-center justify-between border-b border-cyan-300/15 bg-[#05070b]/95 px-3">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-300">{win.title}</div>
-              <button onClick={() => closeWin(win.id)} className="border border-white/10 px-2 py-0.5 text-white/55">×</button>
-            </div>
-            <WindowBody profile={profile} isNativeFramed={isNativeFramed} win={win} url={url || defaultServiceUrl(profile)} />
-          </section>
-        ))}
+          <input value={url} onChange={(event) => setUrl(event.target.value)} placeholder={isProxmox ? 'https://proxmox-host:8006' : isNethServer ? 'https://nethserver-host' : 'Real console URL'} className="w-72 rounded border border-white/10 bg-black/55 px-2 py-1 text-[10px] text-cyan-100 outline-none focus:border-cyan-300/50" />
+        </div>
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <SurfaceBody key={`${surface.title}-${reloadKey}`} profile={profile} isNativeFramed={isNativeFramed} surface={surface} url={url || defaultServiceUrl(profile)} />
+        </div>
       </div>
-    </div>
+    </OlympusWorkspaceShell>
   );
 };
 
-function WindowBody({ profile, isNativeFramed, win, url }: { profile: Profile; isNativeFramed: boolean; win: Win; url: string }) {
-  if (isNativeFramed) return <NativeServiceGui profile={profile} kind={win.kind} url={url} />;
-  if (win.kind === 'web' && url) return <iframe src={normalizeUrl(url)} className="h-[calc(100%-36px)] w-full border-0 bg-black" title={win.title} />;
-  return <div className="p-5 text-sm text-white/60">{win.title} app surface. Native panels and service bindings attach here.</div>;
+function SurfaceBody({ profile, isNativeFramed, surface, url }: { profile: Profile; isNativeFramed: boolean; surface: Surface; url: string }) {
+  if (isNativeFramed && surface.kind === 'web') return <NativeServiceGui profile={profile} kind={surface.kind} url={url} />;
+  if (surface.kind === 'web' && url) return <iframe src={normalizeUrl(url)} className="h-full w-full border-0 bg-black" title={surface.title} />;
+  return <ServicePanel profile={profile} surface={surface} url={url} />;
+}
+
+function ServicePanel({ profile, surface, url }: { profile: Profile; surface: Surface; url: string }) {
+  return (
+    <div className="h-full overflow-auto p-5 text-sm text-white/60 custom-scrollbar">
+      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+        <section className="rounded border border-cyan-300/15 bg-white/[0.03] p-4">
+          <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">{surface.title}</div>
+          <div className="mt-3 text-lg font-bold uppercase tracking-[0.12em] text-white">{labelForKind(surface.kind)}</div>
+          <p className="mt-3 leading-relaxed text-white/55">{profile.note} Native panels and service bindings attach to this shared workspace surface.</p>
+        </section>
+        <aside className="rounded border border-white/10 bg-black/35 p-4">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Connection</div>
+          <div className="mt-2 break-all font-mono text-cyan-100">{url || 'Not configured'}</div>
+          <div className="mt-4 text-[10px] uppercase tracking-[0.14em] text-white/35">Olympus Behavior</div>
+          <ul className="mt-2 space-y-2 text-xs text-white/50">
+            <li>Runs inside the shared Olympus workspace shell.</li>
+            <li>Toolbar actions switch the active service surface.</li>
+            <li>Native web consoles stay inside the app workspace.</li>
+            <li>No extra random floating GUI windows are created.</li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+  );
 }
 
 function NativeServiceGui({ profile, kind, url }: { profile: Profile; kind: WinKind; url: string }) {
@@ -135,11 +151,11 @@ function NativeServiceGui({ profile, kind, url }: { profile: Profile; kind: WinK
   const imageUrl = profile.short === 'PVE' ? `/api/proxmox-lab/browser-screen?url=${encodeURIComponent(serviceUrl)}&r=${reloadKey}` : '';
 
   return (
-    <div className="h-[calc(100%-36px)] bg-[#020617]">
+    <div className="h-full bg-[#020617]">
       <div className="flex h-10 items-center justify-between border-b border-cyan-300/15 bg-black/70 px-3">
         <div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-300">Olympus {profile.short} Frame · {section}</div>
-          <div className="text-[8px] uppercase tracking-[0.14em] text-white/35">{profile.short === 'PVE' ? 'Rendered by the Olympus internal system browser' : `Native ${serviceName} GUI inside an Olympus workspace window`}</div>
+          <div className="text-[8px] uppercase tracking-[0.14em] text-white/35">{profile.short === 'PVE' ? 'Rendered by the Olympus internal system browser' : `Native ${serviceName} GUI inside an Olympus workspace`}</div>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setReloadKey((current) => current + 1)} className="rounded border border-cyan-300/25 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-cyan-200">Reload</button>
