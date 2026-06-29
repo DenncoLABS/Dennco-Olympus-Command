@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { useThemeStore } from '../../ui/theme/theme.store';
 import { OlympusWorkspaceShell, type OlympusWorkspaceAction } from '../../ui/layout/OlympusWorkspaceShell';
 
 type AppId = 'agent-dvr' | 'rc2' | 'freepbx' | 'gitlab' | 'nethserver8' | 'proxmox8';
@@ -60,7 +59,6 @@ function defaultServiceUrl(profile: Profile) {
 }
 
 export const ServiceWorkspace: React.FC = () => {
-  const setActiveModule = useThemeStore((state) => state.setActiveModule);
   const [profile] = useState<Profile>(() => selectedProfile());
   const [surface, setSurface] = useState<Surface>(() => ({ title: `${selectedProfile().short} Overview`, kind: 'generic' }));
   const [url, setUrl] = useState(() => localStorage.getItem(profile.urlKey) || defaultServiceUrl(profile));
@@ -86,8 +84,7 @@ export const ServiceWorkspace: React.FC = () => {
     { id: 'save-url', label: 'Save URL', tone: 'success' as const, onClick: saveUrl },
     { id: 'web', label: 'Open Web', tone: 'success' as const, onClick: () => setSurface({ title: `${profile.short} Web Console`, kind: 'web' }) },
     { id: 'reload', label: 'Reload', tone: 'primary' as const, onClick: () => setReloadKey((current) => current + 1) },
-    { id: 'close', label: '× Close App', tone: 'danger' as const, onClick: () => setActiveModule('core') },
-  ], [profile, surface.title, isNativeFramed, setActiveModule, url]);
+  ], [profile, surface.title, isNativeFramed, url]);
 
   return (
     <OlympusWorkspaceShell
@@ -95,6 +92,7 @@ export const ServiceWorkspace: React.FC = () => {
       subtitle={`${profile.note} · shared Olympus app shell`}
       surfaceLabel={`${profile.short} Service Surface`}
       actions={actions}
+      showDefaultClose
     >
       <div className="flex h-full flex-col overflow-hidden bg-[#020617]">
         <div className="flex h-10 shrink-0 items-center justify-between gap-3 border-b border-cyan-300/15 bg-[#05070b]/90 px-3">
