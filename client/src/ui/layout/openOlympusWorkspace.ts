@@ -26,7 +26,9 @@ export function openOlympusWorkspace(idOrViewOrLabel: string, options: OlympusWo
   localStorage.setItem(VIEW_KEY, route.view);
   localStorage.setItem(LAST_WORKSPACE_KEY, JSON.stringify(payload));
   useThemeStore.getState().setActiveModule(route.module as ActiveModule);
+
   window.dispatchEvent(new CustomEvent('olympus:workspace-opened', { detail: payload }));
+  window.dispatchEvent(new CustomEvent('olympus:workspace-launch', { detail: payload }));
   return true;
 }
 
