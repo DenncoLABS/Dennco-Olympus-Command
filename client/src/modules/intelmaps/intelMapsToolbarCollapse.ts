@@ -8,17 +8,35 @@ function installStyles() {
   style.id = 'olympus-intel-maps-toolbar-collapse-style';
   style.textContent = `
     .olympus-mp-toolbar{
-      transition:height .22s ease, opacity .22s ease, transform .22s ease, padding .22s ease, border-color .22s ease;
+      transition:height .18s ease, min-height .18s ease, opacity .18s ease, transform .18s ease, padding .18s ease, border-color .18s ease, background-color .18s ease;
       overflow:hidden!important;
     }
+    .olympus-mp-toolbar::after{
+      content:'INTEL MAPS TOOLBAR · HOVER TO EXPAND';
+      position:absolute;
+      left:50%;
+      top:1px;
+      transform:translateX(-50%);
+      display:none;
+      font:700 8px/1.1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      letter-spacing:.24em;
+      color:rgba(103,232,249,.72);
+      pointer-events:none;
+      white-space:nowrap;
+    }
     .olympus-mp-toolbar[data-collapsed='true']{
-      height:13px!important;
-      min-height:13px!important;
+      height:10px!important;
+      min-height:10px!important;
       padding-top:0!important;
       padding-bottom:0!important;
-      opacity:.28!important;
-      transform:translateY(-6px)!important;
-      border-color:rgba(34,211,238,.16)!important;
+      opacity:.34!important;
+      transform:translateY(-8px)!important;
+      border-color:rgba(34,211,238,.18)!important;
+      background-color:rgba(0,0,0,.72)!important;
+      cursor:pointer!important;
+    }
+    .olympus-mp-toolbar[data-collapsed='true']::after{
+      display:block;
     }
     .olympus-mp-toolbar[data-collapsed='true'] > *{
       opacity:0!important;
@@ -31,6 +49,12 @@ function installStyles() {
       min-height:0!important;
       opacity:1!important;
       transform:none!important;
+      cursor:auto!important;
+    }
+    .olympus-mp-toolbar:hover::after,
+    .olympus-mp-toolbar:focus-within::after,
+    .olympus-mp-toolbar[data-collapsed='false']::after{
+      display:none;
     }
     .olympus-mp-toolbar:hover > *,
     .olympus-mp-toolbar:focus-within > *,
@@ -39,10 +63,10 @@ function installStyles() {
       pointer-events:auto!important;
     }
     .olympus-mp-workspace{
-      padding-top:8px!important;
+      padding-top:2px!important;
     }
     .olympus-mp-workspace > section[data-olympus-map-window='true']{
-      max-height:calc(100vh - 160px)!important;
+      max-height:calc(100vh - 112px)!important;
     }
   `;
   document.head.appendChild(style);
@@ -66,11 +90,11 @@ function markMapWindows(workspace: Element | null) {
     if (win.dataset.olympusToolbarReclaimed === 'true') return;
     const currentTop = Number.parseFloat(win.style.top || '0');
     if (Number.isFinite(currentTop)) {
-      win.style.top = `${Math.max(8, currentTop - 56)}px`;
+      win.style.top = `${Math.max(4, currentTop - 72)}px`;
     }
     const currentHeight = Number.parseFloat(win.style.height || '0');
     if (Number.isFinite(currentHeight) && currentHeight > 0) {
-      win.style.height = `${Math.min(window.innerHeight - 160, currentHeight + 44)}px`;
+      win.style.height = `${Math.min(window.innerHeight - 112, currentHeight + 64)}px`;
     }
     win.dataset.olympusToolbarReclaimed = 'true';
   });
@@ -87,7 +111,7 @@ function bindToolbar(toolbar: HTMLElement) {
 
   let timer = window.setTimeout(() => {
     toolbar.dataset.collapsed = 'true';
-  }, 2200);
+  }, 1200);
 
   const expand = () => {
     window.clearTimeout(timer);
@@ -97,7 +121,7 @@ function bindToolbar(toolbar: HTMLElement) {
     window.clearTimeout(timer);
     timer = window.setTimeout(() => {
       toolbar.dataset.collapsed = 'true';
-    }, 1800);
+    }, 950);
   };
 
   toolbar.addEventListener('mouseenter', expand);
