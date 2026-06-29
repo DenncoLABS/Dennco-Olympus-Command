@@ -1,5 +1,10 @@
 import { getWorkspaceRoute } from './workspaceRoutes';
-import { OLYMPUS_DESK_VIEW_SYNC_EVENT, OLYMPUS_WORKSPACE_LAUNCH_EVENT, OLYMPUS_WORKSPACE_OPENED_EVENT } from './workspaceEvents';
+import {
+  OLYMPUS_DESK_VIEW_SYNC_EVENT,
+  OLYMPUS_WORKSPACE_LAUNCH_EVENT,
+  OLYMPUS_WORKSPACE_OPENED_EVENT,
+  type OlympusWorkspaceEventDetail,
+} from './workspaceEvents';
 
 const BOOT_KEY = '__olympusDeskWorkspaceEventSyncReady';
 const VIEW_KEY = 'olympus.desk.v2.view';
@@ -8,18 +13,10 @@ const DEDUPE_MS = 250;
 
 type ScopedWindow = Window & { [BOOT_KEY]?: boolean };
 
-type WorkspaceEventDetail = {
-  id?: string;
-  view?: string;
-  module?: string;
-  source?: string;
-  openedAt?: number;
-};
-
 let lastSyncKey = '';
 let lastSyncAt = 0;
 
-function shouldSkipDuplicate(routeId: string, detail: WorkspaceEventDetail) {
+function shouldSkipDuplicate(routeId: string, detail: OlympusWorkspaceEventDetail) {
   const eventStamp = detail.openedAt || 0;
   const key = `${routeId}:${eventStamp}:${detail.source || ''}`;
   const now = Date.now();
@@ -29,7 +26,7 @@ function shouldSkipDuplicate(routeId: string, detail: WorkspaceEventDetail) {
   return false;
 }
 
-function syncCoreDeskView(detail: WorkspaceEventDetail) {
+function syncCoreDeskView(detail: OlympusWorkspaceEventDetail) {
   const route = getWorkspaceRoute(detail.id || detail.view || '');
   if (!route || route.module !== 'core') return;
   if (shouldSkipDuplicate(route.id, detail)) return;
@@ -47,7 +44,7 @@ function syncCoreDeskView(detail: WorkspaceEventDetail) {
 }
 
 function handleWorkspaceOpened(event: Event) {
-  const detail = (event as CustomEvent<WorkspaceEventDetail>).detail;
+  const detail = (event as CustomEvent<OlympusWorkspaceEventDetail>).detail;
   if (!detail) return;
   syncCoreDeskView(detail);
 }
