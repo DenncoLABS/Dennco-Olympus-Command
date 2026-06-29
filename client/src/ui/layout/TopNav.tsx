@@ -10,6 +10,7 @@ import './deskAiLauncher';
 import './pveDefaultUrlPatch';
 import './mapIntervalGuard';
 import './filesDeskBrowser';
+import './deskWorkspaceEventSync';
 import '../../styles/dock-latch-visibility-override.css';
 
 export const TopNav: React.FC = () => {
