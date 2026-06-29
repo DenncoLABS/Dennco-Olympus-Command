@@ -1,8 +1,10 @@
 import React, { Suspense, lazy } from 'react';
 import { useThemeStore } from '../ui/theme/theme.store';
-import { AdminSettingsPage } from '../admin/AdminSettingsPage';
 import { TileScreens } from '../modules/tiles/TileScreens';
 
+const AdminSettingsWorkspace = lazy(() =>
+  import('../admin/AdminSettingsWorkspace').then((m) => ({ default: m.AdminSettingsWorkspace })),
+);
 const IntelMapsApp = lazy(() =>
   import('../modules/intelmaps/IntelMapsApp').then((m) => ({ default: m.IntelMapsApp })),
 );
@@ -31,7 +33,11 @@ export const AppRoutes: React.FC = () => {
   const activeModule = useThemeStore((s) => s.activeModule);
 
   if (activeModule === 'admin') {
-    return <AdminSettingsPage />;
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <AdminSettingsWorkspace />
+      </Suspense>
+    );
   }
 
   if (activeModule === 'cad') {
