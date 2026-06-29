@@ -1,4 +1,5 @@
 import './deskWorkspaceEventSync';
+import { isCoreDeskView } from './coreDeskViews';
 import { OLYMPUS_DESK_VIEW_SYNC_EVENT } from './workspaceEvents';
 
 const BOOT_KEY = '__olympusDeskWorkspaceViewBridgeReady';
@@ -23,7 +24,9 @@ function clickDockButton(label: string) {
 }
 
 function clickMatchingDeskButton(view: string) {
-  const dockLabelByView: Record<string, string> = {
+  if (!isCoreDeskView(view)) return false;
+
+  const dockLabelByView: Partial<Record<typeof view, string>> = {
     core: 'Core',
     packages: 'Packages',
   };
@@ -31,7 +34,7 @@ function clickMatchingDeskButton(view: string) {
   const dockLabel = dockLabelByView[view];
   if (dockLabel) return clickDockButton(dockLabel);
 
-  const labelByView: Record<string, string> = {
+  const labelByView: Partial<Record<typeof view, string>> = {
     apps: 'Open Apps Browser',
     files: 'Open GNOME Files',
     ollama: 'Open Ollama AI',
@@ -61,6 +64,8 @@ function openDeskHatch() {
 
 function syncVisibleDeskView(detail: DeskViewSyncDetail) {
   const view = detail.view || localStorage.getItem(VIEW_KEY) || 'core';
+  if (!isCoreDeskView(view)) return;
+
   localStorage.setItem(VIEW_KEY, view);
   localStorage.setItem(HATCH_KEY, 'open');
 
