@@ -1,4 +1,5 @@
 import { getWorkspaceRoute } from './workspaceRoutes';
+import { OLYMPUS_DESK_VIEW_SYNC_EVENT, OLYMPUS_WORKSPACE_LAUNCH_EVENT, OLYMPUS_WORKSPACE_OPENED_EVENT } from './workspaceEvents';
 
 const BOOT_KEY = '__olympusDeskWorkspaceEventSyncReady';
 const VIEW_KEY = 'olympus.desk.v2.view';
@@ -35,7 +36,7 @@ function syncCoreDeskView(detail: WorkspaceEventDetail) {
 
   localStorage.setItem(VIEW_KEY, route.view);
   localStorage.setItem(OPEN_HATCH_KEY, 'open');
-  window.dispatchEvent(new CustomEvent('olympus:desk-view-sync', {
+  window.dispatchEvent(new CustomEvent(OLYMPUS_DESK_VIEW_SYNC_EVENT, {
     detail: {
       id: route.id,
       view: route.view,
@@ -55,7 +56,7 @@ if (typeof window !== 'undefined') {
   const scopedWindow = window as ScopedWindow;
   if (!scopedWindow[BOOT_KEY]) {
     scopedWindow[BOOT_KEY] = true;
-    window.addEventListener('olympus:workspace-opened', handleWorkspaceOpened);
-    window.addEventListener('olympus:workspace-launch', handleWorkspaceOpened);
+    window.addEventListener(OLYMPUS_WORKSPACE_OPENED_EVENT, handleWorkspaceOpened);
+    window.addEventListener(OLYMPUS_WORKSPACE_LAUNCH_EVENT, handleWorkspaceOpened);
   }
 }
