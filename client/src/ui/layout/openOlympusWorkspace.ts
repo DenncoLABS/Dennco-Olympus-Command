@@ -3,6 +3,7 @@ import { getWorkspaceRoute } from './workspaceRoutes';
 import {
   OLYMPUS_WORKSPACE_LAUNCH_EVENT,
   OLYMPUS_WORKSPACE_OPENED_EVENT,
+  type OlympusWorkspaceEventDetail,
 } from './workspaceEvents';
 
 const VIEW_KEY = 'olympus.desk.v2.view';
@@ -17,7 +18,7 @@ export function openOlympusWorkspace(idOrViewOrLabel: string, options: OlympusWo
   const route = getWorkspaceRoute(idOrViewOrLabel);
   if (!route) return false;
 
-  const payload = {
+  const payload: OlympusWorkspaceEventDetail = {
     id: route.id,
     label: route.label,
     view: route.view,
