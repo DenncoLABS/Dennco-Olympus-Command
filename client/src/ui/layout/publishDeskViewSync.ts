@@ -1,12 +1,12 @@
 import type { CoreDeskView } from './coreDeskViews';
-import { OLYMPUS_DESK_VIEW_SYNC_EVENT } from './workspaceEvents';
+import { OLYMPUS_DESK_VIEW_SYNC_EVENT, type OlympusDeskViewSyncDetail } from './workspaceEvents';
 
 export function publishDeskViewSync(view: CoreDeskView, source = 'desk-sync') {
-  window.dispatchEvent(new CustomEvent(OLYMPUS_DESK_VIEW_SYNC_EVENT, {
-    detail: {
-      view,
-      source,
-      openedAt: Date.now(),
-    },
-  }));
+  const detail: OlympusDeskViewSyncDetail = {
+    view,
+    source,
+    openedAt: Date.now(),
+  };
+
+  window.dispatchEvent(new CustomEvent(OLYMPUS_DESK_VIEW_SYNC_EVENT, { detail }));
 }
