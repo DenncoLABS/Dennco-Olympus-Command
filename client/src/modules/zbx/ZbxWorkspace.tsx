@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { useThemeStore } from '../../ui/theme/theme.store';
 import { OlympusWorkspaceShell, type OlympusWorkspaceAction } from '../../ui/layout/OlympusWorkspaceShell';
 
 type PanelId = 'overview' | 'dashboard' | 'hosts' | 'graphs' | 'web';
@@ -44,7 +43,6 @@ function isOlympusSelfUrl(value: string) {
 }
 
 export const ZbxWorkspace: React.FC = () => {
-  const setActiveModule = useThemeStore((state) => state.setActiveModule);
   const [activePanel, setActivePanel] = useState<PanelId>('web');
   const [url, setUrl] = useState(() => localStorage.getItem(ZBX_URL_KEY) || defaultZabbixUrl());
   const [reloadKey, setReloadKey] = useState(0);
@@ -68,7 +66,6 @@ export const ZbxWorkspace: React.FC = () => {
     { id: 'save-url', label: 'Save URL', tone: 'success', onClick: saveUrl },
     { id: 'reload', label: 'Reload', tone: 'primary', onClick: () => setReloadKey((current) => current + 1) },
     { id: 'external', label: 'External', onClick: () => normalizedUrl && window.open(normalizedUrl, '_blank', 'noopener,noreferrer') },
-    { id: 'close', label: '× Close App', tone: 'danger', onClick: () => setActiveModule('core') },
   ];
 
   return (
@@ -77,6 +74,7 @@ export const ZbxWorkspace: React.FC = () => {
       subtitle="Monitoring app workspace · toolbar first · GUI surface inside Olympus"
       surfaceLabel="ZBX Workspace Surface"
       actions={actions}
+      showDefaultClose
     >
       <div className="flex h-full flex-col overflow-hidden bg-[#020617]">
         <div className="flex h-10 shrink-0 items-center justify-between gap-3 border-b border-cyan-300/15 bg-[#05070b]/90 px-3">
