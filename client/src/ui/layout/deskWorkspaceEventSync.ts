@@ -3,6 +3,7 @@ import {
   OLYMPUS_DESK_VIEW_SYNC_EVENT,
   OLYMPUS_WORKSPACE_LAUNCH_EVENT,
   OLYMPUS_WORKSPACE_OPENED_EVENT,
+  type OlympusDeskViewSyncDetail,
   type OlympusWorkspaceEventDetail,
 } from './workspaceEvents';
 
@@ -31,16 +32,16 @@ function syncCoreDeskView(detail: OlympusWorkspaceEventDetail) {
   if (!route || route.module !== 'core') return;
   if (shouldSkipDuplicate(route.id, detail)) return;
 
+  const syncDetail: OlympusDeskViewSyncDetail = {
+    id: route.id,
+    view: route.view,
+    source: detail.source || 'workspace-event-sync',
+    openedAt: detail.openedAt || Date.now(),
+  };
+
   localStorage.setItem(VIEW_KEY, route.view);
   localStorage.setItem(OPEN_HATCH_KEY, 'open');
-  window.dispatchEvent(new CustomEvent(OLYMPUS_DESK_VIEW_SYNC_EVENT, {
-    detail: {
-      id: route.id,
-      view: route.view,
-      source: detail.source || 'workspace-event-sync',
-      openedAt: detail.openedAt || Date.now(),
-    },
-  }));
+  window.dispatchEvent(new CustomEvent(OLYMPUS_DESK_VIEW_SYNC_EVENT, { detail: syncDetail }));
 }
 
 function handleWorkspaceOpened(event: Event) {
