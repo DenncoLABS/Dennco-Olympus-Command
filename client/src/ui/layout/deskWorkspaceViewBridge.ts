@@ -1,5 +1,5 @@
 import './deskWorkspaceEventSync';
-import { isCoreDeskView } from './coreDeskViews';
+import { isCoreDeskView, type CoreDeskView } from './coreDeskViews';
 import { OLYMPUS_DESK_VIEW_SYNC_EVENT } from './workspaceEvents';
 
 const BOOT_KEY = '__olympusDeskWorkspaceViewBridgeReady';
@@ -14,6 +14,20 @@ type DeskViewSyncDetail = {
   openedAt?: number;
 };
 
+const dockLabelByView: Partial<Record<CoreDeskView, string>> = {
+  core: 'Core',
+  packages: 'Packages',
+};
+
+const sideButtonLabelByView: Partial<Record<CoreDeskView, string>> = {
+  apps: 'Open Apps Browser',
+  files: 'Open GNOME Files',
+  ollama: 'Open Ollama AI',
+  architecture: 'Visualize Architecture',
+  terminal: 'Open Terminal',
+  settings: 'Desk Settings',
+};
+
 function clickDockButton(label: string) {
   const buttons = Array.from(document.querySelectorAll('.olympus-dock-widget button')) as HTMLButtonElement[];
   const button = buttons.find((candidate) => candidate.getAttribute('title') === label || candidate.textContent?.trim() === label);
@@ -26,24 +40,10 @@ function clickDockButton(label: string) {
 function clickMatchingDeskButton(view: string) {
   if (!isCoreDeskView(view)) return false;
 
-  const dockLabelByView: Partial<Record<typeof view, string>> = {
-    core: 'Core',
-    packages: 'Packages',
-  };
-
   const dockLabel = dockLabelByView[view];
   if (dockLabel) return clickDockButton(dockLabel);
 
-  const labelByView: Partial<Record<typeof view, string>> = {
-    apps: 'Open Apps Browser',
-    files: 'Open GNOME Files',
-    ollama: 'Open Ollama AI',
-    architecture: 'Visualize Architecture',
-    terminal: 'Open Terminal',
-    settings: 'Desk Settings',
-  };
-
-  const label = labelByView[view];
+  const label = sideButtonLabelByView[view];
   if (!label) return false;
 
   const buttons = Array.from(document.querySelectorAll('.olympus-powered-desk button')) as HTMLButtonElement[];
