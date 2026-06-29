@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useThemeStore } from '../../ui/theme/theme.store';
+import { OlympusWorkspaceShell, type OlympusWorkspaceAction } from '../../ui/layout/OlympusWorkspaceShell';
 
 type PanelId = 'overview' | 'dashboard' | 'hosts' | 'graphs' | 'web';
 
@@ -56,46 +57,41 @@ export const ZbxWorkspace: React.FC = () => {
     setReloadKey((current) => current + 1);
   };
 
+  const actions: OlympusWorkspaceAction[] = [
+    ...panels.map((panel) => ({
+      id: panel.id,
+      label: panel.title,
+      active: activePanel === panel.id,
+      tone: activePanel === panel.id ? 'primary' as const : 'default' as const,
+      onClick: () => setActivePanel(panel.id),
+    })),
+    { id: 'save-url', label: 'Save URL', tone: 'success', onClick: saveUrl },
+    { id: 'reload', label: 'Reload', tone: 'primary', onClick: () => setReloadKey((current) => current + 1) },
+    { id: 'external', label: 'External', onClick: () => normalizedUrl && window.open(normalizedUrl, '_blank', 'noopener,noreferrer') },
+    { id: 'close', label: '× Close App', tone: 'danger', onClick: () => setActiveModule('core') },
+  ];
+
   return (
-    <div className="absolute inset-0 overflow-hidden bg-[#020617] font-mono text-white">
-      <div className="absolute left-4 right-4 top-4 z-[20] flex flex-wrap items-center justify-between gap-3 rounded border border-cyan-300/20 bg-black/70 px-3 py-2 backdrop-blur">
-        <div>
-          <div className="text-[10px] uppercase tracking-[0.28em] text-cyan-300">Zabbix Workspace</div>
-          <div className="text-[9px] uppercase tracking-[0.16em] text-white/40">Monitoring app workspace · toolbar first · GUI surface inside Olympus</div>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {panels.map((panel) => (
-            <button
-              key={panel.id}
-              onClick={() => setActivePanel(panel.id)}
-              className={`rounded border px-3 py-1 text-[10px] uppercase tracking-[0.14em] transition ${activePanel === panel.id ? 'border-cyan-300/55 bg-cyan-300/15 text-cyan-100 shadow-[0_0_14px_rgba(34,211,238,0.18)]' : 'border-white/10 bg-white/[0.03] text-white/60 hover:border-cyan-300/35 hover:text-cyan-100'}`}
-            >
-              {panel.title}
-            </button>
-          ))}
+    <OlympusWorkspaceShell
+      title="Zabbix Workspace"
+      subtitle="Monitoring app workspace · toolbar first · GUI surface inside Olympus"
+      surfaceLabel="ZBX Workspace Surface"
+      actions={actions}
+    >
+      <div className="flex h-full flex-col overflow-hidden bg-[#020617]">
+        <div className="flex h-10 shrink-0 items-center justify-between gap-3 border-b border-cyan-300/15 bg-[#05070b]/90 px-3">
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">{active.title}</div>
+            <div className="truncate text-[8px] uppercase tracking-[0.14em] text-white/35">{active.description}</div>
+          </div>
           <input
             value={url}
             onChange={(event) => setUrl(event.target.value)}
             placeholder="http://zabbix-host/zabbix"
-            className="w-64 rounded border border-white/10 bg-black/55 px-2 py-1 text-[10px] text-cyan-100 outline-none focus:border-cyan-300/50"
+            className="w-72 rounded border border-white/10 bg-black/55 px-2 py-1 text-[10px] text-cyan-100 outline-none focus:border-cyan-300/50"
           />
-          <button onClick={saveUrl} className="rounded border border-emerald-300/35 bg-emerald-300/10 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-emerald-100">Save URL</button>
-          <button onClick={() => setReloadKey((current) => current + 1)} className="rounded border border-cyan-300/25 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-cyan-200">Reload</button>
-          <button onClick={() => normalizedUrl && window.open(normalizedUrl, '_blank', 'noopener,noreferrer')} className="rounded border border-white/15 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-white/60 hover:text-cyan-100">External</button>
-          <button onClick={() => setActiveModule('core')} className="rounded border border-red-400/40 bg-red-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-red-200">× Close App</button>
         </div>
-      </div>
-
-      <div className="absolute inset-x-4 bottom-4 top-20 overflow-hidden rounded border border-cyan-300/20 bg-black/45 shadow-[0_24px_60px_rgba(0,0,0,0.72)]">
-        <div className="flex h-10 items-center justify-between border-b border-cyan-300/15 bg-[#05070b]/90 px-3">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">{active.title}</div>
-            <div className="text-[8px] uppercase tracking-[0.14em] text-white/35">{active.description}</div>
-          </div>
-          <div className="text-[9px] uppercase tracking-[0.14em] text-white/35">ZBX Workspace Surface</div>
-        </div>
-
-        <div className="h-[calc(100%-40px)] overflow-hidden bg-[#020617]">
+        <div className="min-h-0 flex-1 overflow-hidden">
           {activePanel === 'web' ? (
             <ZabbixWebSurface key={reloadKey} url={normalizedUrl} blocksSelfEmbed={blocksSelfEmbed} />
           ) : (
@@ -103,7 +99,7 @@ export const ZbxWorkspace: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+    </OlympusWorkspaceShell>
   );
 };
 
@@ -135,7 +131,7 @@ function ZabbixPanel({ panel, url, onOpenWeb }: { panel: Panel; url: string; onO
           <div className="mt-4 text-[10px] uppercase tracking-[0.14em] text-white/35">Olympus Behavior</div>
           <ul className="mt-2 space-y-2 text-xs text-white/50">
             <li>Runs as a workspace like Intel Maps.</li>
-            <li>Toolbar stays at the top of the app.</li>
+            <li>Uses the shared Olympus workspace shell.</li>
             <li>Web GUI opens inside this app surface.</li>
             <li>Olympus self-embedding is blocked to prevent duplicate main interface nesting.</li>
           </ul>
