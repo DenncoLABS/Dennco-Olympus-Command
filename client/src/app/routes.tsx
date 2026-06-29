@@ -11,6 +11,9 @@ const IntelMapsApp = lazy(() =>
 const CadPage = lazy(() =>
   import('../modules/cad/CadPage').then((m) => ({ default: m.CadPage })),
 );
+const MonitorWorkspace = lazy(() =>
+  import('../modules/monitor/MonitorWorkspace').then((m) => ({ default: m.MonitorWorkspace })),
+);
 const ZbxWorkspace = lazy(() =>
   import('../modules/zbx/ZbxWorkspace').then((m) => ({ default: m.ZbxWorkspace })),
 );
@@ -24,7 +27,7 @@ const LabNodeWorkspace = lazy(() =>
 const PageLoader: React.FC = () => (
   <div className="absolute inset-0 flex items-center justify-center bg-intel-bg">
     <span className="text-intel-text-light/40 text-xs font-mono tracking-widest uppercase animate-pulse">
-      Loading…
+      Loading
     </span>
   </div>
 );
@@ -44,6 +47,14 @@ export const AppRoutes: React.FC = () => {
     return (
       <Suspense fallback={<PageLoader />}>
         <CadPage />
+      </Suspense>
+    );
+  }
+
+  if (activeModule === 'monitor') {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <MonitorWorkspace />
       </Suspense>
     );
   }
