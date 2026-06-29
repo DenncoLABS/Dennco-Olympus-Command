@@ -1,13 +1,9 @@
 import { openOlympusWorkspace } from './openOlympusWorkspace';
 import { publishDeskViewSync } from './publishDeskViewSync';
 import { getWorkspaceRoute } from './workspaceRoutes';
+import { isCoreDeskView, type CoreDeskView } from './coreDeskViews';
 
-export type CoreDeskView = 'core' | 'apps' | 'files' | 'architecture' | 'terminal' | 'ollama' | 'packages' | 'settings';
 export type DeskViewSetter = (view: CoreDeskView) => void;
-
-function isCoreDeskView(view: string): view is CoreDeskView {
-  return ['core', 'apps', 'files', 'architecture', 'terminal', 'ollama', 'packages', 'settings'].includes(view);
-}
 
 export function openDeskOrWorkspace(idOrViewOrLabel: string, setDeskView: DeskViewSetter, source = 'desk-native') {
   const route = getWorkspaceRoute(idOrViewOrLabel);
