@@ -12,7 +12,18 @@ type DeskViewSyncDetail = {
   openedAt?: number;
 };
 
+function clickCoreDockButton() {
+  const buttons = Array.from(document.querySelectorAll('.olympus-dock-widget button')) as HTMLButtonElement[];
+  const button = buttons.find((candidate) => candidate.getAttribute('title') === 'Core' || candidate.textContent?.trim() === 'Core');
+  if (!button) return false;
+
+  button.click();
+  return true;
+}
+
 function clickMatchingDeskButton(view: string) {
+  if (view === 'core') return clickCoreDockButton();
+
   const labelByView: Record<string, string> = {
     apps: 'Open Apps Browser',
     files: 'Open GNOME Files',
