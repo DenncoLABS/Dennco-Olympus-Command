@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useThemeStore } from '../../ui/theme/theme.store';
 import { OlympusWorkspaceShell, type OlympusWorkspaceAction } from '../../ui/layout/OlympusWorkspaceShell';
 
 type Stage = 'import' | 'edit' | 'test' | 'ready';
@@ -27,7 +26,6 @@ function writeJobs(jobs: LabJob[]) {
 }
 
 export const LabNodeWorkspace: React.FC = () => {
-  const setActiveModule = useThemeStore((state) => state.setActiveModule);
   const [jobs, setJobs] = useState<LabJob[]>(() => readJobs());
   const [activeStage, setActiveStage] = useState<Stage>('import');
 
@@ -54,7 +52,6 @@ export const LabNodeWorkspace: React.FC = () => {
     { id: 'test', label: 'Test', active: activeStage === 'test', onClick: () => setActiveStage('test') },
     { id: 'ready', label: 'Ready', tone: activeStage === 'ready' ? 'success' : 'default', active: activeStage === 'ready', onClick: () => setActiveStage('ready') },
     { id: 'clear', label: 'Clear Jobs', onClick: clearJobs },
-    { id: 'close', label: '× Close Lab', tone: 'danger', onClick: () => setActiveModule('core') },
   ];
 
   const visibleJobs = jobs.filter((job) => job.stage === activeStage);
@@ -65,6 +62,7 @@ export const LabNodeWorkspace: React.FC = () => {
       subtitle="Lab workflow for importing, changing, testing, and releasing systems."
       surfaceLabel="Lab Node Workspace Surface"
       actions={actions}
+      showDefaultClose
     >
       <div className="grid h-full grid-cols-[300px_1fr] overflow-hidden bg-[#020617]">
         <aside className="border-r border-cyan-300/10 bg-black/35 p-4">
