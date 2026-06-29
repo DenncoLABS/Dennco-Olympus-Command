@@ -1,4 +1,5 @@
 import React from 'react';
+import { closeOlympusWorkspace } from './openOlympusWorkspace';
 
 export type OlympusWorkspaceAction = {
   id: string;
@@ -13,6 +14,7 @@ export type OlympusWorkspaceShellProps = {
   subtitle: string;
   surfaceLabel?: string;
   actions?: OlympusWorkspaceAction[];
+  showDefaultClose?: boolean;
   children: React.ReactNode;
 };
 
@@ -28,8 +30,13 @@ export const OlympusWorkspaceShell: React.FC<OlympusWorkspaceShellProps> = ({
   subtitle,
   surfaceLabel = 'Workspace Surface',
   actions = [],
+  showDefaultClose = false,
   children,
 }) => {
+  const shellActions = showDefaultClose && !actions.some((action) => action.id === 'close')
+    ? [...actions, { id: 'close', label: 'Close App', tone: 'danger' as const, onClick: closeOlympusWorkspace }]
+    : actions;
+
   return (
     <div className="absolute inset-0 overflow-hidden bg-[#020617] font-mono text-white">
       <div className="absolute left-4 right-4 top-4 z-[20] flex flex-wrap items-center justify-between gap-3 rounded border border-cyan-300/20 bg-black/70 px-3 py-2 backdrop-blur">
@@ -37,9 +44,9 @@ export const OlympusWorkspaceShell: React.FC<OlympusWorkspaceShellProps> = ({
           <div className="text-[10px] uppercase tracking-[0.28em] text-cyan-300">{title}</div>
           <div className="text-[9px] uppercase tracking-[0.16em] text-white/40">{subtitle}</div>
         </div>
-        {actions.length ? (
+        {shellActions.length ? (
           <div className="flex flex-wrap items-center justify-end gap-2">
-            {actions.map((action) => (
+            {shellActions.map((action) => (
               <button
                 key={action.id}
                 onClick={action.onClick}
