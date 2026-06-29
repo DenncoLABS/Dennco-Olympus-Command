@@ -1,3 +1,4 @@
+import './deskWorkspaceEventSync';
 import { OLYMPUS_DESK_VIEW_SYNC_EVENT } from './workspaceEvents';
 
 const BOOT_KEY = '__olympusDeskWorkspaceViewBridgeReady';
