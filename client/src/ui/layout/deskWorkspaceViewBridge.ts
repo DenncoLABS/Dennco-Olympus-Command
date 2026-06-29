@@ -1,18 +1,12 @@
 import './deskWorkspaceEventSync';
 import { isCoreDeskView, type CoreDeskView } from './coreDeskViews';
-import { OLYMPUS_DESK_VIEW_SYNC_EVENT } from './workspaceEvents';
+import { OLYMPUS_DESK_VIEW_SYNC_EVENT, type OlympusDeskViewSyncDetail } from './workspaceEvents';
 
 const BOOT_KEY = '__olympusDeskWorkspaceViewBridgeReady';
 const VIEW_KEY = 'olympus.desk.v2.view';
 const HATCH_KEY = 'olympus.desk.v2.hatch';
 
 type ScopedWindow = Window & { [BOOT_KEY]?: boolean };
-
-type DeskViewSyncDetail = {
-  view?: string;
-  source?: string;
-  openedAt?: number;
-};
 
 const dockLabelByView: Partial<Record<CoreDeskView, string>> = {
   core: 'Core',
@@ -62,7 +56,7 @@ function openDeskHatch() {
   latch?.click();
 }
 
-function syncVisibleDeskView(detail: DeskViewSyncDetail) {
+function syncVisibleDeskView(detail: OlympusDeskViewSyncDetail) {
   const view = detail.view || localStorage.getItem(VIEW_KEY) || 'core';
   if (!isCoreDeskView(view)) return;
 
@@ -81,7 +75,7 @@ function syncVisibleDeskView(detail: DeskViewSyncDetail) {
 }
 
 function handleDeskViewSync(event: Event) {
-  const detail = (event as CustomEvent<DeskViewSyncDetail>).detail || {};
+  const detail = (event as CustomEvent<OlympusDeskViewSyncDetail>).detail || {};
   syncVisibleDeskView(detail);
 }
 
