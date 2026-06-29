@@ -12,9 +12,9 @@ type DeskViewSyncDetail = {
   openedAt?: number;
 };
 
-function clickCoreDockButton() {
+function clickDockButton(label: string) {
   const buttons = Array.from(document.querySelectorAll('.olympus-dock-widget button')) as HTMLButtonElement[];
-  const button = buttons.find((candidate) => candidate.getAttribute('title') === 'Core' || candidate.textContent?.trim() === 'Core');
+  const button = buttons.find((candidate) => candidate.getAttribute('title') === label || candidate.textContent?.trim() === label);
   if (!button) return false;
 
   button.click();
@@ -22,7 +22,13 @@ function clickCoreDockButton() {
 }
 
 function clickMatchingDeskButton(view: string) {
-  if (view === 'core') return clickCoreDockButton();
+  const dockLabelByView: Record<string, string> = {
+    core: 'Core',
+    packages: 'Packages',
+  };
+
+  const dockLabel = dockLabelByView[view];
+  if (dockLabel) return clickDockButton(dockLabel);
 
   const labelByView: Record<string, string> = {
     apps: 'Open Apps Browser',
