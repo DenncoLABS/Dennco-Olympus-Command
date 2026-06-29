@@ -1,32 +1,9 @@
-import { useThemeStore, type ActiveModule } from '../theme/theme.store';
+import { openOlympusWorkspace } from './openOlympusWorkspace';
+import { getWorkspaceRoute } from './workspaceRoutes';
 
 const BOOT_KEY = '__olympusWorkspaceLauncherPatchReady';
-const VIEW_KEY = 'olympus.desk.v2.view';
 
 type ScopedWindow = Window & { [BOOT_KEY]?: boolean };
-
-type WorkspaceRoute = {
-  label: string;
-  view: string;
-  module: ActiveModule;
-};
-
-const workspaceRoutes: WorkspaceRoute[] = [
-  { label: 'Zabbix', view: 'zbx', module: 'zbx' },
-  { label: 'Services', view: 'services', module: 'svc' },
-  { label: 'Lab Node', view: 'labnode', module: 'labnode' },
-  { label: 'CAD', view: 'cad', module: 'cad' },
-  { label: 'Admin', view: 'admin', module: 'admin' },
-  { label: 'Intel Maps', view: 'intelmaps', module: 'intelmaps' },
-  { label: 'Core', view: 'core', module: 'core' },
-  { label: 'Apps', view: 'apps', module: 'core' },
-  { label: 'Files', view: 'files', module: 'core' },
-  { label: 'Architecture', view: 'architecture', module: 'core' },
-  { label: 'Terminal', view: 'terminal', module: 'core' },
-  { label: 'Ollama', view: 'ollama', module: 'core' },
-  { label: 'Packages', view: 'packages', module: 'core' },
-  { label: 'Settings', view: 'settings', module: 'core' },
-];
 
 function textForElement(element: HTMLElement) {
   const button = element.closest('button') as HTMLElement | null;
@@ -35,8 +12,8 @@ function textForElement(element: HTMLElement) {
 }
 
 function routeForClick(element: HTMLElement) {
-  const text = textForElement(element).toLowerCase();
-  return workspaceRoutes.find((route) => text.includes(route.label.toLowerCase()));
+  const text = textForElement(element);
+  return getWorkspaceRoute(text);
 }
 
 function isWorkspaceLauncherClick(element: HTMLElement) {
@@ -48,12 +25,6 @@ function isWorkspaceLauncherClick(element: HTMLElement) {
   );
 }
 
-function openWorkspace(route: WorkspaceRoute) {
-  localStorage.setItem(VIEW_KEY, route.view);
-  useThemeStore.getState().setActiveModule(route.module);
-  window.dispatchEvent(new CustomEvent('olympus:workspace-launch', { detail: route }));
-}
-
 function handleClick(event: MouseEvent) {
   const target = event.target as HTMLElement | null;
   if (!target || !isWorkspaceLauncherClick(target)) return;
@@ -62,7 +33,7 @@ function handleClick(event: MouseEvent) {
 
   event.preventDefault();
   event.stopPropagation();
-  openWorkspace(route);
+  openOlympusWorkspace(route.id, { source: 'launcher-bridge' });
 }
 
 if (typeof window !== 'undefined') {
