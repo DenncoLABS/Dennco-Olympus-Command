@@ -31,6 +31,8 @@ function handleClick(event: MouseEvent) {
   const route = routeForClick(target);
   if (!route) return;
 
+  if (route.module === 'core') return;
+
   event.preventDefault();
   event.stopPropagation();
   openOlympusWorkspace(route.id, { source: 'launcher-bridge' });
