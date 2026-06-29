@@ -1,9 +1,9 @@
+import { isCoreDeskView } from './coreDeskViews';
+import { publishDeskViewSync } from './publishDeskViewSync';
 import { getWorkspaceRoute } from './workspaceRoutes';
 import {
-  OLYMPUS_DESK_VIEW_SYNC_EVENT,
   OLYMPUS_WORKSPACE_LAUNCH_EVENT,
   OLYMPUS_WORKSPACE_OPENED_EVENT,
-  type OlympusDeskViewSyncDetail,
   type OlympusWorkspaceEventDetail,
 } from './workspaceEvents';
 
@@ -30,18 +30,15 @@ function shouldSkipDuplicate(routeId: string, detail: OlympusWorkspaceEventDetai
 function syncCoreDeskView(detail: OlympusWorkspaceEventDetail) {
   const route = getWorkspaceRoute(detail.id || detail.view || '');
   if (!route || route.module !== 'core') return;
+  if (!isCoreDeskView(route.view)) return;
   if (shouldSkipDuplicate(route.id, detail)) return;
-
-  const syncDetail: OlympusDeskViewSyncDetail = {
-    id: route.id,
-    view: route.view,
-    source: detail.source || 'workspace-event-sync',
-    openedAt: detail.openedAt || Date.now(),
-  };
 
   localStorage.setItem(VIEW_KEY, route.view);
   localStorage.setItem(OPEN_HATCH_KEY, 'open');
-  window.dispatchEvent(new CustomEvent(OLYMPUS_DESK_VIEW_SYNC_EVENT, { detail: syncDetail }));
+  publishDeskViewSync(route.view, detail.source || 'workspace-event-sync', {
+    id: route.id,
+    openedAt: detail.openedAt,
+  });
 }
 
 function handleWorkspaceOpened(event: Event) {
