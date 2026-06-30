@@ -180,7 +180,7 @@ export const FlightsPage: React.FC = () => {
 
   const onClick = useCallback((event: import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] }) => {
     const features = event.features || [];
-    const aircraftFeature = features.find((item) => item.layer?.id === 'aircraft-points' && item.properties?.icao24) || features.find((item) => item.properties?.icao24);
+    const aircraftFeature = features.find((item) => item.layer?.id === 'aircraft-click-target' && item.properties?.icao24) || features.find((item) => item.layer?.id === 'aircraft-points' && item.properties?.icao24) || features.find((item) => item.properties?.icao24);
     if (aircraftFeature?.properties?.icao24) {
       setSelectedIcao24(String(aircraftFeature.properties.icao24));
       setInfrastructurePopup(null);
@@ -220,7 +220,7 @@ export const FlightsPage: React.FC = () => {
           initialViewState={{ latitude: 39.8283, longitude: -98.5795, zoom: 4 }}
           mapStyle={activeMapStyle}
           styleDiffing={false}
-          interactiveLayerIds={['aircraft-points', 'radar-region-points', 'airport-points', 'flight-airbase-points']}
+          interactiveLayerIds={['aircraft-click-target', 'aircraft-points', 'radar-region-points', 'airport-points', 'flight-airbase-points']}
           onClick={onClick}
           cursor={selectedIcao24 ? 'pointer' : 'crosshair'}
           onLoad={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)}
@@ -250,6 +250,16 @@ export const FlightsPage: React.FC = () => {
           )}
 
           <Source id="aircraft" type="geojson" data={pointsGeoJSON}>
+            <Layer
+              id="aircraft-click-target"
+              type="circle"
+              paint={{
+                'circle-radius': 18,
+                'circle-color': '#ffffff',
+                'circle-opacity': 0,
+                'circle-stroke-opacity': 0,
+              }}
+            />
             <Layer
               id="aircraft-halo"
               type="circle"
