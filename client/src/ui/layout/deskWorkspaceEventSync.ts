@@ -18,8 +18,8 @@ let lastSyncKey = '';
 let lastSyncAt = 0;
 
 function shouldSkipDuplicate(routeId: string, detail: OlympusWorkspaceEventDetail) {
-  const eventStamp = detail.openedAt || 0;
-  const key = `${routeId}:${eventStamp}:${detail.source || ''}`;
+  const eventStamp = detail.openedAt ?? 0;
+  const key = `${routeId}:${eventStamp}:${detail.source ?? ''}`;
   const now = Date.now();
   if (key === lastSyncKey && now - lastSyncAt < DEDUPE_MS) return true;
   lastSyncKey = key;
@@ -35,7 +35,7 @@ function syncCoreDeskView(detail: OlympusWorkspaceEventDetail) {
 
   localStorage.setItem(VIEW_KEY, route.view);
   localStorage.setItem(OPEN_HATCH_KEY, 'open');
-  publishDeskViewSync(route.view, detail.source || 'workspace-event-sync', {
+  publishDeskViewSync(route.view, detail.source ?? 'workspace-event-sync', {
     id: route.id,
     openedAt: detail.openedAt,
   });
