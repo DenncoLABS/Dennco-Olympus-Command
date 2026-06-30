@@ -5,6 +5,16 @@ function normalizeIcao(value: string | null | undefined): string {
   return (value || '').trim().toLowerCase();
 }
 
+function resolveSelectedFlight(states: AircraftState[], selectedIcao24: string | null | undefined): AircraftState | null {
+  const selectedKey = normalizeIcao(selectedIcao24);
+  if (!selectedKey) return null;
+
+  return states.find((state) => {
+    const keys = [state.icao24, state.registration, state.callsign].map(normalizeIcao).filter(Boolean);
+    return keys.includes(selectedKey);
+  }) || null;
+}
+
 export function useFlightSelection(states: AircraftState[] = []) {
   const selectedIcao24 = useFlightsStore((s) => s.selectedIcao24);
   const setSelectedIcao24 = useFlightsStore((s) => s.setSelectedIcao24);
@@ -20,8 +30,7 @@ export function useFlightSelection(states: AircraftState[] = []) {
     }
   };
 
-  const selectedKey = normalizeIcao(selectedIcao24);
-  const selectedFlight = selectedKey ? states.find((s) => normalizeIcao(s.icao24) === selectedKey) || null : null;
+  const selectedFlight = resolveSelectedFlight(states, selectedIcao24);
 
   return { selectedIcao24, setSelectedIcao24: handleSetSelectedIcao24, selectedFlight };
 }
