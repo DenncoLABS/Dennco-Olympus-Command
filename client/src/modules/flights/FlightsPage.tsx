@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Map, { Layer, NavigationControl, Popup, Source } from 'react-map-gl/maplibre';
-import { Target } from 'lucide-react';
 import { useFlightsSnapshot } from './hooks/useFlightsSnapshot';
 import { useFlightSelection } from './hooks/useFlightSelection';
 import { useFlightsStore } from './state/flights.store';
@@ -60,8 +59,8 @@ function valueOrDash(value: unknown, suffix = '') {
 
 function emergencyLabel(value: unknown) {
   const code = String(value || 'none').toLowerCase();
-  if (code === 'nordo') return 'NORDO "NO RADIO"';
-  if (code === '7500') return '7500 HIJACK / UNLAWFUL INTERFERENCE';
+  if (code === 'nordo') return 'NORDO NO RADIO';
+  if (code === '7500') return '7500 SPECIAL SECURITY CODE';
   if (code === '7600') return '7600 RADIO FAILURE';
   if (code === '7700') return '7700 GENERAL EMERGENCY';
   if (code === 'none' || code === '') return 'SIMULATED AIR EMERGENCY';
@@ -81,6 +80,12 @@ function infrastructureSubtitle(popup: InfrastructurePopup): string {
   if (popup.type === 'radar') return `${popup.item.scope} | ${popup.item.radiusNm} NM radar feed node`;
   if (popup.type === 'military') return `${popup.item.country || 'Military'} | Non-civilian installation`;
   return `${popup.item.code} | Airport`;
+}
+
+function findAircraftFeature(features: import('maplibre-gl').MapGeoJSONFeature[]) {
+  return features.find((item) => item.layer?.id === 'aircraft-click-target' && item.properties?.icao24)
+    || features.find((item) => item.layer?.id === 'aircraft-points' && item.properties?.icao24)
+    || features.find((item) => item.properties?.icao24);
 }
 
 export const FlightsPage: React.FC = () => {
@@ -180,7 +185,10 @@ export const FlightsPage: React.FC = () => {
 
   const onClick = useCallback((event: import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] }) => {
     const features = event.features || [];
-    const aircraftFeature = features.find((item) => item.layer?.id === 'aircraft-click-target' && item.properties?.icao24) || features.find((item) => item.layer?.id === 'aircraft-points' && item.properties?.icao24) || features.find((item) => item.properties?.icao24);
+    const point = event.point;
+    const box: [[number, number], [number, number]] = [[point.x - 24, point.y - 24], [point.x + 24, point.y + 24]];
+    const queriedAircraft = event.target.queryRenderedFeatures(box, { layers: ['aircraft-click-target', 'aircraft-points'] });
+    const aircraftFeature = findAircraftFeature([...queriedAircraft, ...features]);
     if (aircraftFeature?.properties?.icao24) {
       setSelectedIcao24(String(aircraftFeature.properties.icao24));
       setInfrastructurePopup(null);
@@ -208,7 +216,6 @@ export const FlightsPage: React.FC = () => {
       if (p && coords) setInfrastructurePopup({ type: 'military', item: { name: String(p.name ?? ''), description: String(p.description ?? ''), country: String(p.country ?? ''), lon: coords[0], lat: coords[1] } });
       return;
     }
-    setSelectedIcao24(null);
     setInfrastructurePopup(null);
   }, [airportGeoJSON.features, setSelectedIcao24, toggleRadarRegion]);
 
@@ -254,9 +261,9 @@ export const FlightsPage: React.FC = () => {
               id="aircraft-click-target"
               type="circle"
               paint={{
-                'circle-radius': 18,
-                'circle-color': '#ffffff',
-                'circle-opacity': 0,
+                'circle-radius': 22,
+                'circle-color': '#38bdf8',
+                'circle-opacity': 0.01,
                 'circle-stroke-opacity': 0,
               }}
             />
