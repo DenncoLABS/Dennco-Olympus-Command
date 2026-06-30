@@ -89,16 +89,36 @@ export const TileScreens: React.FC = () => {
                 Open apps from the Dock or Intel Maps bar. Windows will be staged on the active Tile screen.
               </div>
             </div>
-            <div className="absolute bottom-28 left-1/2 flex -translate-x-1/2 items-center gap-2 text-[9px] uppercase tracking-[0.16em] text-white/40">
-              {screens.map((dot) => (
-                <button
-                  key={dot}
-                  type="button"
-                  aria-label={`Go to Tile Screen ${dot + 1}`}
-                  onClick={() => goToTile(dot)}
-                  className={`h-1.5 rounded-full transition-all ${dot === activeIndex ? 'w-8 bg-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.8)]' : 'w-2 bg-white/20 hover:bg-cyan-300/50'}`}
-                />
-              ))}
+            <div className="absolute bottom-4 left-1/2 flex h-12 -translate-x-1/2 items-center gap-2 rounded border border-cyan-300/20 bg-black/65 px-2 text-[9px] uppercase tracking-[0.16em] text-white/40 shadow-[0_14px_36px_rgba(0,0,0,0.55)] backdrop-blur">
+              <button
+                type="button"
+                aria-label="Previous Tile Screen"
+                onClick={previousTile}
+                disabled={activeIndex === 0}
+                className="flex h-10 w-10 items-center justify-center rounded border border-white/10 text-cyan-200/75 transition hover:border-cyan-300/50 hover:text-cyan-100 disabled:opacity-25"
+              >
+                ‹
+              </button>
+              <div className="flex h-10 items-center gap-2 px-1">
+                {screens.map((dot) => (
+                  <button
+                    key={dot}
+                    type="button"
+                    aria-label={`Go to Tile Screen ${dot + 1}`}
+                    onClick={() => goToTile(dot)}
+                    className={`h-2 rounded-full transition-all ${dot === activeIndex ? 'w-8 bg-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.8)]' : 'w-2 bg-white/20 hover:bg-cyan-300/50'}`}
+                  />
+                ))}
+              </div>
+              <button
+                type="button"
+                aria-label="Next Tile Screen"
+                onClick={nextTile}
+                disabled={activeIndex === MAX_TILE_SCREENS - 1}
+                className="flex h-10 w-10 items-center justify-center rounded border border-white/10 text-cyan-200/75 transition hover:border-cyan-300/50 hover:text-cyan-100 disabled:opacity-25"
+              >
+                ›
+              </button>
             </div>
           </section>
         ))}
