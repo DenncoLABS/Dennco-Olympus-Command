@@ -21,7 +21,7 @@ export function openOlympusWorkspace(idOrViewOrLabel: string, options: OlympusWo
     view: route.view,
     module: route.module,
     group: route.group,
-    source: options.source || 'workspace-opener',
+    source: options.source ?? 'workspace-opener',
     openedAt: Date.now(),
   };
 
