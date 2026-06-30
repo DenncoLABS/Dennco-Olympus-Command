@@ -123,7 +123,7 @@ export const DraggableDockPanel: React.FC<DraggableDockPanelProps> = ({
 
   return (
     <div
-      className={`absolute z-30 flex flex-col font-mono text-sm tech-panel shadow-[0_18px_38px_rgba(0,0,0,0.82)] pointer-events-auto ${className}`}
+      className={`absolute z-[120] flex flex-col font-mono text-sm tech-panel shadow-[0_18px_38px_rgba(0,0,0,0.82)] pointer-events-auto ${className}`}
       style={{ left: `${position.x}px`, top: `${position.y}px`, width: `${width}px`, maxHeight: 'calc(100vh - 92px)' }}
     >
       <div
