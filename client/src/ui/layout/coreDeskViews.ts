@@ -2,7 +2,7 @@ export type CoreDeskView = 'core' | 'apps' | 'files' | 'architecture' | 'termina
 
 export const coreDeskViews: CoreDeskView[] = ['core', 'apps', 'files', 'architecture', 'terminal', 'ollama', 'packages', 'settings'];
 
-export function getCoreDeskViews() {
+export function getCoreDeskViews(): CoreDeskView[] {
   return [...coreDeskViews];
 }
 
