@@ -5,7 +5,7 @@ import { isCoreDeskView, type CoreDeskView } from './coreDeskViews';
 
 export type DeskViewSetter = (view: CoreDeskView) => void;
 
-export function openDeskOrWorkspace(idOrViewOrLabel: string, setDeskView: DeskViewSetter, source = 'desk-native') {
+export function openDeskOrWorkspace(idOrViewOrLabel: string, setDeskView: DeskViewSetter, source = 'desk-native'): boolean {
   const route = getWorkspaceRoute(idOrViewOrLabel);
   if (!route) return false;
 
