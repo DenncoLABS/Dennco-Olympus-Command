@@ -13,6 +13,7 @@ import '../ui/desk/deskScalabilityBootstrap';
 import '../modules/intelmaps/mapTileSessionCache';
 import '../modules/intelmaps/sessionRenderCache';
 import '../modules/flights/aircraftDatabaseWidgetPatch';
+import '../modules/flights/flightMapClickBridge';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
