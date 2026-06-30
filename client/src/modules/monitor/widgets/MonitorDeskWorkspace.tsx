@@ -95,6 +95,7 @@ function widgetIcon(id: MonitorDeskWidgetId) {
   switch (id) {
     case 'global-notifications':
       return <Bell size={18} />;
+    case 'aircraft-database':
     case 'flight-notifications':
       return <Plane size={18} />;
     case 'maritime-notifications':
