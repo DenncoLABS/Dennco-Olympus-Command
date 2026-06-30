@@ -1,0 +1,1 @@
+Core Desk view validation now reads through the shared getter path.
