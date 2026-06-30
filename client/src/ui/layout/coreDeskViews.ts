@@ -7,7 +7,7 @@ export function getCoreDeskViews(): CoreDeskView[] {
 }
 
 export function isCoreDeskView(view: string): view is CoreDeskView {
-  return coreDeskViews.includes(view as CoreDeskView);
+  return getCoreDeskViews().includes(view as CoreDeskView);
 }
 
 export function getCoreDeskViewOrFallback(view: string | null | undefined, fallback: CoreDeskView = 'core'): CoreDeskView {
