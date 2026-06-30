@@ -4,6 +4,8 @@ export type IntelMapResourceKind = 'instance' | 'layer' | 'asset' | 'feed' | 'te
 export type IntelMapAssetKind = 'geojson' | 'kml' | 'kmz' | 'image' | 'icon' | 'symbol' | 'raster' | 'vector' | 'document' | 'other';
 export type IntelMapFeedKind = 'rest' | 'geojson' | 'tiles' | 'websocket' | 'local-file' | 'manual';
 export type IntelMapLayerKind = 'base' | 'overlay' | 'feed' | 'asset' | 'drawn' | 'annotation';
+export type IntelMapShareRole = 'viewer' | 'operator' | 'editor' | 'owner';
+export type IntelMapShareScope = 'private' | 'workgroup' | 'link' | 'organization';
 
 export type IntelMapViewState = {
   longitude: number;
@@ -64,6 +66,35 @@ export type IntelMapTemplateDefinition = {
   assetIds: string[];
 };
 
+export type IntelMapSharePermission = {
+  role: IntelMapShareRole;
+  canView: boolean;
+  canEdit: boolean;
+  canOperate: boolean;
+  canShare: boolean;
+  canExport: boolean;
+};
+
+export type IntelMapShareTarget = {
+  id: string;
+  label: string;
+  scope: IntelMapShareScope;
+  role: IntelMapShareRole;
+  expiresAt?: number;
+};
+
+export type IntelMapShareState = {
+  enabled: boolean;
+  scope: IntelMapShareScope;
+  ownerId?: string;
+  shareId?: string;
+  shareUrl?: string;
+  createdAt?: number;
+  expiresAt?: number;
+  defaultPermission: IntelMapSharePermission;
+  targets: IntelMapShareTarget[];
+};
+
 export type IntelMapInstanceDefinition = {
   id: string;
   title: string;
@@ -76,6 +107,7 @@ export type IntelMapInstanceDefinition = {
   assetIds: string[];
   notes?: string;
   savedPath?: string;
+  share?: IntelMapShareState;
 };
 
 export type IntelMapResourceRegistry = {
