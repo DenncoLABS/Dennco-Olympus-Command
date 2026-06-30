@@ -11,7 +11,7 @@ export function publishDeskViewSync(view: CoreDeskView, source = 'desk-sync', op
     id: options.id,
     view,
     source,
-    openedAt: options.openedAt || Date.now(),
+    openedAt: options.openedAt ?? Date.now(),
   };
 
   window.dispatchEvent(new CustomEvent<OlympusDeskViewSyncDetail>(OLYMPUS_DESK_VIEW_SYNC_EVENT, { detail }));
