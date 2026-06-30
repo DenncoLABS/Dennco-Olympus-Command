@@ -17,7 +17,7 @@ type ScopedWindow = Window & { [BOOT_KEY]?: boolean };
 let lastSyncKey = '';
 let lastSyncAt = 0;
 
-function shouldSkipDuplicate(routeId: string, detail: OlympusWorkspaceEventDetail) {
+function shouldSkipDuplicate(routeId: string, detail: OlympusWorkspaceEventDetail): boolean {
   const eventStamp = detail.openedAt ?? 0;
   const key = `${routeId}:${eventStamp}:${detail.source ?? ''}`;
   const now = Date.now();
