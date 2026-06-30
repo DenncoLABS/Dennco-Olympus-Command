@@ -7,3 +7,10 @@
   overflow: visible !important;
   contain: none !important;
 }
+
+#olympus-aircraft-db-widget,
+#olympus-flight-widgets-folder {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
