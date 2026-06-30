@@ -6,6 +6,6 @@ export function isCoreDeskView(view: string): view is CoreDeskView {
   return coreDeskViews.includes(view as CoreDeskView);
 }
 
-export function getCoreDeskViewOrFallback(view: string | null | undefined, fallback: CoreDeskView = 'core') {
+export function getCoreDeskViewOrFallback(view: string | null | undefined, fallback: CoreDeskView = 'core'): CoreDeskView {
   return view && isCoreDeskView(view) ? view : fallback;
 }
