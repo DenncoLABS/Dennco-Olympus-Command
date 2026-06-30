@@ -54,7 +54,7 @@ function openDeskHatch(): void {
   latch?.click();
 }
 
-function syncVisibleDeskView(detail: OlympusDeskViewSyncDetail) {
+function syncVisibleDeskView(detail: OlympusDeskViewSyncDetail): void {
   const view = getCoreDeskViewOrFallback(detail.view ?? localStorage.getItem(VIEW_KEY));
 
   localStorage.setItem(VIEW_KEY, view);
@@ -71,7 +71,7 @@ function syncVisibleDeskView(detail: OlympusDeskViewSyncDetail) {
   }, 360);
 }
 
-function handleDeskViewSync(event: Event) {
+function handleDeskViewSync(event: Event): void {
   const detail = (event as CustomEvent<OlympusDeskViewSyncDetail>).detail ?? {};
   syncVisibleDeskView(detail);
 }
