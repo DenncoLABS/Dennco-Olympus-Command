@@ -4,6 +4,7 @@ export type MonitorDeskWidgetId =
   | 'gulf-watch'
   | 'ai-synthesis'
   | 'live-intel-feed'
+  | 'aircraft-database'
   | 'global-notifications'
   | 'flight-notifications'
   | 'maritime-notifications'
@@ -12,6 +13,7 @@ export type MonitorDeskWidgetId =
 
 export type DeskWidgetSource =
   | 'monitor-dashboard-v1'
+  | 'aircraft-database-v1'
   | 'global-notification-system-v1'
   | 'flight-notification-system-v1'
   | 'maritime-notification-system-v1'
@@ -67,6 +69,14 @@ export const monitorDeskWidgetManifest: MonitorDeskWidgetDefinition[] = [
     defaultDock: 'desk',
     savedFrom: 'monitor-dashboard-v1',
     futureUse: 'Convert into a movable live-feed widget with saved size and position.',
+  },
+  {
+    id: 'aircraft-database',
+    title: 'Aircraft Database',
+    description: 'Aircraft lookup and local aircraft-database status widget moved under Dock > Monitor > Widgets instead of living as its own Dock button.',
+    defaultDock: 'desk',
+    savedFrom: 'aircraft-database-v1',
+    futureUse: 'Keep aircraft database lookup with Monitor widgets and connect it to selected aircraft detail workflows.',
   },
   {
     id: 'global-notifications',
