@@ -1,0 +1,1 @@
+Core Desk view getter now returns the CoreDeskView array type explicitly.
