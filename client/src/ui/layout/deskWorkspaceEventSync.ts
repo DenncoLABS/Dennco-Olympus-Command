@@ -27,7 +27,7 @@ function shouldSkipDuplicate(routeId: string, detail: OlympusWorkspaceEventDetai
   return false;
 }
 
-function syncCoreDeskView(detail: OlympusWorkspaceEventDetail) {
+function syncCoreDeskView(detail: OlympusWorkspaceEventDetail): void {
   const route = getWorkspaceRoute(detail.id || detail.view || '');
   if (!route || route.module !== 'core') return;
   if (!isCoreDeskView(route.view)) return;
@@ -41,7 +41,7 @@ function syncCoreDeskView(detail: OlympusWorkspaceEventDetail) {
   });
 }
 
-function handleWorkspaceOpened(event: Event) {
+function handleWorkspaceOpened(event: Event): void {
   const detail = (event as CustomEvent<OlympusWorkspaceEventDetail>).detail;
   if (!detail) return;
   syncCoreDeskView(detail);
