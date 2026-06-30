@@ -17,6 +17,10 @@ type ScopedWindow = Window & { [BOOT_KEY]?: boolean };
 let lastSyncKey = '';
 let lastSyncAt = 0;
 
+function getWorkspaceEventRouteKey(detail: OlympusWorkspaceEventDetail): string {
+  return detail.id ?? detail.view ?? '';
+}
+
 function shouldSkipDuplicate(routeId: string, detail: OlympusWorkspaceEventDetail): boolean {
   const eventStamp = detail.openedAt ?? 0;
   const key = `${routeId}:${eventStamp}:${detail.source ?? ''}`;
@@ -28,7 +32,7 @@ function shouldSkipDuplicate(routeId: string, detail: OlympusWorkspaceEventDetai
 }
 
 function syncCoreDeskView(detail: OlympusWorkspaceEventDetail): void {
-  const route = getWorkspaceRoute(detail.id ?? detail.view ?? '');
+  const route = getWorkspaceRoute(getWorkspaceEventRouteKey(detail));
   if (!route || route.module !== 'core') return;
   if (!isCoreDeskView(route.view)) return;
   if (shouldSkipDuplicate(route.id, detail)) return;
