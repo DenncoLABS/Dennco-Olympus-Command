@@ -21,6 +21,10 @@ export interface AircraftState {
   operator?: string;
   typecode?: string;
   built?: string;
+  enrichmentSource?: string;
+  enrichmentConfidence?: number;
+  enrichmentUpdatedAt?: number;
+  needsEnrichment?: boolean;
 
   // Extended telemetry from ADSB.lol
   mach?: number;
