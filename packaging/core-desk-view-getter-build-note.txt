@@ -1,0 +1,1 @@
+Core Desk view getter added for shared route enumeration.
