@@ -31,9 +31,7 @@ function clickDockButton(label: string) {
   return true;
 }
 
-function clickMatchingDeskButton(view: string) {
-  if (!isCoreDeskView(view)) return false;
-
+function clickMatchingDeskButton(view: CoreDeskView) {
   const dockLabel = dockLabelByView[view];
   if (dockLabel) return clickDockButton(dockLabel);
 
