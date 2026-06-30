@@ -11,7 +11,7 @@ export type OlympusWorkspaceOpenOptions = {
   openDeskView?: boolean;
 };
 
-export function openOlympusWorkspace(idOrViewOrLabel: string, options: OlympusWorkspaceOpenOptions = {}) {
+export function openOlympusWorkspace(idOrViewOrLabel: string, options: OlympusWorkspaceOpenOptions = {}): boolean {
   const route = getWorkspaceRoute(idOrViewOrLabel);
   if (!route) return false;
 
