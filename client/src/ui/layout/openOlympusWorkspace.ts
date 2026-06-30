@@ -33,6 +33,6 @@ export function openOlympusWorkspace(idOrViewOrLabel: string, options: OlympusWo
   return true;
 }
 
-export function closeOlympusWorkspace() {
+export function closeOlympusWorkspace(): boolean {
   return openOlympusWorkspace('core', { source: 'workspace-close' });
 }
