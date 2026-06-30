@@ -28,7 +28,7 @@ function shouldSkipDuplicate(routeId: string, detail: OlympusWorkspaceEventDetai
 }
 
 function syncCoreDeskView(detail: OlympusWorkspaceEventDetail): void {
-  const route = getWorkspaceRoute(detail.id || detail.view || '');
+  const route = getWorkspaceRoute(detail.id ?? detail.view ?? '');
   if (!route || route.module !== 'core') return;
   if (!isCoreDeskView(route.view)) return;
   if (shouldSkipDuplicate(route.id, detail)) return;
