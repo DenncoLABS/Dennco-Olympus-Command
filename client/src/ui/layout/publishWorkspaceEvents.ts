@@ -5,6 +5,6 @@ import {
 } from './workspaceEvents';
 
 export function publishWorkspaceEvents(detail: OlympusWorkspaceEventDetail) {
-  window.dispatchEvent(new CustomEvent(OLYMPUS_WORKSPACE_OPENED_EVENT, { detail }));
-  window.dispatchEvent(new CustomEvent(OLYMPUS_WORKSPACE_LAUNCH_EVENT, { detail }));
+  window.dispatchEvent(new CustomEvent<OlympusWorkspaceEventDetail>(OLYMPUS_WORKSPACE_OPENED_EVENT, { detail }));
+  window.dispatchEvent(new CustomEvent<OlympusWorkspaceEventDetail>(OLYMPUS_WORKSPACE_LAUNCH_EVENT, { detail }));
 }
