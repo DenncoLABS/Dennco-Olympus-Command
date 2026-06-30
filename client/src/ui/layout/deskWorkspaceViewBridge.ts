@@ -1,5 +1,5 @@
 import './deskWorkspaceEventSync';
-import { isCoreDeskView, type CoreDeskView } from './coreDeskViews';
+import { getCoreDeskViewOrFallback, type CoreDeskView } from './coreDeskViews';
 import { OLYMPUS_DESK_VIEW_SYNC_EVENT, type OlympusDeskViewSyncDetail } from './workspaceEvents';
 
 const BOOT_KEY = '__olympusDeskWorkspaceViewBridgeReady';
@@ -55,8 +55,7 @@ function openDeskHatch() {
 }
 
 function syncVisibleDeskView(detail: OlympusDeskViewSyncDetail) {
-  const view = detail.view || localStorage.getItem(VIEW_KEY) || 'core';
-  if (!isCoreDeskView(view)) return;
+  const view = getCoreDeskViewOrFallback(detail.view || localStorage.getItem(VIEW_KEY));
 
   localStorage.setItem(VIEW_KEY, view);
   localStorage.setItem(HATCH_KEY, 'open');
