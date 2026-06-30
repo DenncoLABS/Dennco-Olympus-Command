@@ -22,7 +22,7 @@ const sideButtonLabelByView: Partial<Record<CoreDeskView, string>> = {
   settings: 'Desk Settings',
 };
 
-function clickDockButton(label: string) {
+function clickDockButton(label: string): boolean {
   const buttons = Array.from(document.querySelectorAll('.olympus-dock-widget button')) as HTMLButtonElement[];
   const button = buttons.find((candidate) => candidate.getAttribute('title') === label || candidate.textContent?.trim() === label);
   if (!button) return false;
@@ -31,7 +31,7 @@ function clickDockButton(label: string) {
   return true;
 }
 
-function clickMatchingDeskButton(view: CoreDeskView) {
+function clickMatchingDeskButton(view: CoreDeskView): boolean {
   const dockLabel = dockLabelByView[view];
   if (dockLabel) return clickDockButton(dockLabel);
 
@@ -46,7 +46,7 @@ function clickMatchingDeskButton(view: CoreDeskView) {
   return true;
 }
 
-function openDeskHatch() {
+function openDeskHatch(): void {
   const section = document.querySelector('.olympus-powered-desk') as HTMLElement | null;
   if (!section || section.dataset.deskLatched !== 'true') return;
 
