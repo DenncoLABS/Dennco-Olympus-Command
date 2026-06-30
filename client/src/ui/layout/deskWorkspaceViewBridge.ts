@@ -72,7 +72,7 @@ function syncVisibleDeskView(detail: OlympusDeskViewSyncDetail) {
 }
 
 function handleDeskViewSync(event: Event) {
-  const detail = (event as CustomEvent<OlympusDeskViewSyncDetail>).detail || {};
+  const detail = (event as CustomEvent<OlympusDeskViewSyncDetail>).detail ?? {};
   syncVisibleDeskView(detail);
 }
 
