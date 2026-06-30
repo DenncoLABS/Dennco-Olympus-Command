@@ -1,0 +1,3 @@
+Workspace sync cleanup marker.
+
+Batch updates completed for Desk and workspace event sync helper typing and fallback cleanup.
