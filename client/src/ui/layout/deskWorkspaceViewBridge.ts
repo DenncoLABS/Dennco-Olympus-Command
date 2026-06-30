@@ -55,7 +55,7 @@ function openDeskHatch() {
 }
 
 function syncVisibleDeskView(detail: OlympusDeskViewSyncDetail) {
-  const view = getCoreDeskViewOrFallback(detail.view || localStorage.getItem(VIEW_KEY));
+  const view = getCoreDeskViewOrFallback(detail.view ?? localStorage.getItem(VIEW_KEY));
 
   localStorage.setItem(VIEW_KEY, view);
   localStorage.setItem(HATCH_KEY, 'open');
