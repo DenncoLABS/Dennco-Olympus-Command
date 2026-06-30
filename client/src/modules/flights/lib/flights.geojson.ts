@@ -27,6 +27,7 @@ export function statesToPointGeoJSON(states: AircraftState[]) {
           onGround: state.onGround,
           emergency: state.emergency || 'none',
           isEmergency: Boolean(state.emergency && state.emergency !== 'none'),
+          hitTarget: true,
         },
       })),
   };
