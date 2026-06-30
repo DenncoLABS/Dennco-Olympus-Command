@@ -6,7 +6,7 @@ export type DeskViewSyncPublishOptions = {
   openedAt?: number;
 };
 
-export function publishDeskViewSync(view: CoreDeskView, source = 'desk-sync', options: DeskViewSyncPublishOptions = {}) {
+export function publishDeskViewSync(view: CoreDeskView, source = 'desk-sync', options: DeskViewSyncPublishOptions = {}): OlympusDeskViewSyncDetail {
   const detail: OlympusDeskViewSyncDetail = {
     id: options.id,
     view,
