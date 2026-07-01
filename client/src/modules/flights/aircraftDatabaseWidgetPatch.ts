@@ -1,15 +1,22 @@
-const BOOT_KEY = '__olympusAircraftDatabaseWidgetReady';
-const WIDGET_ID = 'olympus-aircraft-db-widget';
-const FOLDER_ID = 'olympus-flight-widgets-folder';
-const CLOSED_KEY = 'olympus.flight.widgets.aircraftDb.closed';
-const POS_KEY = 'olympus.flight.widgets.aircraftDb.position';
+const BOOT_KEY = '__olympusFlightDataWorkspaceReady';
+const WIDGET_ID = 'olympus-flight-data-widget';
+const FOLDER_ID = 'olympus-flight-data-launcher';
+const CLOSED_KEY = 'olympus.flightData.closed';
+const POS_KEY = 'olympus.flightData.position';
 
 type ScopedWindow = Window & { [BOOT_KEY]?: boolean };
 type AircraftRecord = { icao24: string; registration?: string; manufacturerName?: string; model?: string; operator?: string; typecode?: string; built?: string };
 
-function flightMapActive() {
+function flightWorkspaceActive() {
   const text = document.body?.innerText || '';
-  return text.includes('Flight Map') || text.includes('FLIGHT') || text.includes('Flight Notifications') || text.includes('TARGET // FLIGHT');
+  return (
+    text.includes('Flight Map') ||
+    text.includes('FLIGHT') ||
+    text.includes('Flight Notifications') ||
+    text.includes('TARGET // FLIGHT') ||
+    text.includes('Intel Maps Workspace') ||
+    text.includes('MULTI-PURPOSE EARTH WORKSPACE')
+  );
 }
 
 function readPosition() {
@@ -48,8 +55,8 @@ function makeButton(label: string) {
 }
 
 async function fetchAircraft(query: string) {
-  const response = await fetch(`/api/flights/aircraft-db?q=${encodeURIComponent(query)}&limit=60`);
-  if (!response.ok) throw new Error(`Aircraft database failed: ${response.status}`);
+  const response = await fetch(`/api/flights/aircraft-db?q=${encodeURIComponent(query)}&limit=80`);
+  if (!response.ok) throw new Error(`Flight data failed: ${response.status}`);
   return response.json() as Promise<{ info?: { records?: number; source?: string; loaded?: boolean }; results?: AircraftRecord[] }>;
 }
 
@@ -67,12 +74,12 @@ function renderResults(container: HTMLElement, results: AircraftRecord[]) {
   }
 }
 
-function ensureFolder() {
-  let folder = document.getElementById(FOLDER_ID) as HTMLDivElement | null;
-  if (folder) return folder;
-  folder = document.createElement('div');
-  folder.id = FOLDER_ID;
-  styleElement(folder, {
+function ensureLauncher() {
+  let launcher = document.getElementById(FOLDER_ID) as HTMLDivElement | null;
+  if (launcher) return launcher;
+  launcher = document.createElement('div');
+  launcher.id = FOLDER_ID;
+  styleElement(launcher, {
     position: 'fixed',
     left: '18px',
     bottom: '74px',
@@ -87,17 +94,17 @@ function ensureFolder() {
     boxShadow: '0 18px 38px rgba(0,0,0,.72)',
   });
   const label = document.createElement('span');
-  label.textContent = 'Widgets';
+  label.textContent = 'Flight Tools';
   styleElement(label, { color: 'rgba(255,255,255,.45)', fontSize: '10px', letterSpacing: '.18em', textTransform: 'uppercase' });
-  const open = makeButton('Aircraft DB');
+  const open = makeButton('Flight Data');
   open.onclick = () => {
     localStorage.setItem(CLOSED_KEY, 'false');
     ensureWidget();
     updateVisibility();
   };
-  folder.append(label, open);
-  document.body.appendChild(folder);
-  return folder;
+  launcher.append(label, open);
+  document.body.appendChild(launcher);
+  return launcher;
 }
 
 function ensureWidget() {
@@ -110,7 +117,7 @@ function ensureWidget() {
     position: 'fixed',
     left: `${pos.x}px`,
     top: `${pos.y}px`,
-    width: '420px',
+    width: '460px',
     maxHeight: 'calc(100vh - 130px)',
     zIndex: '9999',
     display: 'flex',
@@ -125,7 +132,7 @@ function ensureWidget() {
 
   const header = document.createElement('div');
   styleElement(header, { cursor: 'move', padding: '10px 12px', borderBottom: '1px solid rgba(34,211,238,.2)', background: 'rgba(0,0,0,.38)' });
-  header.innerHTML = '<div style="display:flex;justify-content:space-between;gap:10px"><div><div style="font-size:10px;color:#67e8f9;letter-spacing:.22em;text-transform:uppercase;font-weight:bold">Aircraft Database</div><div style="margin-top:3px;font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.14em;text-transform:uppercase">Browse Olympus aircraft data folder</div></div></div>';
+  header.innerHTML = '<div style="display:flex;justify-content:space-between;gap:10px"><div><div style="font-size:10px;color:#67e8f9;letter-spacing:.22em;text-transform:uppercase;font-weight:bold">Flight Data</div><div style="margin-top:3px;font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.14em;text-transform:uppercase">Aircraft database · ICAO · registration · model · operator</div></div></div>';
   const close = document.createElement('button');
   close.textContent = '[X]';
   styleElement(close, { position: 'absolute', right: '10px', top: '10px', background: 'transparent', border: '0', color: '#67e8f9', cursor: 'pointer', fontFamily: 'monospace' });
@@ -170,10 +177,10 @@ function ensureWidget() {
   styleElement(results, { border: '1px solid rgba(255,255,255,.08)', background: 'rgba(0,0,0,.28)', maxHeight: '440px', overflow: 'auto', fontSize: '11px' });
 
   async function runSearch() {
-    results.textContent = 'Loading aircraft database...';
+    results.textContent = 'Loading flight data...';
     try {
       const data = await fetchAircraft(input.value.trim());
-      info.textContent = `${data.info?.records || 0} records · ${data.info?.source || 'aircraft data folder'}`;
+      info.textContent = `${data.info?.records || 0} records · ${data.info?.source || 'aircraft data folder'}${data.info?.loaded === false ? ' · loading' : ''}`;
       renderResults(results, data.results || []);
     } catch (error) {
       results.textContent = String(error);
@@ -190,11 +197,11 @@ function ensureWidget() {
 }
 
 function updateVisibility() {
-  const active = flightMapActive();
+  const active = flightWorkspaceActive();
   const closed = localStorage.getItem(CLOSED_KEY) === 'true';
-  const folder = ensureFolder();
+  const launcher = ensureLauncher();
   const widget = document.getElementById(WIDGET_ID) || ensureWidget();
-  folder.style.display = active && closed ? 'flex' : 'none';
+  launcher.style.display = active && closed ? 'flex' : 'none';
   widget.style.display = active && !closed ? 'flex' : 'none';
 }
 
