@@ -16,6 +16,9 @@ import { useGlobalNotificationsStore } from '../../notifications/globalNotificat
 import { SATELLITE_STYLE, LIGHT_STYLE, DARK_STYLE, STREET_STYLE } from '../../lib/mapStyles';
 import { airportPinsGeoJSON, RADAR_REGIONS, type AirportPin, type RadarRegionPin } from './data/aviationInfrastructure';
 
+const AIRCRAFT_HIT_RADIUS_PX = 12;
+const AIRCRAFT_LAYERS = ['aircraft-points', 'aircraft-click-target'];
+
 const aircraftPath =
   'M9.123 30.464l-1.33-6.268-6.318-1.397 1.291-2.475 5.785-0.316c0.297-0.386 0.96-1.234 1.374-1.648l5.271-5.271-10.989-5.388 2.782-2.782 13.932 2.444 4.933-4.933c0.585-0.585 1.496-0.894 2.634-0.894 0.776 0 1.395 0.143 1.421 0.149l0.3 0.070 0.089 0.295c0.469 1.55 0.187 3.298-0.67 4.155l-4.956 4.956 2.434 13.875-2.782 2.782-5.367-10.945-4.923 4.924c-0.518 0.517-1.623 1.536-2.033 1.912l-0.431 5.425-2.449 1.329z';
 
@@ -70,6 +73,8 @@ function emergencyLabel(value: unknown) {
 type MilitaryAirbasePin = { name: string; description: string; country: string; lat: number; lon: number };
 type InfrastructurePopup = { type: 'airport'; item: AirportPin } | { type: 'radar'; item: RadarRegionPin } | { type: 'military'; item: MilitaryAirbasePin };
 type FlightAlert = { id: string; timestamp: number; title: string; details: string; icao24: string; callsign?: string | null; emergency: string; reportedBy: string; activeDistress: boolean };
+type MapFeature = import('maplibre-gl').MapGeoJSONFeature;
+type MapPoint = { x: number; y: number };
 
 function infrastructureTitle(popup: InfrastructurePopup): string {
   if (popup.type === 'radar') return popup.item.label;
@@ -82,10 +87,40 @@ function infrastructureSubtitle(popup: InfrastructurePopup): string {
   return `${popup.item.code} | Airport`;
 }
 
-function findAircraftFeature(features: import('maplibre-gl').MapGeoJSONFeature[]) {
-  return features.find((item) => item.layer?.id === 'aircraft-click-target' && item.properties?.icao24)
-    || features.find((item) => item.layer?.id === 'aircraft-points' && item.properties?.icao24)
-    || features.find((item) => item.properties?.icao24);
+function aircraftCoordinates(feature: MapFeature): [number, number] | null {
+  if (feature.geometry?.type !== 'Point') return null;
+  const coordinates = (feature.geometry as GeoJSON.Point).coordinates;
+  if (coordinates.length < 2) return null;
+  const [lon, lat] = coordinates;
+  if (!Number.isFinite(lon) || !Number.isFinite(lat)) return null;
+  return [lon, lat];
+}
+
+function nearestAircraftFeature(map: import('maplibre-gl').Map, point: MapPoint, eventFeatures: MapFeature[]) {
+  const box: [[number, number], [number, number]] = [
+    [point.x - AIRCRAFT_HIT_RADIUS_PX, point.y - AIRCRAFT_HIT_RADIUS_PX],
+    [point.x + AIRCRAFT_HIT_RADIUS_PX, point.y + AIRCRAFT_HIT_RADIUS_PX],
+  ];
+  const queriedAircraft = map.queryRenderedFeatures(box, { layers: AIRCRAFT_LAYERS });
+  const unique = new Map<string, MapFeature>();
+  for (const feature of [...queriedAircraft, ...eventFeatures]) {
+    const icao24 = feature.properties?.icao24;
+    if (!icao24 || !aircraftCoordinates(feature)) continue;
+    unique.set(`${feature.layer?.id || 'feature'}-${String(icao24)}`, feature);
+  }
+
+  return [...unique.values()]
+    .map((feature) => {
+      const coordinates = aircraftCoordinates(feature);
+      if (!coordinates) return null;
+      const [lon, lat] = coordinates;
+      const projected = map.project({ lng: lon, lat });
+      const dx = projected.x - point.x;
+      const dy = projected.y - point.y;
+      return { feature, distance: Math.sqrt(dx * dx + dy * dy) };
+    })
+    .filter((hit): hit is { feature: MapFeature; distance: number } => Boolean(hit))
+    .sort((a, b) => a.distance - b.distance)[0]?.feature || null;
 }
 
 export const FlightsPage: React.FC = () => {
@@ -101,6 +136,8 @@ export const FlightsPage: React.FC = () => {
   const [flightAlerts, setFlightAlerts] = useState<FlightAlert[]>([]);
   const [simulatedEmergencyIcaos, setSimulatedEmergencyIcaos] = useState<Set<string>>(new Set());
   const seenEmergencyAlerts = useRef<Set<string>>(new Set());
+  const mapRef = useRef<import('maplibre-gl').Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
 
   const filteredStates = useMemo(
     () => states.filter((state) => {
@@ -137,6 +174,14 @@ export const FlightsPage: React.FC = () => {
       pushAlert({ id: key, timestamp: Date.now(), title: 'Air Emergency Reported', details: `${emergency} detected for ${state.callsign || state.registration || state.icao24}.`, icao24: state.icao24, callsign: state.callsign, emergency, reportedBy: simulatedEmergencyIcaos.has(state.icao24) ? 'Olympus / Local Admin user' : 'Olympus / Live feed', activeDistress: true });
     });
   }, [displayedStates, pushAlert, simulatedEmergencyIcaos]);
+
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return undefined;
+    const resizeObserver = new ResizeObserver(() => mapRef.current?.resize());
+    resizeObserver.observe(container);
+    return () => resizeObserver.disconnect();
+  }, []);
 
   const airborneCount = useMemo(() => displayedStates.filter((state) => !state.onGround).length, [displayedStates]);
   const onGroundCount = useMemo(() => displayedStates.filter((state) => state.onGround).length, [displayedStates]);
@@ -183,12 +228,10 @@ export const FlightsPage: React.FC = () => {
     pushGlobalNotification({ id: `global-${standDown.id}`, domain: 'flight', severity: 'warning', title: standDown.title, details: standDown.details, entityId: icao24, reportedBy: standDown.reportedBy, timestamp: standDown.timestamp });
   }, [pushGlobalNotification, selectedDisplayFlight]);
 
-  const onClick = useCallback((event: import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] }) => {
+  const onClick = useCallback((event: import('maplibre-gl').MapMouseEvent & { features?: MapFeature[] }) => {
     const features = event.features || [];
     const point = event.point;
-    const box: [[number, number], [number, number]] = [[point.x - 24, point.y - 24], [point.x + 24, point.y + 24]];
-    const queriedAircraft = event.target.queryRenderedFeatures(box, { layers: ['aircraft-click-target', 'aircraft-points'] });
-    const aircraftFeature = findAircraftFeature([...queriedAircraft, ...features]);
+    const aircraftFeature = nearestAircraftFeature(event.target, point, features);
     if (aircraftFeature?.properties?.icao24) {
       setSelectedIcao24(String(aircraftFeature.properties.icao24));
       setInfrastructurePopup(null);
@@ -222,7 +265,7 @@ export const FlightsPage: React.FC = () => {
   return (
     <div className="absolute inset-0 bg-intel-bg overflow-hidden flex flex-col">
       <FlightsToolbar totalCount={states.length} filteredCount={displayedStates.length} airborneCount={airborneCount} onGroundCount={onGroundCount} emergencyCount={emergencyCount} />
-      <div className="relative flex-1 min-h-0">
+      <div ref={mapContainerRef} className="relative flex-1 min-h-0">
         <Map
           initialViewState={{ latitude: 39.8283, longitude: -98.5795, zoom: 4 }}
           mapStyle={activeMapStyle}
@@ -230,8 +273,8 @@ export const FlightsPage: React.FC = () => {
           interactiveLayerIds={['aircraft-click-target', 'aircraft-points', 'radar-region-points', 'airport-points', 'flight-airbase-points']}
           onClick={onClick}
           cursor={selectedIcao24 ? 'pointer' : 'crosshair'}
-          onLoad={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)}
-          onStyleData={(event: { target: import('maplibre-gl').Map }) => addPlaneImages(event.target)}
+          onLoad={(event: { target: import('maplibre-gl').Map }) => { mapRef.current = event.target; addPlaneImages(event.target); event.target.resize(); }}
+          onStyleData={(event: { target: import('maplibre-gl').Map }) => { mapRef.current = event.target; addPlaneImages(event.target); event.target.resize(); }}
           onStyleImageMissing={(event: { id: string; target: import('maplibre-gl').Map }) => { if (event.id.startsWith('olympus-plane')) addPlaneImages(event.target); }}
           projection={mapProjection === 'globe' ? ({ type: 'globe' } as import('maplibre-gl').ProjectionSpecification) : ({ type: 'mercator' } as import('maplibre-gl').ProjectionSpecification)}
           style={{ width: '100%', height: '100%' }}
@@ -261,7 +304,7 @@ export const FlightsPage: React.FC = () => {
               id="aircraft-click-target"
               type="circle"
               paint={{
-                'circle-radius': 22,
+                'circle-radius': AIRCRAFT_HIT_RADIUS_PX,
                 'circle-color': '#38bdf8',
                 'circle-opacity': 0.01,
                 'circle-stroke-opacity': 0,
@@ -364,7 +407,29 @@ function FlightTargetPanel({ flight, onClose, onReport, onConfirm, onRadio, onSt
 
 function FlightAlertLog({ alerts, onClear, onSelect }: { alerts: FlightAlert[]; onClear: () => void; onSelect: (alert: FlightAlert) => void }) {
   const active = alerts.find((alert) => alert.activeDistress);
-  return <div className="absolute top-[19rem] right-16 z-[70] w-[360px] font-mono pointer-events-auto">{active && <button onClick={() => onSelect(active)} className="mb-3 block w-full text-left animate-pulse border-2 border-red-500 bg-red-950/45 p-3 text-red-100 shadow-[0_0_24px_rgba(239,68,68,0.55)]"><div className="flex items-center justify-between gap-3"><div className="text-[10px] uppercase tracking-[0.22em] text-red-200">⚠ {active.title}</div><div className="text-[9px] text-red-200/65">{new Date(active.timestamp).toLocaleTimeString()}</div></div><div className="mt-2 text-sm font-bold uppercase tracking-[0.08em]">{active.emergency}</div><div className="mt-1 text-xs text-red-100/75">{active.details}</div></button>}<div className="border border-cyan-400/25 bg-black/60 backdrop-blur shadow-[0_0_20px_rgba(0,229,255,0.08)]"><div className="flex items-center justify-between border-b border-white/10 px-3 py-2"><div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">Flight Notifications</div><button onClick={onClear} className="text-[9px] uppercase tracking-[0.16em] text-white/35 hover:text-white">Clear</button></div><div className="max-h-56 overflow-auto">{alerts.length === 0 ? <div className="px-3 py-3 text-[11px] text-white/35">No flight notifications yet.</div> : alerts.map((alert) => <button key={alert.id} onClick={() => onSelect(alert)} disabled={!alert.activeDistress} className={`block w-full border-b border-white/8 px-3 py-2 text-left text-[11px] ${alert.activeDistress ? 'text-white/65 hover:bg-cyan-400/10' : 'text-white/35 cursor-default'}`}><div className="flex items-center justify-between gap-2"><span className={alert.activeDistress ? 'text-red-200 uppercase tracking-[0.14em]' : 'text-white/45 uppercase tracking-[0.14em]'}>{alert.title}</span><span className="text-white/35">{new Date(alert.timestamp).toLocaleString()}</span></div><div className="mt-1 text-white/80">{alert.details}</div><div className="mt-1 text-white/35">ICAO {alert.icao24} | Reported by {alert.reportedBy}</div></button>)}</div></div></div>;
+  return (
+    <div className="absolute top-[19rem] right-16 z-[70] w-[360px] font-mono pointer-events-auto">
+      {active && (
+        <button onClick={() => onSelect(active)} className="mb-3 block w-full text-left animate-pulse border-2 border-red-500 bg-red-950/45 p-3 text-red-100 shadow-[0_0_24px_rgba(239,68,68,0.55)]">
+          <div className="flex items-center justify-between gap-3"><div className="text-[10px] uppercase tracking-[0.22em] text-red-200">⚠ {active.title}</div><div className="text-[9px] text-red-200/65">{new Date(active.timestamp).toLocaleTimeString()}</div></div>
+          <div className="mt-2 text-sm font-bold uppercase tracking-[0.08em]">{active.emergency}</div>
+          <div className="mt-1 text-xs text-red-100/75">{active.details}</div>
+        </button>
+      )}
+      <div className="border border-cyan-400/25 bg-black/60 backdrop-blur shadow-[0_0_20px_rgba(0,229,255,0.08)]">
+        <div className="flex items-center justify-between border-b border-white/10 px-3 py-2"><div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">Flight Notifications</div><button onClick={onClear} className="text-[9px] uppercase tracking-[0.16em] text-white/35 hover:text-white">Clear</button></div>
+        <div className="max-h-56 overflow-auto">
+          {alerts.length === 0 ? <div className="px-3 py-3 text-[11px] text-white/35">No flight notifications yet.</div> : alerts.map((alert) => (
+            <button key={alert.id} onClick={() => onSelect(alert)} disabled={!alert.activeDistress} className={`block w-full border-b border-white/8 px-3 py-2 text-left text-[11px] ${alert.activeDistress ? 'text-white/65 hover:bg-cyan-400/10' : 'text-white/35 cursor-default'}`}>
+              <div className="flex items-center justify-between gap-2"><span className={alert.activeDistress ? 'text-red-200 uppercase tracking-[0.14em]' : 'text-white/45 uppercase tracking-[0.14em]'}>{alert.title}</span><span className="text-white/35">{new Date(alert.timestamp).toLocaleString()}</span></div>
+              <div className="mt-1 text-white/80">{alert.details}</div>
+              <div className="mt-1 text-white/35">ICAO {alert.icao24} | Reported by {alert.reportedBy}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function Detail({ label, value }: { label: string; value: unknown }) {
