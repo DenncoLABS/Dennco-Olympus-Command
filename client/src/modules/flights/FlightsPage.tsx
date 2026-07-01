@@ -148,6 +148,10 @@ function nearestAircraftFeature(map: import('maplibre-gl').Map, point: MapPoint,
     .sort((a, b) => a.distance - b.distance || Number(b.visibleSymbol) - Number(a.visibleSymbol))[0]?.feature || null;
 }
 
+function featureInLayer(features: MapFeature[], layerId: string) {
+  return features.find((feature) => feature.layer?.id === layerId) || null;
+}
+
 export const FlightsPage: React.FC = () => {
   const { mapProjection, mapLayer } = useThemeStore();
   const pushGlobalNotification = useGlobalNotificationsStore((state) => state.pushNotification);
@@ -263,27 +267,31 @@ export const FlightsPage: React.FC = () => {
       return;
     }
 
-    const feature = features[0];
-    const layerId = feature?.layer?.id;
-    if (layerId === 'radar-region-points' && feature?.properties?.id) {
-      const region = RADAR_REGIONS.find((item) => item.id === String(feature.properties?.id));
+    const radarFeature = featureInLayer(features, 'radar-region-points');
+    if (radarFeature?.properties?.id) {
+      const region = RADAR_REGIONS.find((item) => item.id === String(radarFeature.properties?.id));
       if (region) {
         toggleRadarRegion(region.id);
         setInfrastructurePopup({ type: 'radar', item: region });
       }
       return;
     }
-    if (layerId === 'airport-points' && feature?.properties?.id) {
-      const item = airportGeoJSON.features.find((pin) => pin.properties.id === String(feature.properties?.id));
+
+    const airportFeature = featureInLayer(features, 'airport-points');
+    if (airportFeature?.properties?.id) {
+      const item = airportGeoJSON.features.find((pin) => pin.properties.id === String(airportFeature.properties?.id));
       if (item) setInfrastructurePopup({ type: 'airport', item: item.properties as AirportPin });
       return;
     }
-    if (layerId === 'flight-airbase-points') {
-      const p = feature?.properties as Record<string, unknown> | undefined;
-      const coords = feature?.geometry?.type === 'Point' ? (feature.geometry as GeoJSON.Point).coordinates : null;
-      if (p && coords) setInfrastructurePopup({ type: 'military', item: { name: String(p.name ?? ''), description: String(p.description ?? ''), country: String(p.country ?? ''), lon: coords[0], lat: coords[1] } });
+
+    const airbaseFeature = featureInLayer(features, 'flight-airbase-points');
+    const airbaseProps = airbaseFeature?.properties as Record<string, unknown> | undefined;
+    const airbaseCoords = airbaseFeature?.geometry?.type === 'Point' ? (airbaseFeature.geometry as GeoJSON.Point).coordinates : null;
+    if (airbaseProps && airbaseCoords) {
+      setInfrastructurePopup({ type: 'military', item: { name: String(airbaseProps.name ?? ''), description: String(airbaseProps.description ?? ''), country: String(airbaseProps.country ?? ''), lon: airbaseCoords[0], lat: airbaseCoords[1] } });
       return;
     }
+
     setInfrastructurePopup(null);
   }, [airportGeoJSON.features, setSelectedIcao24, toggleRadarRegion]);
 
