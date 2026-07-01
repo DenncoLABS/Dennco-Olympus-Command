@@ -14,10 +14,18 @@ import { useThemeStore } from '../../ui/theme/theme.store';
 import { DraggableDockPanel } from '../../ui/layout/DraggableDockPanel';
 import { useGlobalNotificationsStore } from '../../notifications/globalNotifications.store';
 import { SATELLITE_STYLE, LIGHT_STYLE, DARK_STYLE, STREET_STYLE } from '../../lib/mapStyles';
-import { airportPinsGeoJSON, RADAR_REGIONS, type AirportPin, type RadarRegionPin } from './data/aviationInfrastructure';
+import {
+  airportPinsGeoJSON,
+  radarPinsGeoJSON,
+  activeRadarZonesGeoJSON,
+  RADAR_REGIONS,
+  type AirportPin,
+  type RadarRegionPin,
+} from './data/aviationInfrastructure';
 
 const AIRCRAFT_MIN_HIT_RADIUS_PX = 5;
 const AIRCRAFT_MAX_HIT_RADIUS_PX = 12;
+const RADAR_HIT_RADIUS_PX = 18;
 const AIRCRAFT_POINT_LAYERS = ['aircraft-points'];
 const AIRCRAFT_CLICK_LAYERS = ['aircraft-click-target'];
 
@@ -106,7 +114,7 @@ function aircraftCoordinates(feature: MapFeature): [number, number] | null {
   return [lon, lat];
 }
 
-function aircraftQueryBox(point: MapPoint, radius: number): [[number, number], [number, number]] {
+function queryBox(point: MapPoint, radius: number): [[number, number], [number, number]] {
   return [
     [point.x - radius, point.y - radius],
     [point.x + radius, point.y + radius],
@@ -131,8 +139,8 @@ function scoreAircraftFeature(map: import('maplibre-gl').Map, point: MapPoint, f
 
 function nearestAircraftFeature(map: import('maplibre-gl').Map, point: MapPoint, eventFeatures: MapFeature[]) {
   const radius = aircraftHitRadiusForZoom(map.getZoom());
-  const pointHits = map.queryRenderedFeatures(aircraftQueryBox(point, radius), { layers: AIRCRAFT_POINT_LAYERS });
-  const clickHits = map.queryRenderedFeatures(aircraftQueryBox(point, radius), { layers: AIRCRAFT_CLICK_LAYERS });
+  const pointHits = map.queryRenderedFeatures(queryBox(point, radius), { layers: AIRCRAFT_POINT_LAYERS });
+  const clickHits = map.queryRenderedFeatures(queryBox(point, radius), { layers: AIRCRAFT_CLICK_LAYERS });
   const bestByIcao = new Map<string, { feature: MapFeature; distance: number; visibleSymbol: boolean }>();
 
   for (const feature of [...pointHits, ...clickHits, ...eventFeatures]) {
@@ -152,6 +160,12 @@ function featureInLayer(features: MapFeature[], layerId: string) {
   return features.find((feature) => feature.layer?.id === layerId) || null;
 }
 
+function radarFeatureNear(map: import('maplibre-gl').Map, point: MapPoint, features: MapFeature[]) {
+  return featureInLayer(features, 'radar-region-points')
+    || map.queryRenderedFeatures(queryBox(point, RADAR_HIT_RADIUS_PX), { layers: ['radar-region-points'] })[0]
+    || null;
+}
+
 export const FlightsPage: React.FC = () => {
   const { mapProjection, mapLayer } = useThemeStore();
   const pushGlobalNotification = useGlobalNotificationsStore((state) => state.pushNotification);
@@ -159,7 +173,7 @@ export const FlightsPage: React.FC = () => {
   const states = useMemo(() => data?.states || [], [data?.states]);
   const timestamp = data?.timestamp || 0;
   const provider = data?.provider || 'adsblol';
-  const { filters, toggleRadarRegion } = useFlightsStore();
+  const { filters, toggleRadarRegion, activeRadarRegionIds } = useFlightsStore();
   const { selectedIcao24, setSelectedIcao24, selectedFlight } = useFlightSelection(states);
   const [infrastructurePopup, setInfrastructurePopup] = useState<InfrastructurePopup | null>(null);
   const [flightAlerts, setFlightAlerts] = useState<FlightAlert[]>([]);
@@ -217,6 +231,8 @@ export const FlightsPage: React.FC = () => {
   const emergencyCount = useMemo(() => displayedStates.filter((state) => state.emergency && state.emergency !== 'none').length, [displayedStates]);
   const pointsGeoJSON = useMemo(() => statesToPointGeoJSON(displayedStates), [displayedStates]);
   const airportGeoJSON = useMemo(() => airportPinsGeoJSON(), []);
+  const radarGeoJSON = useMemo(() => radarPinsGeoJSON(activeRadarRegionIds), [activeRadarRegionIds]);
+  const activeRadarZones = useMemo(() => activeRadarZonesGeoJSON(activeRadarRegionIds), [activeRadarRegionIds]);
 
   const activeMapStyle = useMemo(() => {
     switch (mapLayer) {
@@ -260,20 +276,21 @@ export const FlightsPage: React.FC = () => {
   const onClick = useCallback((event: import('maplibre-gl').MapMouseEvent & { features?: MapFeature[] }) => {
     const features = event.features || [];
     const point = event.point;
-    const aircraftFeature = nearestAircraftFeature(event.target, point, features);
-    if (aircraftFeature?.properties?.icao24) {
-      setSelectedIcao24(String(aircraftFeature.properties.icao24));
-      setInfrastructurePopup(null);
-      return;
-    }
 
-    const radarFeature = featureInLayer(features, 'radar-region-points');
+    const radarFeature = radarFeatureNear(event.target, point, features);
     if (radarFeature?.properties?.id) {
       const region = RADAR_REGIONS.find((item) => item.id === String(radarFeature.properties?.id));
       if (region) {
         toggleRadarRegion(region.id);
         setInfrastructurePopup({ type: 'radar', item: region });
       }
+      return;
+    }
+
+    const aircraftFeature = nearestAircraftFeature(event.target, point, features);
+    if (aircraftFeature?.properties?.icao24) {
+      setSelectedIcao24(String(aircraftFeature.properties.icao24));
+      setInfrastructurePopup(null);
       return;
     }
 
@@ -303,7 +320,7 @@ export const FlightsPage: React.FC = () => {
           initialViewState={{ latitude: 39.8283, longitude: -98.5795, zoom: 4 }}
           mapStyle={activeMapStyle}
           styleDiffing={false}
-          interactiveLayerIds={['aircraft-click-target', 'aircraft-points', 'radar-region-points', 'airport-points', 'flight-airbase-points']}
+          interactiveLayerIds={['radar-region-points', 'aircraft-click-target', 'aircraft-points', 'airport-points', 'flight-airbase-points']}
           onClick={onClick}
           cursor={selectedIcao24 ? 'pointer' : 'crosshair'}
           onLoad={(event: { target: import('maplibre-gl').Map }) => { mapRef.current = event.target; addPlaneImages(event.target); event.target.resize(); }}
@@ -331,6 +348,19 @@ export const FlightsPage: React.FC = () => {
               </div>
             </Popup>
           )}
+
+          <Source id="active-radar-zones" type="geojson" data={activeRadarZones}>
+            <Layer
+              id="active-radar-zone-fill"
+              type="fill"
+              paint={{ 'fill-color': '#06b6d4', 'fill-opacity': 0.08 }}
+            />
+            <Layer
+              id="active-radar-zone-outline"
+              type="line"
+              paint={{ 'line-color': '#22d3ee', 'line-opacity': 0.55, 'line-width': 1 }}
+            />
+          </Source>
 
           <Source id="aircraft" type="geojson" data={pointsGeoJSON}>
             <Layer
@@ -365,6 +395,28 @@ export const FlightsPage: React.FC = () => {
                 'icon-ignore-placement': true,
               }}
               paint={{ 'icon-opacity': 0.98 }}
+            />
+          </Source>
+
+          <Source id="radar-regions" type="geojson" data={radarGeoJSON}>
+            <Layer
+              id="radar-region-points"
+              type="circle"
+              paint={{
+                'circle-radius': ['case', ['boolean', ['get', 'active'], false], 9, 7],
+                'circle-color': ['case', ['boolean', ['get', 'active'], false], '#22d3ee', '#0f172a'],
+                'circle-stroke-color': '#67e8f9',
+                'circle-stroke-width': ['case', ['boolean', ['get', 'active'], false], 3, 2],
+                'circle-opacity': 0.92,
+              }}
+            />
+          </Source>
+
+          <Source id="airport-pins" type="geojson" data={airportGeoJSON}>
+            <Layer
+              id="airport-points"
+              type="circle"
+              paint={{ 'circle-radius': 5, 'circle-color': '#facc15', 'circle-stroke-color': '#78350f', 'circle-stroke-width': 1.5, 'circle-opacity': 0.9 }}
             />
           </Source>
         </Map>
