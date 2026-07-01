@@ -16,8 +16,10 @@ import { useGlobalNotificationsStore } from '../../notifications/globalNotificat
 import { SATELLITE_STYLE, LIGHT_STYLE, DARK_STYLE, STREET_STYLE } from '../../lib/mapStyles';
 import { airportPinsGeoJSON, RADAR_REGIONS, type AirportPin, type RadarRegionPin } from './data/aviationInfrastructure';
 
-const AIRCRAFT_HIT_RADIUS_PX = 12;
-const AIRCRAFT_LAYERS = ['aircraft-points', 'aircraft-click-target'];
+const AIRCRAFT_MIN_HIT_RADIUS_PX = 5;
+const AIRCRAFT_MAX_HIT_RADIUS_PX = 12;
+const AIRCRAFT_POINT_LAYERS = ['aircraft-points'];
+const AIRCRAFT_CLICK_LAYERS = ['aircraft-click-target'];
 
 const aircraftPath =
   'M9.123 30.464l-1.33-6.268-6.318-1.397 1.291-2.475 5.785-0.316c0.297-0.386 0.96-1.234 1.374-1.648l5.271-5.271-10.989-5.388 2.782-2.782 13.932 2.444 4.933-4.933c0.585-0.585 1.496-0.894 2.634-0.894 0.776 0 1.395 0.143 1.421 0.149l0.3 0.070 0.089 0.295c0.469 1.55 0.187 3.298-0.67 4.155l-4.956 4.956 2.434 13.875-2.782 2.782-5.367-10.945-4.923 4.924c-0.518 0.517-1.623 1.536-2.033 1.912l-0.431 5.425-2.449 1.329z';
@@ -87,6 +89,14 @@ function infrastructureSubtitle(popup: InfrastructurePopup): string {
   return `${popup.item.code} | Airport`;
 }
 
+function aircraftHitRadiusForZoom(zoom: number): number {
+  if (zoom < 4) return AIRCRAFT_MIN_HIT_RADIUS_PX;
+  if (zoom < 5) return 6;
+  if (zoom < 6) return 8;
+  if (zoom < 7) return 10;
+  return AIRCRAFT_MAX_HIT_RADIUS_PX;
+}
+
 function aircraftCoordinates(feature: MapFeature): [number, number] | null {
   if (feature.geometry?.type !== 'Point') return null;
   const coordinates = (feature.geometry as GeoJSON.Point).coordinates;
@@ -96,31 +106,46 @@ function aircraftCoordinates(feature: MapFeature): [number, number] | null {
   return [lon, lat];
 }
 
-function nearestAircraftFeature(map: import('maplibre-gl').Map, point: MapPoint, eventFeatures: MapFeature[]) {
-  const box: [[number, number], [number, number]] = [
-    [point.x - AIRCRAFT_HIT_RADIUS_PX, point.y - AIRCRAFT_HIT_RADIUS_PX],
-    [point.x + AIRCRAFT_HIT_RADIUS_PX, point.y + AIRCRAFT_HIT_RADIUS_PX],
+function aircraftQueryBox(point: MapPoint, radius: number): [[number, number], [number, number]] {
+  return [
+    [point.x - radius, point.y - radius],
+    [point.x + radius, point.y + radius],
   ];
-  const queriedAircraft = map.queryRenderedFeatures(box, { layers: AIRCRAFT_LAYERS });
-  const unique = new Map<string, MapFeature>();
-  for (const feature of [...queriedAircraft, ...eventFeatures]) {
-    const icao24 = feature.properties?.icao24;
-    if (!icao24 || !aircraftCoordinates(feature)) continue;
-    unique.set(`${feature.layer?.id || 'feature'}-${String(icao24)}`, feature);
+}
+
+function scoreAircraftFeature(map: import('maplibre-gl').Map, point: MapPoint, feature: MapFeature) {
+  const icao24 = feature.properties?.icao24;
+  const coordinates = aircraftCoordinates(feature);
+  if (!icao24 || !coordinates) return null;
+  const [lon, lat] = coordinates;
+  const projected = map.project({ lng: lon, lat });
+  const dx = projected.x - point.x;
+  const dy = projected.y - point.y;
+  return {
+    feature,
+    icao24: String(icao24).trim().toLowerCase(),
+    distance: Math.sqrt(dx * dx + dy * dy),
+    visibleSymbol: feature.layer?.id === 'aircraft-points',
+  };
+}
+
+function nearestAircraftFeature(map: import('maplibre-gl').Map, point: MapPoint, eventFeatures: MapFeature[]) {
+  const radius = aircraftHitRadiusForZoom(map.getZoom());
+  const pointHits = map.queryRenderedFeatures(aircraftQueryBox(point, radius), { layers: AIRCRAFT_POINT_LAYERS });
+  const clickHits = map.queryRenderedFeatures(aircraftQueryBox(point, radius), { layers: AIRCRAFT_CLICK_LAYERS });
+  const bestByIcao = new Map<string, { feature: MapFeature; distance: number; visibleSymbol: boolean }>();
+
+  for (const feature of [...pointHits, ...clickHits, ...eventFeatures]) {
+    const hit = scoreAircraftFeature(map, point, feature);
+    if (!hit || hit.distance > radius) continue;
+    const existing = bestByIcao.get(hit.icao24);
+    if (!existing || hit.distance < existing.distance || (hit.visibleSymbol && !existing.visibleSymbol)) {
+      bestByIcao.set(hit.icao24, hit);
+    }
   }
 
-  return [...unique.values()]
-    .map((feature) => {
-      const coordinates = aircraftCoordinates(feature);
-      if (!coordinates) return null;
-      const [lon, lat] = coordinates;
-      const projected = map.project({ lng: lon, lat });
-      const dx = projected.x - point.x;
-      const dy = projected.y - point.y;
-      return { feature, distance: Math.sqrt(dx * dx + dy * dy) };
-    })
-    .filter((hit): hit is { feature: MapFeature; distance: number } => Boolean(hit))
-    .sort((a, b) => a.distance - b.distance)[0]?.feature || null;
+  return [...bestByIcao.values()]
+    .sort((a, b) => a.distance - b.distance || Number(b.visibleSymbol) - Number(a.visibleSymbol))[0]?.feature || null;
 }
 
 export const FlightsPage: React.FC = () => {
@@ -304,7 +329,7 @@ export const FlightsPage: React.FC = () => {
               id="aircraft-click-target"
               type="circle"
               paint={{
-                'circle-radius': AIRCRAFT_HIT_RADIUS_PX,
+                'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, 5, 4, 6, 5, 8, 6, 10, 7, 12],
                 'circle-color': '#38bdf8',
                 'circle-opacity': 0.01,
                 'circle-stroke-opacity': 0,
@@ -325,7 +350,7 @@ export const FlightsPage: React.FC = () => {
               type="symbol"
               layout={{
                 'icon-image': ['case', ['==', ['get', 'icao24'], selectedIcao24 || ''], 'olympus-plane-selected', ['boolean', ['get', 'isEmergency'], false], 'olympus-plane-emergency', ['boolean', ['get', 'onGround'], false], 'olympus-plane-ground', 'olympus-plane-airborne'],
-                'icon-size': 0.42,
+                'icon-size': ['interpolate', ['linear'], ['zoom'], 3, 0.28, 5, 0.34, 7, 0.42],
                 'icon-rotate': ['-', ['coalesce', ['get', 'heading'], 0], 45],
                 'icon-rotation-alignment': 'map',
                 'icon-allow-overlap': true,
