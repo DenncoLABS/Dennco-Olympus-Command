@@ -25,7 +25,7 @@ import {
 
 const AIRCRAFT_MIN_HIT_RADIUS_PX = 5;
 const AIRCRAFT_MAX_HIT_RADIUS_PX = 12;
-const RADAR_HIT_RADIUS_PX = 10;
+const RADAR_HIT_RADIUS_PX = 14;
 const AIRCRAFT_POINT_LAYERS = ['aircraft-points'];
 const AIRCRAFT_CLICK_LAYERS = ['aircraft-click-target'];
 
@@ -105,7 +105,7 @@ function aircraftHitRadiusForZoom(zoom: number): number {
   return AIRCRAFT_MAX_HIT_RADIUS_PX;
 }
 
-function aircraftCoordinates(feature: MapFeature): [number, number] | null {
+function pointCoordinates(feature: MapFeature): [number, number] | null {
   if (feature.geometry?.type !== 'Point') return null;
   const coordinates = (feature.geometry as GeoJSON.Point).coordinates;
   if (coordinates.length < 2) return null;
@@ -121,18 +121,23 @@ function queryBox(point: MapPoint, radius: number): [[number, number], [number, 
   ];
 }
 
-function scoreAircraftFeature(map: import('maplibre-gl').Map, point: MapPoint, feature: MapFeature) {
-  const icao24 = feature.properties?.icao24;
-  const coordinates = aircraftCoordinates(feature);
-  if (!icao24 || !coordinates) return null;
+function pointDistance(map: import('maplibre-gl').Map, point: MapPoint, feature: MapFeature): number {
+  const coordinates = pointCoordinates(feature);
+  if (!coordinates) return Number.POSITIVE_INFINITY;
   const [lon, lat] = coordinates;
   const projected = map.project({ lng: lon, lat });
   const dx = projected.x - point.x;
   const dy = projected.y - point.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function scoreAircraftFeature(map: import('maplibre-gl').Map, point: MapPoint, feature: MapFeature) {
+  const icao24 = feature.properties?.icao24;
+  if (!icao24 || !pointCoordinates(feature)) return null;
   return {
     feature,
     icao24: String(icao24).trim().toLowerCase(),
-    distance: Math.sqrt(dx * dx + dy * dy),
+    distance: pointDistance(map, point, feature),
     visibleSymbol: feature.layer?.id === 'aircraft-points',
   };
 }
@@ -161,9 +166,24 @@ function featureInLayer(features: MapFeature[], layerId: string) {
 }
 
 function radarFeatureNear(map: import('maplibre-gl').Map, point: MapPoint, features: MapFeature[]) {
-  return featureInLayer(features, 'radar-region-points')
+  const feature = featureInLayer(features, 'radar-region-points')
     || map.queryRenderedFeatures(queryBox(point, RADAR_HIT_RADIUS_PX), { layers: ['radar-region-points'] })[0]
     || null;
+  if (!feature) return null;
+  return pointDistance(map, point, feature) <= RADAR_HIT_RADIUS_PX ? feature : null;
+}
+
+function chooseNearestPrimaryTarget(map: import('maplibre-gl').Map, point: MapPoint, features: MapFeature[]) {
+  const aircraftFeature = nearestAircraftFeature(map, point, features);
+  const radarFeature = radarFeatureNear(map, point, features);
+  if (aircraftFeature && radarFeature) {
+    return pointDistance(map, point, aircraftFeature) <= pointDistance(map, point, radarFeature)
+      ? { type: 'aircraft' as const, feature: aircraftFeature }
+      : { type: 'radar' as const, feature: radarFeature };
+  }
+  if (aircraftFeature) return { type: 'aircraft' as const, feature: aircraftFeature };
+  if (radarFeature) return { type: 'radar' as const, feature: radarFeature };
+  return null;
 }
 
 export const FlightsPage: React.FC = () => {
@@ -276,17 +296,16 @@ export const FlightsPage: React.FC = () => {
   const onClick = useCallback((event: import('maplibre-gl').MapMouseEvent & { features?: MapFeature[] }) => {
     const features = event.features || [];
     const point = event.point;
+    const target = chooseNearestPrimaryTarget(event.target, point, features);
 
-    const aircraftFeature = nearestAircraftFeature(event.target, point, features);
-    if (aircraftFeature?.properties?.icao24) {
-      setSelectedIcao24(String(aircraftFeature.properties.icao24));
+    if (target?.type === 'aircraft' && target.feature.properties?.icao24) {
+      setSelectedIcao24(String(target.feature.properties.icao24));
       setInfrastructurePopup(null);
       return;
     }
 
-    const radarFeature = radarFeatureNear(event.target, point, features);
-    if (radarFeature?.properties?.id) {
-      const region = RADAR_REGIONS.find((item) => item.id === String(radarFeature.properties?.id));
+    if (target?.type === 'radar' && target.feature.properties?.id) {
+      const region = RADAR_REGIONS.find((item) => item.id === String(target.feature.properties?.id));
       if (region) {
         toggleRadarRegion(region.id);
         setInfrastructurePopup({ type: 'radar', item: region });
