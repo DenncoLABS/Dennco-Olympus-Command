@@ -1,22 +1,13 @@
-const BOOT_KEY = '__olympusFlightDataWorkspaceReady';
-const WIDGET_ID = 'olympus-flight-data-widget';
-const FOLDER_ID = 'olympus-flight-data-launcher';
-const CLOSED_KEY = 'olympus.flightData.closed';
-const POS_KEY = 'olympus.flightData.position';
+const BOOT_KEY = '__olympusFlightDataLauncherV2Ready';
+const WIDGET_ID = 'olympus-flight-data-widget-v2';
+const LAUNCHER_ID = 'olympus-flight-data-launcher-v2';
+const POS_KEY = 'olympus.flightData.v2.position';
 
 type ScopedWindow = Window & { [BOOT_KEY]?: boolean };
 type AircraftRecord = { icao24: string; registration?: string; manufacturerName?: string; model?: string; operator?: string; typecode?: string; built?: string };
 
-function flightWorkspaceActive() {
-  const text = document.body?.innerText || '';
-  return (
-    text.includes('Flight Map') ||
-    text.includes('FLIGHT') ||
-    text.includes('Flight Notifications') ||
-    text.includes('TARGET // FLIGHT') ||
-    text.includes('Intel Maps Workspace') ||
-    text.includes('MULTI-PURPOSE EARTH WORKSPACE')
-  );
+function appLoaded() {
+  return Boolean(document.getElementById('root')?.children.length);
 }
 
 function readPosition() {
@@ -42,28 +33,29 @@ function makeButton(label: string) {
   const button = document.createElement('button');
   button.textContent = label;
   styleElement(button, {
-    border: '1px solid rgba(34,211,238,.35)',
-    background: 'rgba(8,47,73,.55)',
-    color: '#a5f3fc',
-    padding: '6px 8px',
+    border: '1px solid rgba(34,211,238,.45)',
+    background: 'rgba(8,47,73,.78)',
+    color: '#cffafe',
+    padding: '7px 10px',
     fontSize: '10px',
     letterSpacing: '.14em',
     textTransform: 'uppercase',
     cursor: 'pointer',
+    fontFamily: 'monospace',
   });
   return button;
 }
 
 async function fetchAircraft(query: string) {
-  const response = await fetch(`/api/flights/aircraft-db?q=${encodeURIComponent(query)}&limit=80`);
-  if (!response.ok) throw new Error(`Flight data failed: ${response.status}`);
+  const response = await fetch(`/api/flights/aircraft-db?q=${encodeURIComponent(query)}&limit=100`, { credentials: 'same-origin' });
+  if (!response.ok) throw new Error(`Flight data failed: HTTP ${response.status}`);
   return response.json() as Promise<{ info?: { records?: number; source?: string; loaded?: boolean }; results?: AircraftRecord[] }>;
 }
 
 function renderResults(container: HTMLElement, results: AircraftRecord[]) {
   container.innerHTML = '';
   if (!results.length) {
-    container.textContent = 'No aircraft records found.';
+    container.textContent = 'No aircraft records found. Try an ICAO, tail number, model, manufacturer, or operator.';
     return;
   }
   for (const item of results) {
@@ -75,21 +67,21 @@ function renderResults(container: HTMLElement, results: AircraftRecord[]) {
 }
 
 function ensureLauncher() {
-  let launcher = document.getElementById(FOLDER_ID) as HTMLDivElement | null;
+  let launcher = document.getElementById(LAUNCHER_ID) as HTMLDivElement | null;
   if (launcher) return launcher;
   launcher = document.createElement('div');
-  launcher.id = FOLDER_ID;
+  launcher.id = LAUNCHER_ID;
   styleElement(launcher, {
     position: 'fixed',
     left: '18px',
     bottom: '74px',
-    zIndex: '9998',
+    zIndex: '10000',
     fontFamily: 'monospace',
-    display: 'none',
+    display: 'flex',
     gap: '6px',
     alignItems: 'center',
-    background: 'rgba(0,0,0,.72)',
-    border: '1px solid rgba(34,211,238,.28)',
+    background: 'rgba(0,0,0,.78)',
+    border: '1px solid rgba(34,211,238,.32)',
     padding: '8px',
     boxShadow: '0 18px 38px rgba(0,0,0,.72)',
   });
@@ -98,9 +90,8 @@ function ensureLauncher() {
   styleElement(label, { color: 'rgba(255,255,255,.45)', fontSize: '10px', letterSpacing: '.18em', textTransform: 'uppercase' });
   const open = makeButton('Flight Data');
   open.onclick = () => {
-    localStorage.setItem(CLOSED_KEY, 'false');
-    ensureWidget();
-    updateVisibility();
+    ensureWidget().style.display = 'flex';
+    void runDefaultSearch();
   };
   launcher.append(label, open);
   document.body.appendChild(launcher);
@@ -117,13 +108,13 @@ function ensureWidget() {
     position: 'fixed',
     left: `${pos.x}px`,
     top: `${pos.y}px`,
-    width: '460px',
+    width: '500px',
     maxHeight: 'calc(100vh - 130px)',
-    zIndex: '9999',
-    display: 'flex',
+    zIndex: '10001',
+    display: 'none',
     flexDirection: 'column',
-    background: 'rgba(2,6,23,.94)',
-    border: '1px solid rgba(34,211,238,.32)',
+    background: 'rgba(2,6,23,.96)',
+    border: '1px solid rgba(34,211,238,.38)',
     color: '#dbeafe',
     fontFamily: 'monospace',
     boxShadow: '0 24px 60px rgba(0,0,0,.82)',
@@ -132,14 +123,11 @@ function ensureWidget() {
 
   const header = document.createElement('div');
   styleElement(header, { cursor: 'move', padding: '10px 12px', borderBottom: '1px solid rgba(34,211,238,.2)', background: 'rgba(0,0,0,.38)' });
-  header.innerHTML = '<div style="display:flex;justify-content:space-between;gap:10px"><div><div style="font-size:10px;color:#67e8f9;letter-spacing:.22em;text-transform:uppercase;font-weight:bold">Flight Data</div><div style="margin-top:3px;font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.14em;text-transform:uppercase">Aircraft database · ICAO · registration · model · operator</div></div></div>';
+  header.innerHTML = '<div style="font-size:10px;color:#67e8f9;letter-spacing:.22em;text-transform:uppercase;font-weight:bold">Flight Data</div><div style="margin-top:3px;font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.14em;text-transform:uppercase">Aircraft database · ICAO · registration · model · operator</div>';
   const close = document.createElement('button');
   close.textContent = '[X]';
   styleElement(close, { position: 'absolute', right: '10px', top: '10px', background: 'transparent', border: '0', color: '#67e8f9', cursor: 'pointer', fontFamily: 'monospace' });
-  close.onclick = () => {
-    localStorage.setItem(CLOSED_KEY, 'true');
-    updateVisibility();
-  };
+  close.onclick = () => { widget!.style.display = 'none'; };
   header.appendChild(close);
 
   let drag: { dx: number; dy: number } | null = null;
@@ -167,14 +155,17 @@ function ensureWidget() {
   const controls = document.createElement('div');
   styleElement(controls, { display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px', marginBottom: '10px' });
   const input = document.createElement('input');
+  input.id = 'olympus-flight-data-search-input';
   input.placeholder = 'Search ICAO, registration, model, operator...';
   styleElement(input, { background: 'rgba(0,0,0,.45)', border: '1px solid rgba(255,255,255,.14)', color: '#cffafe', padding: '8px', outline: 'none', fontFamily: 'monospace', fontSize: '11px' });
   const search = makeButton('Search');
   controls.append(input, search);
   const info = document.createElement('div');
+  info.id = 'olympus-flight-data-info';
   styleElement(info, { color: 'rgba(255,255,255,.4)', fontSize: '10px', marginBottom: '8px', lineHeight: '1.45' });
   const results = document.createElement('div');
-  styleElement(results, { border: '1px solid rgba(255,255,255,.08)', background: 'rgba(0,0,0,.28)', maxHeight: '440px', overflow: 'auto', fontSize: '11px' });
+  results.id = 'olympus-flight-data-results';
+  styleElement(results, { border: '1px solid rgba(255,255,255,.08)', background: 'rgba(0,0,0,.28)', maxHeight: '460px', overflow: 'auto', fontSize: '11px', padding: '0' });
 
   async function runSearch() {
     results.textContent = 'Loading flight data...';
@@ -192,26 +183,37 @@ function ensureWidget() {
   body.append(controls, info, results);
   widget.append(header, body);
   document.body.appendChild(widget);
-  void runSearch();
   return widget;
 }
 
-function updateVisibility() {
-  const active = flightWorkspaceActive();
-  const closed = localStorage.getItem(CLOSED_KEY) === 'true';
-  const launcher = ensureLauncher();
-  const widget = document.getElementById(WIDGET_ID) || ensureWidget();
-  launcher.style.display = active && closed ? 'flex' : 'none';
-  widget.style.display = active && !closed ? 'flex' : 'none';
+async function runDefaultSearch() {
+  const search = document.getElementById('olympus-flight-data-search-input') as HTMLInputElement | null;
+  const results = document.getElementById('olympus-flight-data-results') as HTMLDivElement | null;
+  const info = document.getElementById('olympus-flight-data-info') as HTMLDivElement | null;
+  if (!search || !results || !info || results.childNodes.length) return;
+  results.textContent = 'Loading flight data...';
+  try {
+    const data = await fetchAircraft(search.value.trim());
+    info.textContent = `${data.info?.records || 0} records · ${data.info?.source || 'aircraft data folder'}`;
+    renderResults(results, data.results || []);
+  } catch (error) {
+    results.textContent = String(error);
+  }
+}
+
+function bootFlightDataLauncher() {
+  if (!appLoaded()) return;
+  ensureLauncher();
+  ensureWidget();
 }
 
 if (typeof window !== 'undefined') {
   const scopedWindow = window as ScopedWindow;
   if (!scopedWindow[BOOT_KEY]) {
     scopedWindow[BOOT_KEY] = true;
-    window.setInterval(updateVisibility, 900);
-    window.addEventListener('focus', updateVisibility);
-    window.addEventListener('resize', updateVisibility);
-    setTimeout(updateVisibility, 900);
+    window.setInterval(bootFlightDataLauncher, 1000);
+    window.addEventListener('focus', bootFlightDataLauncher);
+    window.addEventListener('resize', bootFlightDataLauncher);
+    setTimeout(bootFlightDataLauncher, 1000);
   }
 }
