@@ -25,7 +25,7 @@ import {
 
 const AIRCRAFT_MIN_HIT_RADIUS_PX = 5;
 const AIRCRAFT_MAX_HIT_RADIUS_PX = 12;
-const RADAR_HIT_RADIUS_PX = 18;
+const RADAR_HIT_RADIUS_PX = 10;
 const AIRCRAFT_POINT_LAYERS = ['aircraft-points'];
 const AIRCRAFT_CLICK_LAYERS = ['aircraft-click-target'];
 
@@ -277,6 +277,13 @@ export const FlightsPage: React.FC = () => {
     const features = event.features || [];
     const point = event.point;
 
+    const aircraftFeature = nearestAircraftFeature(event.target, point, features);
+    if (aircraftFeature?.properties?.icao24) {
+      setSelectedIcao24(String(aircraftFeature.properties.icao24));
+      setInfrastructurePopup(null);
+      return;
+    }
+
     const radarFeature = radarFeatureNear(event.target, point, features);
     if (radarFeature?.properties?.id) {
       const region = RADAR_REGIONS.find((item) => item.id === String(radarFeature.properties?.id));
@@ -284,13 +291,6 @@ export const FlightsPage: React.FC = () => {
         toggleRadarRegion(region.id);
         setInfrastructurePopup({ type: 'radar', item: region });
       }
-      return;
-    }
-
-    const aircraftFeature = nearestAircraftFeature(event.target, point, features);
-    if (aircraftFeature?.properties?.icao24) {
-      setSelectedIcao24(String(aircraftFeature.properties.icao24));
-      setInfrastructurePopup(null);
       return;
     }
 
@@ -320,7 +320,7 @@ export const FlightsPage: React.FC = () => {
           initialViewState={{ latitude: 39.8283, longitude: -98.5795, zoom: 4 }}
           mapStyle={activeMapStyle}
           styleDiffing={false}
-          interactiveLayerIds={['radar-region-points', 'aircraft-click-target', 'aircraft-points', 'airport-points', 'flight-airbase-points']}
+          interactiveLayerIds={['aircraft-click-target', 'aircraft-points', 'radar-region-points', 'airport-points', 'flight-airbase-points']}
           onClick={onClick}
           cursor={selectedIcao24 ? 'pointer' : 'crosshair'}
           onLoad={(event: { target: import('maplibre-gl').Map }) => { mapRef.current = event.target; addPlaneImages(event.target); event.target.resize(); }}
@@ -350,16 +350,8 @@ export const FlightsPage: React.FC = () => {
           )}
 
           <Source id="active-radar-zones" type="geojson" data={activeRadarZones}>
-            <Layer
-              id="active-radar-zone-fill"
-              type="fill"
-              paint={{ 'fill-color': '#06b6d4', 'fill-opacity': 0.08 }}
-            />
-            <Layer
-              id="active-radar-zone-outline"
-              type="line"
-              paint={{ 'line-color': '#22d3ee', 'line-opacity': 0.55, 'line-width': 1 }}
-            />
+            <Layer id="active-radar-zone-fill" type="fill" paint={{ 'fill-color': '#06b6d4', 'fill-opacity': 0.08 }} />
+            <Layer id="active-radar-zone-outline" type="line" paint={{ 'line-color': '#22d3ee', 'line-opacity': 0.55, 'line-width': 1 }} />
           </Source>
 
           <Source id="aircraft" type="geojson" data={pointsGeoJSON}>
@@ -413,11 +405,7 @@ export const FlightsPage: React.FC = () => {
           </Source>
 
           <Source id="airport-pins" type="geojson" data={airportGeoJSON}>
-            <Layer
-              id="airport-points"
-              type="circle"
-              paint={{ 'circle-radius': 5, 'circle-color': '#facc15', 'circle-stroke-color': '#78350f', 'circle-stroke-width': 1.5, 'circle-opacity': 0.9 }}
-            />
+            <Layer id="airport-points" type="circle" paint={{ 'circle-radius': 5, 'circle-color': '#facc15', 'circle-stroke-color': '#78350f', 'circle-stroke-width': 1.5, 'circle-opacity': 0.9 }} />
           </Source>
         </Map>
 
