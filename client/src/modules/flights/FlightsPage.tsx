@@ -65,6 +65,8 @@ type InfrastructurePopup = { type: 'airport'; item: AirportPin } | { type: 'rada
 type FlightAlert = { id: string; timestamp: number; title: string; details: string; icao24: string; callsign?: string | null; emergency: string; reportedBy: string; activeDistress: boolean };
 type MapFeature = import('maplibre-gl').MapGeoJSONFeature;
 
+type ScreenPoint = { x: number; y: number };
+
 function infrastructureTitle(popup: InfrastructurePopup): string {
   if (popup.type === 'radar') return popup.item.label;
   return popup.item.name;
@@ -84,11 +86,47 @@ function aircraftFeatureFrom(features: MapFeature[]) {
   return featureInLayer(features, 'aircraft-points') || featureInLayer(features, 'aircraft-click-target') || features.find((feature) => feature.properties?.icao24) || null;
 }
 
+function queryAircraftFeature(map: import('maplibre-gl').Map, point: ScreenPoint, eventFeatures: MapFeature[]) {
+  const fromEvent = aircraftFeatureFrom(eventFeatures);
+  if (fromEvent) return fromEvent;
+  const radius = 16;
+  const queried = map.queryRenderedFeatures([[point.x - radius, point.y - radius], [point.x + radius, point.y + radius]], { layers: ['aircraft-points', 'aircraft-click-target'] });
+  return aircraftFeatureFrom(queried as MapFeature[]);
+}
+
 function findAircraftByFeature(states: AircraftState[], feature: MapFeature) {
   const props = feature.properties || {};
   const keys = [props.icao24, props.registration, props.callsign].map(normalizeKey).filter(Boolean);
   if (keys.length === 0) return null;
   return states.find((state) => [state.icao24, state.registration, state.callsign].map(normalizeKey).some((key) => keys.includes(key))) || null;
+}
+
+function aircraftFromFeature(feature: MapFeature): AircraftState | null {
+  const props = feature.properties || {};
+  const icao24 = normalizeKey(props.icao24);
+  if (!icao24) return null;
+  const coords = feature.geometry?.type === 'Point' ? (feature.geometry as GeoJSON.Point).coordinates : [0, 0];
+  const lon = Number(coords[0]);
+  const lat = Number(coords[1]);
+  return {
+    icao24,
+    callsign: props.callsign ? String(props.callsign).trim() : null,
+    lat: Number.isFinite(lat) ? lat : 0,
+    lon: Number.isFinite(lon) ? lon : 0,
+    baroAltitude: Number.isFinite(Number(props.altitude)) ? Number(props.altitude) : null,
+    geoAltitude: null,
+    velocity: Number.isFinite(Number(props.velocity)) ? Number(props.velocity) : null,
+    heading: Number.isFinite(Number(props.heading)) ? Number(props.heading) : null,
+    onGround: Boolean(props.onGround),
+    lastContact: Math.floor(Date.now() / 1000),
+    originCountry: null,
+    verticalRate: null,
+    squawk: null,
+    spi: false,
+    positionSource: 0,
+    category: 0,
+    emergency: props.emergency ? String(props.emergency) : 'none',
+  };
 }
 
 export const FlightsPage: React.FC = () => {
@@ -184,11 +222,15 @@ export const FlightsPage: React.FC = () => {
       return;
     }
 
-    const aircraftFeature = aircraftFeatureFrom(features);
+    const aircraftFeature = queryAircraftFeature(event.target, event.point, features);
     if (aircraftFeature?.properties?.icao24) {
-      const clickedFlight = findAircraftByFeature(displayedStates, aircraftFeature) || findAircraftByFeature(states, aircraftFeature);
-      if (clickedFlight) setSelectedFlightSnapshot(clickedFlight);
-      setSelectedIcao24(String(aircraftFeature.properties.icao24));
+      const clickedFlight = findAircraftByFeature(displayedStates, aircraftFeature) || findAircraftByFeature(states, aircraftFeature) || aircraftFromFeature(aircraftFeature);
+      if (clickedFlight) {
+        setSelectedFlightSnapshot(clickedFlight);
+        setSelectedIcao24(clickedFlight.icao24);
+      } else {
+        setSelectedIcao24(String(aircraftFeature.properties.icao24));
+      }
       setInfrastructurePopup(null);
       return;
     }
