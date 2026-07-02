@@ -1,0 +1,14 @@
+{
+  "id": "olympus-municipal",
+  "name": "Olympus Municipal",
+  "version": "0.1.0",
+  "kind": "app",
+  "type": "dashboard",
+  "status": "draft",
+  "description": "Municipal operations app pack for public works, civic infrastructure, road conditions, public meetings, grants, local alerts, and operational awareness.",
+  "entrypoints": {},
+  "dependsOn": [],
+  "enabledCoreModules": ["earth", "desk", "admin", "notifications", "dot", "reports"],
+  "plannedExtensions": ["infrastructure", "public-records", "grants", "weather", "source-registry"],
+  "sourcePosture": "public-authorized-organization-approved"
+}
