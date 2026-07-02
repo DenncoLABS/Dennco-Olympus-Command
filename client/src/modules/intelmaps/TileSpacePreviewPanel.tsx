@@ -92,7 +92,12 @@ export const TileSpacePreviewPanel: React.FC = () => {
     const numericShortcut = Number(event.key);
     if (numericShortcut >= 1 && numericShortcut <= QUAD_TILE_IDS.length) {
       event.preventDefault();
-      selectTile(QUAD_TILE_IDS[numericShortcut - 1]);
+      const tileId = QUAD_TILE_IDS[numericShortcut - 1];
+      if (event.shiftKey) {
+        focusTile(tileId);
+      } else {
+        selectTile(tileId);
+      }
       return;
     }
     if (event.key === 'Escape' && focusLayoutActive) {
@@ -139,6 +144,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
       <div className="flex items-center gap-2 rounded border border-cyan-300/10 bg-cyan-300/5 px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-white/45">
         <span className="text-cyan-300">Shortcuts</span>
         <span className="rounded border border-white/10 px-2 py-1">1–4: Select Tile</span>
+        <span className="rounded border border-white/10 px-2 py-1">Shift+1–4: Focus Tile</span>
         <span className="rounded border border-white/10 px-2 py-1">Click: Select</span>
         <span className="rounded border border-white/10 px-2 py-1">Double-click: Focus</span>
         <span className="rounded border border-white/10 px-2 py-1">F: Focus selected card</span>
@@ -185,7 +191,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
               <button type="button" onClick={nextFocusPage} disabled={focusPageIndex === FOCUS_PAGES.length - 1} className="h-8 w-8 rounded border border-white/10 text-cyan-200 disabled:opacity-25 hover:border-cyan-300/50">›</button>
             </div>
           </div>
-          <p className="mt-2 text-white/45">Press 1–4 to select a tile, then use Focus Tile, double-click, or F to promote it into the main surface.</p>
+          <p className="mt-2 text-white/45">Press 1–4 to select a tile or Shift+1–4 to select and focus it immediately.</p>
         </div>
         <aside className="rounded border border-cyan-300/20 bg-cyan-300/10 p-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-300">App Assistant Context</div>
