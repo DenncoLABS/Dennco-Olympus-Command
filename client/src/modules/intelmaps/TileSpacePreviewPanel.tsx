@@ -26,6 +26,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
   const [focusPageIndex, setFocusPageIndex] = useState(readFocusPageIndex);
   const selectedTile = useMemo(() => getTileRegistryItem(selectedTileId), [selectedTileId]);
   const focusPage = FOCUS_PAGES[focusPageIndex] || FOCUS_PAGES[0];
+  const assistantContext = `${focusPage} · ${selectedTile?.label || 'No tile'} · ${quadDeployed ? 'Quad deployed' : 'Quad cleared'}`;
 
   useEffect(() => {
     writeTileSpacePreviewString(TILESPACE_PREVIEW_SELECTED_TILE_KEY, selectedTileId);
@@ -59,7 +60,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-[1fr_260px] gap-3 text-xs">
+      <div className="grid grid-cols-[1fr_260px_280px] gap-3 text-xs">
         <div className="rounded border border-white/10 bg-black/35 p-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-300">Selected Tile</div>
           <div className="mt-1 text-sm font-bold uppercase tracking-[0.12em] text-white">{selectedTile?.label || 'None'}</div>
@@ -78,6 +79,12 @@ export const TileSpacePreviewPanel: React.FC = () => {
           </div>
           <p className="mt-2 text-white/45">Selected tile, quad state, and focus page now survive reloads and app switching.</p>
         </div>
+        <aside className="rounded border border-cyan-300/20 bg-cyan-300/10 p-3">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-300">App Assistant Context</div>
+          <div className="mt-1 text-sm font-bold uppercase tracking-[0.12em] text-white">TileSpace</div>
+          <p className="mt-2 text-white/55">{assistantContext}</p>
+          <div className="mt-3 rounded border border-white/10 bg-black/30 p-2 text-[10px] uppercase tracking-[0.12em] text-white/45">Context object ready for app assistant wiring.</div>
+        </aside>
       </div>
 
       {quadDeployed ? (
