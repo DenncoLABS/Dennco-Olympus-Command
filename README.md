@@ -11,6 +11,8 @@ Olympus Command is maintained as a Dennco-controlled platform. It should not car
 The project is now documented across these continuation files:
 
 - [`docs/MASTER_PLATFORM_STRATEGY.md`](docs/MASTER_PLATFORM_STRATEGY.md) — master platform doctrine, expansion lanes, industry-product model, source posture, and AI posture.
+- [`docs/DEVELOPMENT_GUARDRAILS.md`](docs/DEVELOPMENT_GUARDRAILS.md) — foundational developer rules, conflict process, scaffold protection, and deployment guardrails.
+- [`docs/APP_PACK_INDEX.md`](docs/APP_PACK_INDEX.md) — app-pack index for industry-specific products built from the master platform.
 - [`docs/PROJECT_CONTINUITY.md`](docs/PROJECT_CONTINUITY.md) — current repo state, module status, package baseline, workflow notes, and next tasks.
 - [`docs/OLYMPUS_DESK_AND_OS.md`](docs/OLYMPUS_DESK_AND_OS.md) — Olympus Desk, Dock, Earth screen, Debian/GNOME shell direction, and OS app plan.
 - [`docs/MODULE_STATUS.md`](docs/MODULE_STATUS.md) — Flight, Maritime, Monitor, DOT, CAD, Admin, branding, and global notifications status.
