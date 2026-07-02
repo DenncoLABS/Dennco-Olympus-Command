@@ -6,21 +6,24 @@ Use apps when a capability needs its own routing, product identity, release cycl
 
 ## Core app deployment rule
 
-Olympus apps must follow the Desk-first deployment model:
+Olympus apps must follow the Desk and TileSpace model:
 
 ```text
-Dock = launcher
-Desk = first approach workspace
-Window = focused working surface
+Dock = app selector
+Desk = app management surface and tile deployment surface
+TileSpace = active tile layout area
+Tile = focused app container
+Widget = movable capability inside a scope
+Focus Page = named tile layout for a task
 ```
 
-Apps should first open inside the Olympus Desk so the operator can understand the service, review status, choose a workflow, and decide how to approach the app.
+Apps should first open inside the Olympus Desk so the operator can understand the app, review status, manage settings, collaborate, take notes, choose tools, configure integrations, run automations, and deploy tiles.
 
-Deep work can then open in windows, workspaces, panels, editors, maps, consoles, or detail views.
+Active work then appears in TileSpace as app tiles, tile groups, widgets, focus pages, and sub-tiles.
 
-Do not build apps as disconnected pages that bypass Olympus Desk/Dock/Window behavior.
+Do not build apps as disconnected pages that bypass Olympus Desk/TileSpace behavior.
 
-See [`docs/CORE_APP_DEPLOYMENT_MODEL.md`](../docs/CORE_APP_DEPLOYMENT_MODEL.md).
+See [`docs/OLYMPUS_TILESPACE_AND_FOCUS_FRAMEWORK.md`](../docs/OLYMPUS_TILESPACE_AND_FOCUS_FRAMEWORK.md) and [`docs/CORE_APP_DEPLOYMENT_MODEL.md`](../docs/CORE_APP_DEPLOYMENT_MODEL.md).
 
 ## Directory layout
 
@@ -54,15 +57,31 @@ Every app must include `app.manifest.json`.
     "surface": "desk",
     "approachRoute": "/apps/example-app",
     "defaultWorkspace": "overview",
-    "opensWindows": true,
+    "opensTiles": true,
     "earthLayer": false
   },
   "desk": {
     "dockLabel": "Example",
     "dockIcon": "example",
     "summary": "Short operator-facing purpose.",
-    "primaryWorkflows": ["overview", "registry", "reports"]
-  }
+    "primaryWorkflows": ["overview", "registry", "reports"],
+    "sections": ["overview", "tools", "widgets", "notes", "automations", "integrations", "settings"]
+  },
+  "tiles": [
+    {
+      "id": "overview-tile",
+      "name": "Overview Tile",
+      "scope": "app",
+      "defaultLayout": "single"
+    }
+  ],
+  "widgets": [
+    {
+      "id": "status-widget",
+      "name": "Status Widget",
+      "scope": "app"
+    }
+  ]
 }
 ```
 
@@ -78,7 +97,7 @@ Every app must include `app.manifest.json`.
 
 ### Dashboard app
 
-Opens in Desk with dashboard, registry, and workflow choices. Detail work opens in windows.
+Opens in Desk with dashboard, registry, tools, widget catalog, tile deployment, notes, and workflow choices. Active work opens in TileSpace.
 
 ### Public portal app
 
@@ -90,11 +109,34 @@ Opens in Desk for configuration and preview. Mobile packaging is a deployment ta
 
 ### Integration app
 
-Opens in Desk with connection status, sync status, source health, object registry, and guarded actions.
+Opens in Desk with connection status, sync status, source health, object registry, widget catalog, and guarded controls.
 
 ### Admin app
 
-Opens in Desk with settings categories, audit, permissions, and guarded control panels.
+Opens in Desk with settings categories, audit, permissions, and control panels.
+
+## Required app Desk sections
+
+Every app Desk should eventually include:
+
+```text
+App Overview
+Status / Health
+Tools / Sub-apps
+Deploy App Tile
+Tile Layouts
+Widget Manager
+Global App Widgets
+Sub-App Widgets
+Collaboration
+Notes
+Automations
+Integrations
+Related Apps
+Core App Settings
+Permissions / Guardrails
+Activity
+```
 
 ## Rules
 
@@ -102,8 +144,8 @@ Opens in Desk with settings categories, audit, permissions, and guarded control 
 - Keep app-specific code inside its own folder.
 - Promote shared code into `packages/` later if multiple apps need it.
 - Document environment variables and deployment targets before production use.
-- Add launch and Desk metadata to app manifests as apps move from draft planning into implementation.
+- Add launch, Desk, tile, and widget metadata to app manifests as apps move from draft planning into implementation.
 - Launch apps from Dock into Desk first.
-- Use windows/workspaces for focused app work.
+- Use TileSpace for active app tiles, widgets, focus pages, and tile groups.
 - Preserve the Earth screen unless an app explicitly contributes a map layer or approved Earth workflow.
-- Never launch guarded or destructive actions directly from Dock.
+- Do not use ordinary window language as the primary app model. Use TileSpace, tiles, widgets, and focus pages.
