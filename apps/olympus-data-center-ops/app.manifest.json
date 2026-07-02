@@ -1,0 +1,14 @@
+{
+  "id": "olympus-data-center-ops",
+  "name": "Olympus Data Center Ops",
+  "version": "0.1.0",
+  "kind": "app",
+  "type": "dashboard",
+  "status": "draft",
+  "description": "Data center operations app pack for uptime, facilities, power, cooling, network status, physical security, maintenance, and incident reporting.",
+  "entrypoints": {},
+  "dependsOn": [],
+  "enabledCoreModules": ["earth", "desk", "admin", "notifications", "reports", "cyber"],
+  "plannedExtensions": ["facility-status", "power-cooling", "network-status", "physical-security", "maintenance"],
+  "sourcePosture": "organization-approved-authorized"
+}
