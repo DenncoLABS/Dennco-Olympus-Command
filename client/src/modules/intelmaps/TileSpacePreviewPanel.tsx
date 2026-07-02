@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  TILESPACE_PREVIEW_ACTIVE_TAB_KEY,
   TILESPACE_PREVIEW_FOCUS_KEY,
   TILESPACE_PREVIEW_QUAD_KEY,
   TILESPACE_PREVIEW_SELECTED_TILE_KEY,
@@ -21,11 +22,16 @@ function readFocusPageIndex() {
   return index >= 0 ? index : 0;
 }
 
+function readActiveTab() {
+  const savedTab = readTileSpacePreviewString(TILESPACE_PREVIEW_ACTIVE_TAB_KEY, APP_TABS[0]);
+  return APP_TABS.includes(savedTab) ? savedTab : APP_TABS[0];
+}
+
 export const TileSpacePreviewPanel: React.FC = () => {
   const [selectedTileId, setSelectedTileId] = useState(() => readTileSpacePreviewString(TILESPACE_PREVIEW_SELECTED_TILE_KEY, 'intelmaps-flight'));
   const [quadDeployed, setQuadDeployed] = useState(() => readTileSpacePreviewBoolean(TILESPACE_PREVIEW_QUAD_KEY, true));
   const [focusPageIndex, setFocusPageIndex] = useState(readFocusPageIndex);
-  const [activeTab, setActiveTab] = useState('Quad');
+  const [activeTab, setActiveTab] = useState(readActiveTab);
   const selectedTile = useMemo(() => getTileRegistryItem(selectedTileId), [selectedTileId]);
   const focusPage = FOCUS_PAGES[focusPageIndex] || FOCUS_PAGES[0];
   const assistantContext = `${focusPage} · ${selectedTile?.label || 'No tile'} · ${quadDeployed ? 'Quad deployed' : 'Quad cleared'}`;
@@ -41,6 +47,10 @@ export const TileSpacePreviewPanel: React.FC = () => {
   useEffect(() => {
     writeTileSpacePreviewString(TILESPACE_PREVIEW_FOCUS_KEY, focusPage);
   }, [focusPage]);
+
+  useEffect(() => {
+    writeTileSpacePreviewString(TILESPACE_PREVIEW_ACTIVE_TAB_KEY, activeTab);
+  }, [activeTab]);
 
   const previousFocusPage = () => setFocusPageIndex((current) => Math.max(0, current - 1));
   const nextFocusPage = () => setFocusPageIndex((current) => Math.min(FOCUS_PAGES.length - 1, current + 1));
@@ -93,7 +103,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
               <button type="button" onClick={nextFocusPage} disabled={focusPageIndex === FOCUS_PAGES.length - 1} className="h-8 w-8 rounded border border-white/10 text-cyan-200 disabled:opacity-25 hover:border-cyan-300/50">›</button>
             </div>
           </div>
-          <p className="mt-2 text-white/45">Selected tile, quad state, and focus page now survive reloads and app switching.</p>
+          <p className="mt-2 text-white/45">Selected tile, quad state, focus page, and center surface now survive reloads and app switching.</p>
         </div>
         <aside className="rounded border border-cyan-300/20 bg-cyan-300/10 p-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-300">App Assistant Context</div>
