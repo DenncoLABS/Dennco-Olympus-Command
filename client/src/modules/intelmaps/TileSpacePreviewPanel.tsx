@@ -37,10 +37,11 @@ export const TileSpacePreviewPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState(readActiveTab);
   const [layoutName, setLayoutName] = useState(() => readTileSpacePreviewString(TILESPACE_PREVIEW_LAYOUT_KEY, DEFAULT_LAYOUT));
   const selectedTile = useMemo(() => getTileRegistryItem(selectedTileId), [selectedTileId]);
+  const selectedTileNumber = Math.max(1, QUAD_TILE_IDS.indexOf(selectedTileId) + 1);
   const focusPage = FOCUS_PAGES[focusPageIndex] || FOCUS_PAGES[0];
   const assistantContext = `${focusPage} · ${selectedTile?.label || 'No tile'} · ${quadDeployed ? 'Quad deployed' : 'Quad cleared'}`;
   const focusLayoutActive = layoutName === FOCUS_LAYOUT;
-  const runtimeStatus = `${selectedTile?.label || 'No tile'} / ${layoutName} / ${activeTab} / ${focusPage}`;
+  const runtimeStatus = `Tile ${selectedTileNumber}: ${selectedTile?.label || 'No tile'} / ${layoutName} / ${activeTab} / ${focusPage}`;
 
   useEffect(() => {
     writeTileSpacePreviewString(TILESPACE_PREVIEW_SELECTED_TILE_KEY, selectedTileId);
@@ -64,6 +65,10 @@ export const TileSpacePreviewPanel: React.FC = () => {
 
   const previousFocusPage = () => setFocusPageIndex((current) => Math.max(0, current - 1));
   const nextFocusPage = () => setFocusPageIndex((current) => Math.min(FOCUS_PAGES.length - 1, current + 1));
+  const selectTile = (tileId: string) => {
+    setSelectedTileId(tileId);
+    setActiveTab('Quad');
+  };
   const focusSelectedTile = () => {
     setQuadDeployed(true);
     setActiveTab('Quad');
@@ -84,6 +89,12 @@ export const TileSpacePreviewPanel: React.FC = () => {
     setLayoutName(DEFAULT_LAYOUT);
   };
   const handlePanelKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    const numericShortcut = Number(event.key);
+    if (numericShortcut >= 1 && numericShortcut <= QUAD_TILE_IDS.length) {
+      event.preventDefault();
+      selectTile(QUAD_TILE_IDS[numericShortcut - 1]);
+      return;
+    }
     if (event.key === 'Escape' && focusLayoutActive) {
       event.preventDefault();
       returnToQuad();
@@ -127,6 +138,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
 
       <div className="flex items-center gap-2 rounded border border-cyan-300/10 bg-cyan-300/5 px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-white/45">
         <span className="text-cyan-300">Shortcuts</span>
+        <span className="rounded border border-white/10 px-2 py-1">1–4: Select Tile</span>
         <span className="rounded border border-white/10 px-2 py-1">Click: Select</span>
         <span className="rounded border border-white/10 px-2 py-1">Double-click: Focus</span>
         <span className="rounded border border-white/10 px-2 py-1">F: Focus selected card</span>
@@ -156,7 +168,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
       <div className="grid grid-cols-[1fr_260px_280px] gap-3 text-xs">
         <div className="rounded border border-white/10 bg-black/35 p-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-300">Selected Tile</div>
-          <div className="mt-1 text-sm font-bold uppercase tracking-[0.12em] text-white">{selectedTile?.label || 'None'}</div>
+          <div className="mt-1 text-sm font-bold uppercase tracking-[0.12em] text-white">Tile {selectedTileNumber}: {selectedTile?.label || 'None'}</div>
           <p className="mt-2 text-white/45">{selectedTile?.description || 'Select a tile from the quad.'}</p>
           <button type="button" onClick={focusSelectedTile} className="mt-3 rounded border border-cyan-300/30 px-3 py-1 text-[10px] uppercase tracking-[0.12em] text-cyan-100 hover:bg-cyan-300/10">
             Focus This Tile
@@ -173,7 +185,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
               <button type="button" onClick={nextFocusPage} disabled={focusPageIndex === FOCUS_PAGES.length - 1} className="h-8 w-8 rounded border border-white/10 text-cyan-200 disabled:opacity-25 hover:border-cyan-300/50">›</button>
             </div>
           </div>
-          <p className="mt-2 text-white/45">Select any tile, then use Focus Tile, double-click, or F to promote it into the main surface.</p>
+          <p className="mt-2 text-white/45">Press 1–4 to select a tile, then use Focus Tile, double-click, or F to promote it into the main surface.</p>
         </div>
         <aside className="rounded border border-cyan-300/20 bg-cyan-300/10 p-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-300">App Assistant Context</div>
@@ -186,14 +198,14 @@ export const TileSpacePreviewPanel: React.FC = () => {
       {activeTab === 'Quad' && quadDeployed && !focusLayoutActive ? (
         <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-2 overflow-hidden">
           {QUAD_TILE_IDS.map((tileId) => (
-            <TileRuntimeCard key={tileId} tileId={tileId} selected={selectedTileId === tileId} onSelect={() => setSelectedTileId(tileId)} onFocusTile={() => focusTile(tileId)} />
+            <TileRuntimeCard key={tileId} tileId={tileId} selected={selectedTileId === tileId} onSelect={() => selectTile(tileId)} onFocusTile={() => focusTile(tileId)} />
           ))}
         </div>
       ) : activeTab === 'Quad' && quadDeployed ? (
         <div className="flex min-h-0 items-center justify-center rounded border border-cyan-300/20 bg-black/35 p-6 text-center">
           <div>
             <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-300">Focused Tile Layout</div>
-            <div className="mt-2 text-2xl font-bold uppercase tracking-[0.18em] text-white">{selectedTile?.label || 'No Tile Selected'}</div>
+            <div className="mt-2 text-2xl font-bold uppercase tracking-[0.18em] text-white">Tile {selectedTileNumber}: {selectedTile?.label || 'No Tile Selected'}</div>
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/45">{selectedTile?.description || 'Select a tile from the quad.'}</p>
             <button type="button" onClick={returnToQuad} className="mt-5 rounded border border-cyan-300/30 px-4 py-2 text-[10px] uppercase tracking-[0.14em] text-cyan-100 hover:bg-cyan-300/10">
               Return to Quad
@@ -211,7 +223,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
         <div className="flex min-h-0 items-center justify-center rounded border border-cyan-300/20 bg-black/35 p-6 text-center">
           <div>
             <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-300">Selected Tile Surface</div>
-            <div className="mt-2 text-2xl font-bold uppercase tracking-[0.18em] text-white">{selectedTile?.label || 'No Tile Selected'}</div>
+            <div className="mt-2 text-2xl font-bold uppercase tracking-[0.18em] text-white">Tile {selectedTileNumber}: {selectedTile?.label || 'No Tile Selected'}</div>
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/45">{selectedTile?.description || 'Select a tile from the Quad tab to inspect it here.'}</p>
             <button type="button" onClick={focusSelectedTile} className="mt-5 rounded border border-cyan-300/30 px-4 py-2 text-[10px] uppercase tracking-[0.14em] text-cyan-100 hover:bg-cyan-300/10">
               Focus This Tile
