@@ -10,7 +10,11 @@ The Earth screen is the main operational map space. It should remain active whil
 
 ### Desk
 
-The Desk is the full-width bottom workspace. It behaves like a separate OS screen below the Earth screen. Dragging the Desk upward should reduce the height of the Earth screen instead of covering it.
+The Desk is the full-width bottom workspace. It behaves like a separate OS control surface below the Earth screen. Dragging the Desk upward should reduce the height of the Earth screen instead of covering it.
+
+The Desk is not TileSpace.
+
+The Desk is where apps are managed and where tiles are deployed from. TileSpace is where deployed tiles run.
 
 Current implementation:
 
@@ -23,7 +27,7 @@ Current implementation:
 
 ### Dock
 
-The Dock is the launcher inside the Desk. It is not the Desk itself.
+The Dock is the app selector inside the Desk. It is not the Desk itself.
 
 Current Dock behavior:
 
@@ -47,23 +51,42 @@ Current Dock buttons:
 - Admin
 - Settings
 
-## Desk-first app model
+### TileSpace
 
-Olympus apps should follow this opening model:
+TileSpace is the active tile layout area. It is where deployed app tiles, tile groups, widgets, and focus pages run.
+
+TileSpace is the monitoring and workflow wall. The Desk is the control surface.
+
+Planned TileSpace behavior:
+
+- Hold active app tiles.
+- Allow multiple app tiles to tile together.
+- Allow app tiles to contain internal sub-tiles.
+- Support global app widgets and sub-app widgets.
+- Preserve tile state when the Desk opens, closes, or switches apps.
+- Support named Focus Pages navigated by left/right arrows.
+- Support smooth tile deployment and layout transitions.
+
+## Desk and TileSpace app model
+
+Olympus apps should follow this model:
 
 ```text
-Dock = launcher
-Desk = first approach workspace
-Window = focused working surface
+Dock = app selector
+Desk = app management surface and tile deployment surface
+TileSpace = active tile layout area
+Tile = focused app container
+Widget = movable capability inside a scope
+Focus Page = named tile layout for a task
 ```
 
-All apps should first open in the Desk. The Desk approach screen helps the operator understand the service, review status, choose a workflow, and decide how to proceed.
+All apps should first open in the Desk. The Desk surface helps the operator understand the app, review status, manage settings, collaborate, take notes, choose tools, configure integrations, run automations, and deploy tiles.
 
-Deep work opens from the Desk into windows, workspaces, object panels, editors, consoles, or focused maps.
+Active app work appears in TileSpace as app tiles, widgets, tile groups, sub-tiles, and focus pages.
 
-The Dock should not launch destructive or deep production actions directly. The Dock opens or focuses the app approach screen.
+The Dock should open or focus the app Desk surface. Clicking the active app again should close or minimize the Desk. Clicking a different app should keep the Desk open and smoothly switch the Desk to that app.
 
-See `docs/CORE_APP_DEPLOYMENT_MODEL.md` for the full doctrine.
+See `docs/OLYMPUS_TILESPACE_AND_FOCUS_FRAMEWORK.md` for the full TileSpace doctrine.
 
 ## Desk apps
 
@@ -88,8 +111,12 @@ Planned function:
 - Installed Olympus modules
 - Future Olympus apps
 - App state and permissions
-- App approach screens
-- App window/workspace launcher
+- App Desk surfaces
+- Tile deployment controls
+- Widget manager
+- Global app widgets
+- Sub-app widgets
+- App window legacy migration toward TileSpace
 - Manifest-driven app registry
 
 ### Files
@@ -118,6 +145,8 @@ Planned function:
 - Data-source relationships
 - Package/deployment flow
 - Service relationship map
+- TileSpace framework map
+- App/tile/widget registry map
 
 ### Terminal
 
@@ -145,22 +174,43 @@ Saved widgets:
 - AI Synthesis
 - Live Intel Feed
 
-## App window/workspace direction
+## TileSpace direction
 
-Windows and workspaces are focused working surfaces opened from Desk app approach screens.
+TileSpace should become the main active workflow area for Olympus.
 
-They should be used for:
+It should support:
 
-- object detail panels
-- editors
-- live sandbox workspaces
-- report builders
-- configuration workflows
-- consoles
-- AI repair sessions
-- app-specific maps that need focus
+- app tiles
+- app tile groups
+- sub-tiles
+- widgets
+- widget scopes
+- focus pages
+- saved layouts
+- tile linking
+- tile lifecycle states
+- collaboration presence
+- context notes
+- assistant context awareness
+- smooth deployment and layout transitions
 
-App windows should preserve app context and should not hide guardrails, source status, or production safety warnings.
+## App window/workspace migration direction
+
+Existing window language should be treated as legacy wording.
+
+Future product language should prefer:
+
+```text
+TileSpace
+Tile
+App Tile
+Sub-Tile
+Widget
+Focus Page
+Tile Group
+```
+
+Focused work surfaces should be implemented as tiles or tile groups rather than ordinary floating app windows.
 
 ## GNOME integration plan
 
@@ -179,17 +229,20 @@ Planned behavior:
 
 - GNOME session starts Olympus automatically.
 - Olympus opens as the main local command application.
-- The Desk becomes the primary OS navigation surface.
+- The Desk becomes the primary app management and tile deployment surface.
+- TileSpace becomes the active workflow and monitoring surface.
 - Core apps provide local system control without requiring direct shell use.
 
 ## Development rules
 
 - Keep Earth and Desk separated.
+- Keep Desk and TileSpace separated.
 - Dock buttons should not switch the main map unless explicitly designed to.
 - Desk apps open inside the Desk.
-- Apps open in Desk first through an approach screen.
-- Deep app work opens in windows, workspaces, or object panels.
-- Dock should never launch destructive or guarded actions directly.
-- Widgets can later be dragged from the Desk to the Earth screen.
+- Apps open in Desk first through an app management surface.
+- The Desk deploys tiles into TileSpace.
+- TileSpace preserves active tile layouts while the Desk changes apps.
+- Avoid ordinary window language as the primary app model.
+- Widgets can later be dragged from the Desk to TileSpace or Earth when explicitly supported.
 - Preserve local storage keys or provide migrations when changing saved Desk behavior.
 - Keep file access safe and explicit.
