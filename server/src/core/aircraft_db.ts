@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { mapAssetStore, type MapAssetRecord } from './map_assets';
 const duckdb = require('duckdb');
 
 export interface AircraftDetails {
@@ -12,43 +13,16 @@ export interface AircraftDetails {
   built?: string;
 }
 
-export interface AircraftAsset {
-  assetId: string;
-  assetType: 'aircraft';
-  folderPath: string;
-  databasePath: string;
-  label: string;
-  details: AircraftDetails;
-  data: {
-    identity: AircraftDetails;
-    telemetry: Record<string, unknown> | null;
-    history: unknown[];
-    documents: unknown[];
-    notes: unknown[];
-  };
-}
+export type AircraftAsset = MapAssetRecord;
 
 const PARQUET_PATH = path.resolve(
   __dirname,
   '../../src/Data/aircraft-database-complete-2025-08.parquet',
 );
 const JSON_CACHE_PATH = `${PARQUET_PATH}.cache.json`;
-const ASSET_ROOT = '/var/lib/dennco/olympus-command/assets/aircraft';
 
 function normalizeIcao24(value: string): string {
   return value.trim().toLowerCase();
-}
-
-function sanitizeAssetName(value: string): string {
-  return value.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'unknown';
-}
-
-function assetIdFor(icao24: string): string {
-  return `aircraft-${sanitizeAssetName(icao24)}`;
-}
-
-function folderPathFor(icao24: string): string {
-  return `${ASSET_ROOT}/${sanitizeAssetName(icao24)}`;
 }
 
 function labelFor(details: AircraftDetails): string {
@@ -142,25 +116,28 @@ class AircraftDatabase {
   public getAsset(icao24: string, telemetry: Record<string, unknown> | null = null): AircraftAsset {
     const key = normalizeIcao24(icao24);
     const details = this.getDetails(key) || { icao24: key };
-    return {
-      assetId: assetIdFor(key),
+    const tracking = telemetry
+      ? {
+          enabled: true,
+          source: 'dennco-flightmesh',
+          status: 'online' as const,
+          lastSeen: Date.now(),
+          lat: typeof telemetry.lat === 'number' ? telemetry.lat : null,
+          lon: typeof telemetry.lon === 'number' ? telemetry.lon : null,
+          telemetry,
+        }
+      : undefined;
+    return mapAssetStore.upsert({
       assetType: 'aircraft',
-      folderPath: folderPathFor(key),
-      databasePath: `aircraft/${sanitizeAssetName(key)}`,
+      uniqueId: key,
       label: labelFor(details),
       details,
-      data: {
-        identity: details,
-        telemetry,
-        history: [],
-        documents: [],
-        notes: [],
-      },
-    };
+      tracking,
+    });
   }
 
   public getInfo() {
-    return { records: this.db.size, source: PARQUET_PATH, cache: JSON_CACHE_PATH, assetRoot: ASSET_ROOT, loaded: this.isLoaded };
+    return { records: this.db.size, source: PARQUET_PATH, cache: JSON_CACHE_PATH, assetRoot: '/var/lib/dennco/olympus-command/assets', loaded: this.isLoaded };
   }
 
   public search(query: string, limit = 50): AircraftAsset[] {
