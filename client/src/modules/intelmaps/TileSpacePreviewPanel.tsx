@@ -68,6 +68,12 @@ export const TileSpacePreviewPanel: React.FC = () => {
     setActiveTab('Quad');
     setLayoutName(FOCUS_LAYOUT);
   };
+  const focusTile = (tileId: string) => {
+    setSelectedTileId(tileId);
+    setQuadDeployed(true);
+    setActiveTab('Quad');
+    setLayoutName(FOCUS_LAYOUT);
+  };
   const resetLayout = () => {
     setSelectedTileId('intelmaps-flight');
     setQuadDeployed(true);
@@ -145,7 +151,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
               <button type="button" onClick={nextFocusPage} disabled={focusPageIndex === FOCUS_PAGES.length - 1} className="h-8 w-8 rounded border border-white/10 text-cyan-200 disabled:opacity-25 hover:border-cyan-300/50">›</button>
             </div>
           </div>
-          <p className="mt-2 text-white/45">Select any tile, then use Focus Tile to promote it into the main surface.</p>
+          <p className="mt-2 text-white/45">Select any tile, then use Focus Tile or double-click a tile to promote it into the main surface.</p>
         </div>
         <aside className="rounded border border-cyan-300/20 bg-cyan-300/10 p-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-300">App Assistant Context</div>
@@ -158,7 +164,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
       {activeTab === 'Quad' && quadDeployed && !focusLayoutActive ? (
         <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-2 overflow-hidden">
           {QUAD_TILE_IDS.map((tileId) => (
-            <TileRuntimeCard key={tileId} tileId={tileId} selected={selectedTileId === tileId} onSelect={() => setSelectedTileId(tileId)} />
+            <TileRuntimeCard key={tileId} tileId={tileId} selected={selectedTileId === tileId} onSelect={() => setSelectedTileId(tileId)} onFocusTile={() => focusTile(tileId)} />
           ))}
         </div>
       ) : activeTab === 'Quad' && quadDeployed ? (
