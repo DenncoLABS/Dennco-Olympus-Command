@@ -14,6 +14,7 @@ Supporting files:
 apps/olympus-proxmox-data-center/app.manifest.json
 apps/olympus-proxmox-data-center/README.md
 apps/olympus-proxmox-data-center/NOTES.md
+apps/olympus-proxmox-data-center/GUI_PLAN.md
 docs/APP_PACK_INDEX.md
 docs/DEVELOPMENT_GUARDRAILS.md
 ```
@@ -23,6 +24,29 @@ docs/DEVELOPMENT_GUARDRAILS.md
 Olympus Proxmox Data Center is the Proxmox operations app for Dennco Olympus Command.
 
 It should make Olympus the command interface for authorized Proxmox cluster visibility, VM/container inventory, support-lab repair workflows, live sandbox workspaces, AI-assisted lab editing, and production apply planning.
+
+## Functional GUI requirement
+
+The first development milestone must produce a visible, functional operator GUI. If backend API work is not ready, build the GUI with mock/configured data first.
+
+The GUI plan is the required UI reference:
+
+```text
+apps/olympus-proxmox-data-center/GUI_PLAN.md
+```
+
+The first GUI milestone is acceptable when an operator can:
+
+1. Open the Proxmox app from Olympus.
+2. See a Proxmox overview dashboard.
+3. See cluster, node, and VM/CT mock/configured inventory.
+4. Click a cluster and view detail tabs.
+5. Click a VM/CT and view an object panel.
+6. Click Open Lab Workspace or Clone to Support Lab placeholder.
+7. Open a Live Sandbox Workspace screen.
+8. See live preview, file editor, logs, AI helper, and diff/validation areas.
+9. See production actions marked as guarded/disabled.
+10. Understand the intended safe workflow without reading backend code.
 
 ## Locked doctrine
 
@@ -44,7 +68,7 @@ Do not let AI directly edit production files.
 
 ## Build order
 
-### Phase 1: app shell and safe inventory
+### Phase 1: functional app GUI and safe inventory
 
 - Add Proxmox Data Center route/shell.
 - Add dashboard cards for clusters, nodes, VMs, containers, storage, backups, and alerts.
@@ -54,7 +78,10 @@ Do not let AI directly edit production files.
 - Add customer/service linking placeholders.
 - Add support lab workspace list.
 - Add live sandbox UI placeholder.
+- Add code/file editor placeholder.
+- Add logs/diff/validation placeholder areas.
 - Add AI helper panel placeholder.
+- Mark production actions as guarded/disabled.
 
 ### Phase 2: authorized sync and lab workspace
 
