@@ -4,9 +4,11 @@ import { useRuntimeSettings } from '../../admin/runtimeSettings';
 import { logoutAdmin } from '../../admin/LoginGate';
 import { useThemeStore, type ActiveModule } from '../theme/theme.store';
 import { MonitorDeskWorkspace } from '../../modules/monitor/widgets/MonitorDeskWorkspace';
-import { deskAppCatalog, dockActionCatalog } from '../desk/registry/deskCatalog';
+import { deskAppCatalog, dockActionCatalog, standardDeskSections } from '../desk/registry/deskCatalog';
+import type { DeskAppDefinition, DeskTileDefinition, DeskWidgetDefinition } from '../desk/registry/deskTypes';
+import { useTileSpaceStore, type FocusLayout, type TileInstance } from '../tiles/tileSpace.store';
 
-type DeskView = 'core' | 'apps' | 'files' | 'architecture' | 'terminal' | 'ollama' | 'services' | 'packages' | 'intelmaps' | 'monitor' | 'cad' | 'admin' | 'settings';
+type DeskView = string;
 type DockPlacement = 'left' | 'center' | 'right';
 type HatchState = 'latched' | 'opening' | 'open' | 'closing';
 type DeskStatus = 'active' | 'planned' | 'protected';
@@ -19,78 +21,39 @@ const DOCK_KEY = 'olympus.desk.v2.dock';
 const VIEW_KEY = 'olympus.desk.v2.view';
 const HATCH_KEY = 'olympus.desk.v2.hatch';
 const DOCK_ORDER_KEY = 'olympus.desk.v2.dockOrder';
-const TILE_SCREEN_COUNT_KEY = 'olympus.tiles.screenCount';
-const TILE_SCREEN_INDEX_KEY = 'olympus.tiles.activeIndex';
-const TILE_NAV_EVENT = 'olympus:tile-screen-nav';
-const MIN_TILE_SCREENS = 3;
-const MAX_TILE_SCREENS = 18;
-const DEFAULT_HEIGHT = 260;
+const DEFAULT_HEIGHT = 320;
 const LATCHED_HEIGHT = 18;
 const SNAP_HEIGHT = 80;
-const HATCH_MS = 1250;
+const HATCH_MS = 220;
 const IDLE_CLOSE_MS = 45000;
 
-const deskItems: DeskItem[] = deskAppCatalog
-  .filter((item) => item.status !== 'hidden')
-  .map((item) => ({
-    id: item.id,
-    label: item.label,
-    icon: item.icon,
-    view: item.view as DeskView,
-    module: item.module,
-    group: item.group,
-    status: item.status === 'hidden' ? 'planned' : item.status as DeskStatus,
-    description: item.description,
-  }));
+const deskItems: DeskItem[] = deskAppCatalog.filter((item) => item.status !== 'hidden').map((item) => ({ id: item.id, label: item.label, icon: item.icon, view: item.view, module: item.module, group: item.group, status: item.status === 'hidden' ? 'planned' : item.status as DeskStatus, description: item.description }));
 const logoutSource = dockActionCatalog.find((item) => item.id === 'logout');
 const logoutDockItem: LogoutDockItem = { id: 'logout', label: 'Logout', icon: '⏻', action: 'logout' };
-if (logoutSource) {
-  logoutDockItem.label = logoutSource.label as 'Logout';
-  logoutDockItem.icon = logoutSource.icon as '⏻';
-}
+if (logoutSource) { logoutDockItem.label = logoutSource.label as 'Logout'; logoutDockItem.icon = logoutSource.icon as '⏻'; }
 
 const architectureNodes = [
   ['Debian Base', 'Host OS packages, apt repository, systemd, local state directories'],
   ['GNOME Shell', 'Desktop launcher, autostart entry, future session integration'],
-  ['Olympus Core GUI', 'TopNav, Tile Screens, powered Desk hatch, Dock launcher'],
-  ['Tile Screens', 'Primary monitor viewing surface. Intel Maps opens map workspaces from tiles.'],
-  ['Olympus Desk', 'Apps, Files, Architecture, Terminal, Ollama AI, Services, Packages, Settings'],
-  ['Intel Maps App', 'Flight, Maritime, Monitor, DOT, and Cyber maps attach to one workspace bar'],
+  ['Olympus Core GUI', 'TopNav, Focus Pages, powered Desk hatch, Dock launcher'],
+  ['TileSpace', 'Active app tile area. Focus Pages preserve app surfaces, widgets, and tile groups.'],
+  ['Olympus Desk', 'Selected app management/control surface for tile deployment, widgets, notes, settings, and activity'],
+  ['Intel Maps App', 'Flight, Maritime, Monitor, and DOT sub-app tiles deploy through the Desk'],
 ] as const;
 
-function savedNumber(key: string, fallback: number) {
-  const value = Number(localStorage.getItem(key));
-  return Number.isFinite(value) ? value : fallback;
-}
-function clamp(value: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, value));
-}
-function clampHeight(value: number) {
-  return Math.max(LATCHED_HEIGHT, Math.min(value, Math.floor(window.innerHeight * 0.72)));
-}
-function savedDock(): DockPlacement {
-  const value = localStorage.getItem(DOCK_KEY);
-  return value === 'left' || value === 'right' || value === 'center' ? value : 'center';
-}
-function savedView(): DeskView {
-  const value = localStorage.getItem(VIEW_KEY) as DeskView | null;
-  return deskItems.some((item) => item.view === value) ? value as DeskView : 'core';
-}
-function savedHatch(): HatchState {
-  return localStorage.getItem(HATCH_KEY) === 'open' ? 'open' : 'latched';
-}
-function savedDockOrder() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(DOCK_ORDER_KEY) || '[]');
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
-  } catch {
-    return [];
-  }
-}
+const sectionLabels: Record<string, string> = { overview: 'Overview', status: 'Status / Health', tools: 'Tools / Sub-Apps', deploy: 'Deploy App Tile', layouts: 'Tile Layouts', widgets: 'Widget Manager', 'global-widgets': 'Global App Widgets', 'sub-app-widgets': 'Sub-App Widgets', collaboration: 'Collaboration', notes: 'Notes', automations: 'Automations', integrations: 'Integrations', 'related-apps': 'Related Apps', settings: 'Core App Settings', permissions: 'Permissions / Guardrails', activity: 'Activity' };
+
+function savedNumber(key: string, fallback: number) { const value = Number(localStorage.getItem(key)); return Number.isFinite(value) ? value : fallback; }
+function clampHeight(value: number) { return Math.max(LATCHED_HEIGHT, Math.min(value, Math.floor(window.innerHeight * 0.72))); }
+function savedDock(): DockPlacement { const value = localStorage.getItem(DOCK_KEY); return value === 'left' || value === 'right' || value === 'center' ? value : 'center'; }
+function savedView(): DeskView { const value = localStorage.getItem(VIEW_KEY); return value && deskItems.some((item) => item.view === value) ? value : 'core'; }
+function savedHatch(): HatchState { return localStorage.getItem(HATCH_KEY) === 'open' ? 'open' : 'latched'; }
+function savedDockOrder() { try { const parsed = JSON.parse(localStorage.getItem(DOCK_ORDER_KEY) || '[]'); return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []; } catch { return []; } }
 
 export const OlympusDeskV2: React.FC = () => {
   const { settings } = useRuntimeSettings();
   const setActiveModule = useThemeStore((state) => state.setActiveModule);
+  const setActiveDeskSurface = useTileSpaceStore((state) => state.setActiveDeskSurface);
   const [height, setHeight] = useState(() => savedHatch() === 'open' ? clampHeight(savedNumber(HEIGHT_KEY, DEFAULT_HEIGHT)) : LATCHED_HEIGHT);
   const [hatch, setHatch] = useState<HatchState>(() => savedHatch());
   const [view, setView] = useState<DeskView>(() => savedView());
@@ -102,219 +65,93 @@ export const OlympusDeskV2: React.FC = () => {
   const draggedDockIdRef = useRef<string | null>(null);
 
   const launchers = useMemo(() => deskItems.filter((item) => !item.module || item.module === 'intelmaps' || settings.featureToggles[item.module] !== false), [settings.featureToggles]);
-  const dockWidgets = useMemo<DockWidgetItem[]>(() => {
-    const widgets: DockWidgetItem[] = [...launchers, logoutDockItem];
-    const order = dockOrder.length ? dockOrder : widgets.map((item) => item.id);
-    return [...widgets].sort((a, b) => {
-      const ai = order.indexOf(a.id);
-      const bi = order.indexOf(b.id);
-      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-    });
-  }, [launchers, dockOrder]);
+  const dockWidgets = useMemo<DockWidgetItem[]>(() => { const widgets: DockWidgetItem[] = [...launchers, logoutDockItem]; const order = dockOrder.length ? dockOrder : widgets.map((item) => item.id); return [...widgets].sort((a, b) => { const ai = order.indexOf(a.id); const bi = order.indexOf(b.id); return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi); }); }, [launchers, dockOrder]);
   const open = hatch === 'open' || hatch === 'opening';
   const latched = hatch === 'latched' || hatch === 'closing';
-
-  const clearHatchTimer = () => {
-    if (hatchTimerRef.current) window.clearTimeout(hatchTimerRef.current);
-    hatchTimerRef.current = null;
-  };
-  const powerOpen = () => {
-    clearHatchTimer();
-    setHatch('opening');
-    requestAnimationFrame(() => setHeight((current) => Math.max(current, DEFAULT_HEIGHT)));
-    hatchTimerRef.current = window.setTimeout(() => setHatch('open'), HATCH_MS);
-  };
-  const powerClose = () => {
-    clearHatchTimer();
-    setHatch('closing');
-    requestAnimationFrame(() => setHeight(LATCHED_HEIGHT));
-    hatchTimerRef.current = window.setTimeout(() => setHatch('latched'), HATCH_MS);
-  };
-  const resetIdle = () => {
-    if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
-    if (hatch === 'open') idleTimerRef.current = window.setTimeout(powerClose, IDLE_CLOSE_MS);
-  };
-  const moveDockWidget = (sourceId: string, targetId: string) => {
-    if (sourceId === targetId) return;
-    const current = dockWidgets.map((item) => item.id);
-    const from = current.indexOf(sourceId);
-    const to = current.indexOf(targetId);
-    if (from === -1 || to === -1) return;
-    const next = [...current];
-    const [moved] = next.splice(from, 1);
-    next.splice(to, 0, moved);
-    setDockOrder(next);
-  };
+  const clearHatchTimer = () => { if (hatchTimerRef.current) window.clearTimeout(hatchTimerRef.current); hatchTimerRef.current = null; };
+  const powerOpen = () => { clearHatchTimer(); setHatch('opening'); requestAnimationFrame(() => setHeight((current) => Math.max(current, DEFAULT_HEIGHT))); hatchTimerRef.current = window.setTimeout(() => setHatch('open'), HATCH_MS); };
+  const powerClose = () => { clearHatchTimer(); setHatch('closing'); requestAnimationFrame(() => setHeight(LATCHED_HEIGHT)); hatchTimerRef.current = window.setTimeout(() => setHatch('latched'), HATCH_MS); };
+  const resetIdle = () => { if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current); if (hatch === 'open') idleTimerRef.current = window.setTimeout(powerClose, IDLE_CLOSE_MS); };
+  const moveDockWidget = (sourceId: string, targetId: string) => { if (sourceId === targetId) return; const current = dockWidgets.map((item) => item.id); const from = current.indexOf(sourceId); const to = current.indexOf(targetId); if (from === -1 || to === -1) return; const next = [...current]; const [moved] = next.splice(from, 1); next.splice(to, 0, moved); setDockOrder(next); };
 
   useEffect(() => { localStorage.setItem(HEIGHT_KEY, String(hatch === 'open' ? height : LATCHED_HEIGHT)); }, [height, hatch]);
   useEffect(() => { localStorage.setItem(HATCH_KEY, hatch === 'open' ? 'open' : 'latched'); }, [hatch]);
-  useEffect(() => { localStorage.setItem(VIEW_KEY, view); }, [view]);
+  useEffect(() => { localStorage.setItem(VIEW_KEY, view); setActiveDeskSurface(view); }, [view, setActiveDeskSurface]);
   useEffect(() => { localStorage.setItem(DOCK_KEY, dock); }, [dock]);
   useEffect(() => { localStorage.setItem(DOCK_ORDER_KEY, JSON.stringify(dockOrder)); }, [dockOrder]);
-  useEffect(() => {
-    const onResize = () => setHeight((current) => clampHeight(current));
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  useEffect(() => {
-    resetIdle();
-    return () => { if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hatch, view]);
+  useEffect(() => { const onResize = () => setHeight((current) => clampHeight(current)); window.addEventListener('resize', onResize); return () => window.removeEventListener('resize', onResize); }, []);
+  useEffect(() => { resetIdle(); return () => { if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current); }; /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [hatch, view]);
 
   const openDockItem = (item: DockWidgetItem) => {
-    if ('action' in item) {
-      logoutAdmin();
-      return;
-    }
+    if ('action' in item) { logoutAdmin(); return; }
+    const isSameDeskApp = view === item.view;
+    if (isSameDeskApp && (hatch === 'open' || hatch === 'opening')) { powerClose(); resetIdle(); return; }
     setView(item.view);
     if (hatch !== 'open' && hatch !== 'opening') powerOpen();
     if (item.module === 'intelmaps') setActiveModule('intelmaps');
     resetIdle();
   };
-  const toggleLatch = () => {
-    if (hatch === 'open' || hatch === 'opening') powerClose();
-    else powerOpen();
-  };
-  const startResize = (event: React.PointerEvent<HTMLButtonElement>) => {
-    clearHatchTimer();
-    setHatch('open');
-    resizeRef.current = { pointerId: event.pointerId, startY: event.clientY, startHeight: height };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-  const moveResize = (event: React.PointerEvent<HTMLButtonElement>) => {
-    const state = resizeRef.current;
-    if (!state || state.pointerId !== event.pointerId) return;
-    setHeight(clampHeight(state.startHeight + state.startY - event.clientY));
-  };
-  const stopResize = (event: React.PointerEvent<HTMLButtonElement>) => {
-    const state = resizeRef.current;
-    if (!state || state.pointerId !== event.pointerId) return;
-    resizeRef.current = null;
-    setHeight((current) => {
-      if (current <= SNAP_HEIGHT) { powerClose(); return LATCHED_HEIGHT; }
-      setHatch('open');
-      return current;
-    });
-    resetIdle();
-    try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* noop */ }
-  };
+  const toggleLatch = () => { if (hatch === 'open' || hatch === 'opening') powerClose(); else powerOpen(); };
+  const startResize = (event: React.PointerEvent<HTMLButtonElement>) => { clearHatchTimer(); setHatch('open'); resizeRef.current = { pointerId: event.pointerId, startY: event.clientY, startHeight: height }; event.currentTarget.setPointerCapture(event.pointerId); };
+  const moveResize = (event: React.PointerEvent<HTMLButtonElement>) => { const state = resizeRef.current; if (!state || state.pointerId !== event.pointerId) return; setHeight(clampHeight(state.startHeight + state.startY - event.clientY)); };
+  const stopResize = (event: React.PointerEvent<HTMLButtonElement>) => { const state = resizeRef.current; if (!state || state.pointerId !== event.pointerId) return; resizeRef.current = null; setHeight((current) => { if (current <= SNAP_HEIGHT) { powerClose(); return LATCHED_HEIGHT; } setHatch('open'); return current; }); resetIdle(); try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* noop */ } };
   const dockClass = dock === 'left' ? 'justify-start' : dock === 'right' ? 'justify-end' : 'justify-center';
+  const dockMarkup = <><div className={`olympus-dock-row flex border-t border-cyan-300/15 bg-black/65 px-3 py-2 ${dockClass}`}><div className="olympus-dock-track flex max-w-full items-end gap-2 overflow-visible rounded-2xl border border-cyan-300/20 bg-white/[0.03] px-3 py-2 shadow-[0_0_24px_rgba(34,211,238,0.12)]"><div className="olympus-dock-label mr-2 hidden min-w-[110px] flex-col items-start border-r border-white/10 pr-3 md:flex"><span className="text-[9px] uppercase tracking-[0.22em] text-cyan-300">Olympus Dock</span><span className="text-[8px] uppercase tracking-[0.16em] text-white/35">Apps</span></div><div className="olympus-dock-widget-lane" aria-label="Draggable Olympus Dock apps">{dockWidgets.map((item) => <DockWidget key={item.id} item={item} active={!('action' in item) && open && view === item.view} draggedDockIdRef={draggedDockIdRef} onMove={moveDockWidget} onOpen={openDockItem} />)}</div></div></div><FocusPageSwitcher /></>;
 
-  const dockMarkup = (
-    <>
-      <div className={`olympus-dock-row flex border-t border-cyan-300/15 bg-black/65 px-3 py-2 ${dockClass}`}>
-        <div className="olympus-dock-track flex max-w-full items-end gap-2 overflow-visible rounded-2xl border border-cyan-300/20 bg-white/[0.03] px-3 py-2 shadow-[0_0_24px_rgba(34,211,238,0.12)]">
-          <div className="olympus-dock-label mr-2 hidden min-w-[110px] flex-col items-start border-r border-white/10 pr-3 md:flex"><span className="text-[9px] uppercase tracking-[0.22em] text-cyan-300">Olympus Dock</span><span className="text-[8px] uppercase tracking-[0.16em] text-white/35">Launcher</span></div>
-          <div className="olympus-dock-widget-lane" aria-label="Draggable Olympus Dock widgets">
-            {dockWidgets.map((item) => (
-              <DockWidget
-                key={item.id}
-                item={item}
-                active={!('action' in item) && view === item.view}
-                draggedDockIdRef={draggedDockIdRef}
-                onMove={moveDockWidget}
-                onOpen={openDockItem}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-      <TileScreenSwitcher />
-    </>
-  );
-
-  return (
-    <>
-      <section data-desk-latched={latched ? 'true' : 'false'} data-hatch-state={hatch} onMouseMove={resetIdle} onClick={resetIdle} className="olympus-powered-desk relative z-[4200] w-full shrink-0 border-t border-cyan-300/25 bg-black/90 font-mono text-white shadow-[0_-16px_40px_rgba(0,0,0,0.82)]" style={{ height: `${height}px` }}>
-        <button type="button" title="Click to operate powered Desk hatch. Drag to manually position." className="olympus-hatch-latch absolute left-1/2 top-0 z-20 h-4 w-64 -translate-x-1/2 cursor-ns-resize rounded-b border-x border-b border-cyan-300/25 bg-cyan-300/10 text-center text-[8px] uppercase tracking-[0.24em] text-cyan-200/65" onClick={toggleLatch} onDoubleClick={toggleLatch} onPointerDown={startResize} onPointerMove={moveResize} onPointerUp={stopResize} onPointerCancel={stopResize}>{hatch === 'latched' ? 'Power Hatch · Latched' : hatch === 'opening' ? 'Power Hatch · Unlatching' : hatch === 'closing' ? 'Power Hatch · Closing' : 'Power Hatch · Open'}</button>
-        <div className="flex h-full flex-col overflow-visible">
-          {open && <div className="olympus-desk-header flex h-11 items-center justify-between border-b border-white/10 px-4 pt-2">
-            <div><div className="text-[10px] uppercase tracking-[0.26em] text-cyan-300">Olympus Desk</div><div className="text-[9px] uppercase tracking-[0.16em] text-white/40">Powered OS workspace · registry-driven Dock widgets · auto-closing hatch</div></div>
-            <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/45">
-              <button onClick={() => setDock('left')} className={`border px-2 py-1 ${dock === 'left' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Left</button>
-              <button onClick={() => setDock('center')} className={`border px-2 py-1 ${dock === 'center' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Center</button>
-              <button onClick={() => setDock('right')} className={`border px-2 py-1 ${dock === 'right' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Right</button>
-              <button onClick={() => setDockOrder([])} className="border border-white/10 px-2 py-1 text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Reset Dock</button>
-              <button onClick={powerClose} className="border border-white/10 px-2 py-1 text-cyan-200 hover:border-cyan-300/60">Latch</button>
-            </div>
-          </div>}
-          {open && <div className="olympus-desk-body min-h-0 flex-1 overflow-hidden px-4 py-3"><DeskApp view={view} setView={setView} dock={dock} setDock={setDock} height={height} setHeight={setHeight} /></div>}
-        </div>
-      </section>
-      {typeof document !== 'undefined' ? createPortal(dockMarkup, document.body) : null}
-    </>
-  );
+  return <><section data-desk-latched={latched ? 'true' : 'false'} data-hatch-state={hatch} onMouseMove={resetIdle} onClick={resetIdle} className="olympus-powered-desk relative z-[4200] w-full shrink-0 border-t border-cyan-300/25 bg-black/90 font-mono text-white shadow-[0_-16px_40px_rgba(0,0,0,0.82)] transition-[height] duration-[220ms] ease-out" style={{ height: `${height}px` }}><button type="button" title="Click to hide Desk. Drag to manually position." className="olympus-hatch-latch absolute left-1/2 top-0 z-20 h-4 w-64 -translate-x-1/2 cursor-ns-resize rounded-b border-x border-b border-cyan-300/25 bg-cyan-300/10 text-center text-[8px] uppercase tracking-[0.24em] text-cyan-200/65" onClick={toggleLatch} onDoubleClick={toggleLatch} onPointerDown={startResize} onPointerMove={moveResize} onPointerUp={stopResize} onPointerCancel={stopResize}>{hatch === 'latched' ? 'Desk · Hidden' : hatch === 'opening' ? 'Desk · Opening' : hatch === 'closing' ? 'Desk · Hiding' : 'Desk · Open'}</button><div className="flex h-full flex-col overflow-visible">{open && <div className="olympus-desk-header flex h-11 items-center justify-between border-b border-white/10 px-4 pt-2 transition-opacity duration-150"><div><div className="text-[10px] uppercase tracking-[0.26em] text-cyan-300">Olympus Desk</div><div className="text-[9px] uppercase tracking-[0.16em] text-white/40">Selected app management · TileSpace deployment · Focus-ready controls</div></div><div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/45"><button onClick={() => setDock('left')} className={`border px-2 py-1 ${dock === 'left' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Left</button><button onClick={() => setDock('center')} className={`border px-2 py-1 ${dock === 'center' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Center</button><button onClick={() => setDock('right')} className={`border px-2 py-1 ${dock === 'right' ? 'border-cyan-300/60 text-cyan-200' : 'border-white/10 hover:border-cyan-300/40'}`}>Dock Right</button><button onClick={() => setDockOrder([])} className="border border-white/10 px-2 py-1 text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Reset Dock</button><button onClick={powerClose} className="border border-white/10 px-2 py-1 text-cyan-200 hover:border-cyan-300/60">Hide Desk</button></div></div>}{open && <div className="olympus-desk-body min-h-0 flex-1 overflow-hidden px-4 py-3 transition-opacity duration-150"><DeskApp view={view} setView={setView} dock={dock} setDock={setDock} height={height} setHeight={setHeight} /></div>}</div></section>{typeof document !== 'undefined' ? createPortal(dockMarkup, document.body) : null}</>;
 };
 
-function TileScreenSwitcher() {
-  const [screenCount, setScreenCount] = useState(() => clamp(savedNumber(TILE_SCREEN_COUNT_KEY, MIN_TILE_SCREENS), MIN_TILE_SCREENS, MAX_TILE_SCREENS));
-  const [activeIndex, setActiveIndex] = useState(() => clamp(savedNumber(TILE_SCREEN_INDEX_KEY, 0), 0, Math.max(0, savedNumber(TILE_SCREEN_COUNT_KEY, MIN_TILE_SCREENS) - 1)));
-
-  const publish = (nextIndex: number, nextCount: number) => {
-    const safeCount = clamp(nextCount, MIN_TILE_SCREENS, MAX_TILE_SCREENS);
-    const safeIndex = clamp(nextIndex, 0, safeCount - 1);
-    setScreenCount(safeCount);
-    setActiveIndex(safeIndex);
-    localStorage.setItem(TILE_SCREEN_COUNT_KEY, String(safeCount));
-    localStorage.setItem(TILE_SCREEN_INDEX_KEY, String(safeIndex));
-    window.dispatchEvent(new CustomEvent(TILE_NAV_EVENT, { detail: { activeIndex: safeIndex, screenCount: safeCount } }));
-  };
-  const previousTile = () => publish(activeIndex - 1, screenCount);
-  const nextTile = () => {
-    if (activeIndex < screenCount - 1) publish(activeIndex + 1, screenCount);
-    else if (screenCount < MAX_TILE_SCREENS) publish(activeIndex + 1, screenCount + 1);
-  };
-
-  useEffect(() => {
-    const refresh = () => {
-      const count = clamp(savedNumber(TILE_SCREEN_COUNT_KEY, MIN_TILE_SCREENS), MIN_TILE_SCREENS, MAX_TILE_SCREENS);
-      setScreenCount(count);
-      setActiveIndex(clamp(savedNumber(TILE_SCREEN_INDEX_KEY, 0), 0, count - 1));
-    };
-    window.addEventListener(TILE_NAV_EVENT, refresh as EventListener);
-    window.addEventListener('storage', refresh);
-    return () => {
-      window.removeEventListener(TILE_NAV_EVENT, refresh as EventListener);
-      window.removeEventListener('storage', refresh);
-    };
-  }, []);
-
-  return (
-    <div className="olympus-tile-switcher fixed bottom-[40px] right-5 z-[4700] flex items-center gap-2 rounded-2xl border border-cyan-300/25 bg-black/80 px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/55 shadow-[0_0_18px_rgba(34,211,238,0.16)] backdrop-blur">
-      <button type="button" onClick={previousTile} disabled={activeIndex === 0} className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-cyan-200 disabled:cursor-not-allowed disabled:opacity-30 hover:border-cyan-300/50 hover:bg-cyan-300/10" aria-label="Previous Tile screen">‹</button>
-      <div className="min-w-[92px] text-center leading-tight"><div className="text-cyan-300">Tile {activeIndex + 1}</div><div className="text-[8px] text-white/35">of {screenCount}</div></div>
-      <button type="button" onClick={nextTile} disabled={activeIndex >= MAX_TILE_SCREENS - 1 && screenCount >= MAX_TILE_SCREENS} className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-cyan-200 disabled:cursor-not-allowed disabled:opacity-30 hover:border-cyan-300/50 hover:bg-cyan-300/10" aria-label="Next Tile screen">›</button>
-    </div>
-  );
+function FocusPageSwitcher() {
+  const focusPages = useTileSpaceStore((state) => state.focusPages);
+  const activeFocusPageId = useTileSpaceStore((state) => state.activeFocusPageId);
+  const previousFocusPage = useTileSpaceStore((state) => state.previousFocusPage);
+  const nextFocusPage = useTileSpaceStore((state) => state.nextFocusPage);
+  const ordered = [...focusPages].filter((page) => !page.archived).sort((a, b) => a.order - b.order);
+  const activeIndex = ordered.findIndex((page) => page.id === activeFocusPageId);
+  const activePage = ordered[activeIndex] || ordered[0];
+  return <div className="olympus-tile-switcher fixed bottom-[40px] right-5 z-[4700] flex items-center gap-2 rounded-2xl border border-cyan-300/25 bg-black/80 px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/55 shadow-[0_0_18px_rgba(34,211,238,0.16)] backdrop-blur"><button type="button" onClick={previousFocusPage} disabled={activeIndex <= 0} className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-cyan-200 disabled:cursor-not-allowed disabled:opacity-30 hover:border-cyan-300/50 hover:bg-cyan-300/10" aria-label="Previous Focus Page">‹</button><div className="min-w-[150px] text-center leading-tight"><div className="text-cyan-300">{activePage?.name || 'Focus Page'}</div><div className="text-[8px] text-white/35">Focus {Math.max(0, activeIndex) + 1} of {ordered.length}</div></div><button type="button" onClick={nextFocusPage} className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-cyan-200 hover:border-cyan-300/50 hover:bg-cyan-300/10" aria-label="Next Focus Page">›</button></div>;
 }
 
 function DockWidget({ item, active, draggedDockIdRef, onMove, onOpen }: { item: DockWidgetItem; active: boolean; draggedDockIdRef: React.MutableRefObject<string | null>; onMove: (sourceId: string, targetId: string) => void; onOpen: (item: DockWidgetItem) => void }) {
-  return (
-    <div className="olympus-dock-widget" draggable onDragStart={(event) => { draggedDockIdRef.current = item.id; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', item.id); }} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; }} onDrop={(event) => { event.preventDefault(); const sourceId = draggedDockIdRef.current || event.dataTransfer.getData('text/plain'); onMove(sourceId, item.id); draggedDockIdRef.current = null; }} onDragEnd={() => { draggedDockIdRef.current = null; }}>
-      <button type="button" data-dock-logout={'action' in item ? 'true' : undefined} onClick={() => onOpen(item)} className={`group flex flex-col items-center justify-center rounded-xl border transition-all ${active ? 'border-cyan-300/60 bg-cyan-400/15 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.25)]' : 'border-white/10 bg-white/[0.03] text-white/55 hover:border-cyan-300/40 hover:bg-cyan-400/10 hover:text-cyan-100'}`} title={item.label}>
-        <span className="dock-widget-icon leading-none">{item.icon}</span>
-        <span className="dock-widget-label">{item.label}</span>
-      </button>
-    </div>
-  );
+  return <div className="olympus-dock-widget" draggable onDragStart={(event) => { draggedDockIdRef.current = item.id; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', item.id); }} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; }} onDrop={(event) => { event.preventDefault(); const sourceId = draggedDockIdRef.current || event.dataTransfer.getData('text/plain'); onMove(sourceId, item.id); draggedDockIdRef.current = null; }} onDragEnd={() => { draggedDockIdRef.current = null; }}><button type="button" data-dock-logout={'action' in item ? 'true' : undefined} onClick={() => onOpen(item)} className={`group flex flex-col items-center justify-center rounded-xl border transition-all duration-150 ${active ? 'border-cyan-300/60 bg-cyan-400/15 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.25)]' : 'border-white/10 bg-white/[0.03] text-white/55 hover:border-cyan-300/40 hover:bg-cyan-400/10 hover:text-cyan-100'}`} title={!('action' in item) && active ? `${item.label} Desk is open — click to hide Desk` : item.label}><span className="dock-widget-icon leading-none">{item.icon}</span><span className="dock-widget-label">{item.label}</span></button></div>;
 }
 
 function DeskApp({ view, setView, dock, setDock, height, setHeight }: { view: DeskView; setView: (view: DeskView) => void; dock: DockPlacement; setDock: (dock: DockPlacement) => void; height: number; setHeight: (height: number) => void }) {
-  const title = deskItems.find((item) => item.view === view)?.label || view;
-  return <div className="grid h-full grid-cols-[270px_1fr] gap-4 text-white/70"><aside className="rounded border border-white/10 bg-black/35 p-3 overflow-auto custom-scrollbar"><div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">Desk Window</div><div className="mt-2 text-2xl font-bold uppercase tracking-[0.14em] text-white">{title}</div><div className="mt-2 text-xs leading-relaxed text-white/45">Olympus Desk apps run inside this workspace.</div><div className="mt-4 space-y-1 text-[10px] uppercase tracking-[0.12em] text-white/40"><button onClick={() => setView('apps')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Open Apps Browser</button><button onClick={() => setView('files')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Open GNOME Files</button><button onClick={() => setView('ollama')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Open Ollama AI</button><button onClick={() => setView('architecture')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Visualize Architecture</button><button onClick={() => setView('terminal')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Open Terminal</button><button onClick={() => setView('settings')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Desk Settings</button></div></aside><main className="min-h-0 overflow-hidden rounded border border-cyan-300/15 bg-[#020617]/70"><div className="flex h-9 items-center justify-between border-b border-white/10 bg-white/[0.03] px-3"><span className="text-[10px] uppercase tracking-[0.2em] text-cyan-300">{title} Window</span><span className="text-[9px] uppercase tracking-[0.14em] text-white/35">GNOME-style Olympus shell</span></div><div className="h-[calc(100%-36px)] overflow-auto custom-scrollbar p-4">{view === 'core' && <CoreView />}{view === 'apps' && <AppsView setView={setView} />}{view === 'files' && <FilesView />}{view === 'ollama' && <OllamaView />}{view === 'architecture' && <ArchitectureView />}{view === 'terminal' && <TerminalView />}{view === 'services' && <ServicesView />}{view === 'packages' && <PackagesView />}{view === 'intelmaps' && <IntelMapsDeskView />}{view === 'monitor' && <MonitorDeskWorkspace />}{view === 'settings' && <SettingsView dock={dock} setDock={setDock} height={height} setHeight={setHeight} />}{['cad', 'admin'].includes(view) && <ModuleView view={view} />}</div></main></div>;
+  const app = deskAppCatalog.find((item) => item.view === view) || deskAppCatalog.find((item) => item.view === 'core')!;
+  return <div className="grid h-full grid-cols-[270px_1fr] gap-4 text-white/70 transition-all duration-200"><aside className="rounded border border-white/10 bg-black/35 p-3 overflow-auto custom-scrollbar"><div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">Desk Surface</div><div className="mt-2 text-2xl font-bold uppercase tracking-[0.14em] text-white">{app.label}</div><div className="mt-2 text-xs leading-relaxed text-white/45">{app.description}</div><div className="mt-4 space-y-1 text-[10px] uppercase tracking-[0.12em] text-white/40"><button onClick={() => setView('apps')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Open Apps Browser</button><button onClick={() => setView('files')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Open Files Surface</button><button onClick={() => setView('ollama')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Open Ollama AI</button><button onClick={() => setView('architecture')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Visualize Architecture</button><button onClick={() => setView('terminal')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Open Terminal Surface</button><button onClick={() => setView('settings')} className="block w-full border border-white/10 px-2 py-1 text-left hover:border-cyan-300/40 hover:text-cyan-200">Desk Settings</button></div></aside><main className="min-h-0 overflow-hidden rounded border border-cyan-300/15 bg-[#020617]/70"><div className="flex h-9 items-center justify-between border-b border-white/10 bg-white/[0.03] px-3"><span className="text-[10px] uppercase tracking-[0.2em] text-cyan-300">{app.label} Desk Surface</span><span className="text-[9px] uppercase tracking-[0.14em] text-white/35">Deploy active app surfaces into TileSpace</span></div><div className="h-[calc(100%-36px)] overflow-auto custom-scrollbar p-4">{view === 'core' && <CoreView />}{view === 'apps' && <AppsView setView={setView} />}{view === 'files' && <FilesView />}{view === 'ollama' && <OllamaView />}{view === 'architecture' && <ArchitectureView />}{view === 'terminal' && <TerminalView />}{view === 'services' && <ServicesView />}{view === 'packages' && <PackagesView />}{view === 'monitor' && <MonitorDeskWorkspace />}{view === 'settings' && <SettingsView dock={dock} setDock={setDock} height={height} setHeight={setHeight} />}{!['core', 'apps', 'files', 'ollama', 'architecture', 'terminal', 'services', 'packages', 'monitor', 'settings'].includes(view) && <StandardAppDesk app={app} />}</div></main></div>;
 }
 
-function CoreView() { return <Panel title="Core System" text="Olympus Core controls the Debian/GNOME shell layer, tile screens, Desk, Dock, Ollama AI, and operational apps." />; }
-function IntelMapsDeskView() { return <Panel title="Intel Maps" text="The Intel Maps Dock button deploys the map workspace bar. Flight, Maritime, Monitor, DOT, and Cyber open from that app." />; }
-function FilesView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">GNOME Files Shell Browser</h3><p className="mt-3 text-sm text-white/60">Files is now assigned to GNOME Files, also packaged as Nautilus, as the Olympus Core OS shell file browser.</p><div className="mt-4 grid gap-3 md:grid-cols-2"><StatusCard title="Shell File Browser" value="GNOME Files / Nautilus" status="installed package dependency" /><StatusCard title="Desktop Command" value="nautilus" status="GNOME shell launcher" /><StatusCard title="System Desktop Entry" value="org.gnome.Nautilus.desktop" status="expected GNOME app id" /><StatusCard title="Olympus Role" value="Files Dock app opens the OS file browser surface" status="active" /></div><div className="mt-4 rounded border border-cyan-300/15 bg-black/35 p-3 text-xs leading-relaxed text-white/50"><div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-cyan-300">Olympus file areas</div><div className="grid gap-2 md:grid-cols-2"><code>/opt/dennco/olympus-command</code><code>/usr/share/dennco-olympus-command</code><code>/var/lib/dennco</code><code>/etc/dennco</code></div></div></div>; }
+function StandardAppDesk({ app }: { app: DeskAppDefinition }) {
+  const deployAppTile = useTileSpaceStore((state) => state.deployAppTile);
+  const deployTileGroup = useTileSpaceStore((state) => state.deployTileGroup);
+  const addWidget = useTileSpaceStore((state) => state.addWidget);
+  const activeTiles = useTileSpaceStore((state) => state.tiles).filter((tile) => tile.appId === app.id && tile.state !== 'closed' && tile.state !== 'archived');
+  const duplicateTile = useTileSpaceStore((state) => state.duplicateTile);
+  const closeTile = useTileSpaceStore((state) => state.closeTile);
+  const selectTile = useTileSpaceStore((state) => state.selectTile);
+  const groupTiles = useTileSpaceStore((state) => state.groupTiles);
+  const saveFocusLayout = useTileSpaceStore((state) => state.saveFocusLayout);
+  const savedLayouts = useTileSpaceStore((state) => state.savedLayouts);
+  const loadFocusLayout = useTileSpaceStore((state) => state.loadFocusLayout);
+  const duplicateFocusLayout = useTileSpaceStore((state) => state.duplicateFocusLayout);
+  const archiveFocusLayout = useTileSpaceStore((state) => state.archiveFocusLayout);
+  const deployWidget = (widget: DeskWidgetDefinition) => addWidget({ appId: app.id, title: widget.label, scope: widget.scope, widgetDefinitionId: widget.id, subAppId: widget.subAppId });
+  const deployTile = (tile: DeskTileDefinition) => { if (tile.deployAsGroup && tile.groupTileIds?.length) { const tiles = tile.groupTileIds.map((tileId) => app.tiles?.find((item) => item.id === tileId)).filter((item): item is DeskTileDefinition => Boolean(item)); deployTileGroup({ appId: app.id, title: tile.label, layout: tile.defaultLayout || 'quad', tiles: tiles.map((item) => ({ title: item.label, subAppId: item.subAppId, tileDefinitionId: item.id, scope: item.scope })) }); return; } deployAppTile({ appId: app.id, title: tile.label, subAppId: tile.subAppId, tileDefinitionId: tile.id, scope: tile.scope }); };
+  const appTileIds = activeTiles.map((tile) => tile.id);
+  return <div className="space-y-4"><section className="rounded border border-cyan-300/15 bg-white/[0.03] p-4"><SectionTitle label="Overview" detail={`${app.label} manages app controls, tile deployment, widgets, notes, automations, integrations, permissions, and activity.`} /></section>{app.focusTemplates?.length ? <section className="rounded border border-cyan-300/15 bg-black/25 p-4"><SectionTitle label="Tile Layouts" detail="Deploy saved app templates into the active Focus Page" /><div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{app.focusTemplates.map((template) => <article key={template.id} className="border border-white/10 bg-white/[0.03] p-3"><div className="font-bold text-white">{template.label}</div><p className="mt-2 text-xs leading-5 text-white/45">{template.description}</p><button type="button" onClick={() => { const templateTiles = (template.tileIds || []).map((tileId) => app.tiles?.find((tile) => tile.id === tileId)).filter((tile): tile is DeskTileDefinition => Boolean(tile)); deployTileGroup({ appId: app.id, title: template.label, layout: template.layout, tiles: templateTiles.map((tile) => ({ title: tile.label, subAppId: tile.subAppId, tileDefinitionId: tile.id, scope: tile.scope })) }); (template.widgetIds || []).forEach((widgetId) => { const widget = app.widgets?.find((item) => item.id === widgetId); if (widget) deployWidget(widget); }); }} className="mt-3 border border-cyan-300/25 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-cyan-200 hover:bg-cyan-300/10">Deploy Template</button></article>)}</div></section> : null}<section className="rounded border border-cyan-300/15 bg-black/25 p-4"><SectionTitle label="Deploy App Tile" detail="Add active app surfaces to TileSpace" /><div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{(app.tiles?.length ? app.tiles : [{ id: `${app.id}-surface`, label: `${app.label} App Surface`, description: 'Deploy the primary app surface into TileSpace.', scope: 'app' as const }]).map((tile) => <article key={tile.id} className="border border-white/10 bg-white/[0.03] p-3 hover:border-cyan-300/35"><div className="flex items-start justify-between gap-2"><div className="font-bold text-white">{tile.label}</div><span className="rounded border border-white/10 px-2 py-1 text-[9px] uppercase tracking-[0.12em] text-white/35">{tile.defaultLayout || 'single'}</span></div><p className="mt-2 text-xs leading-5 text-white/45">{tile.description}</p><button type="button" onClick={() => deployTile(tile)} className="mt-3 border border-cyan-300/25 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-cyan-200 hover:bg-cyan-300/10">{tile.deployAsGroup ? 'Deploy Tile Group' : 'Deploy Tile'}</button></article>)}</div></section>{app.subApps?.length ? <section className="rounded border border-cyan-300/15 bg-black/25 p-4"><SectionTitle label="Tools / Sub-Apps" detail="Sub-app identities available to this app" /><div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">{app.subApps.map((subApp) => <StatusCard key={subApp.id} title={subApp.label} value={subApp.description} status={subApp.status || 'planned'} />)}</div></section> : null}<section className="rounded border border-cyan-300/15 bg-black/25 p-4"><SectionTitle label="Widget Manager" detail="Stage global app widgets and sub-app widget placeholders" /><div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{(app.widgets || []).map((widget) => <article key={widget.id} className="border border-white/10 bg-white/[0.03] p-3"><div className="flex items-start justify-between gap-2"><div className="font-bold text-white">{widget.label}</div><span className="rounded border border-fuchsia-300/20 px-2 py-1 text-[9px] uppercase tracking-[0.12em] text-fuchsia-100/70">{widget.scope}</span></div><p className="mt-2 text-xs leading-5 text-white/45">{widget.description}</p>{widget.subAppId && <div className="mt-2 text-[9px] uppercase tracking-[0.12em] text-white/35">Sub-App · {widget.subAppId}</div>}<button type="button" onClick={() => deployWidget(widget)} className="mt-3 border border-fuchsia-300/25 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-fuchsia-100 hover:bg-fuchsia-300/10">Add Widget</button></article>)}{!app.widgets?.length && <p className="text-sm text-white/45">Widget placeholders are ready for this app. Add registry metadata to expose deployable widgets.</p>}</div></section><section className="rounded border border-cyan-300/15 bg-black/25 p-4"><SectionTitle label="Active App Tiles" detail="Focus, close, duplicate, group, or save deployed tiles" /><div className="mt-3 space-y-2">{activeTiles.length ? activeTiles.map((tile) => <TileManagementRow key={tile.id} tile={tile} onFocus={() => selectTile(tile.id)} onClose={() => closeTile(tile.id)} onDuplicate={() => duplicateTile(tile.id)} />) : <p className="text-sm text-white/45">No active {app.label} tiles are deployed yet.</p>}</div><div className="mt-3 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.14em]"><button type="button" disabled={appTileIds.length < 2} onClick={() => groupTiles({ appId: app.id, title: `${app.label} Tile Group`, tileIds: appTileIds })} className="border border-white/10 px-2 py-1 text-white/55 disabled:opacity-30 hover:border-cyan-300/40 hover:text-cyan-200">Group App Tiles</button><button type="button" onClick={() => saveFocusLayout()} className="border border-cyan-300/25 px-2 py-1 text-cyan-200 hover:bg-cyan-300/10">Save Focus Layout</button></div></section><section className="rounded border border-cyan-300/15 bg-black/25 p-4"><SectionTitle label="Saved Layouts" detail="Load, duplicate, reset, or archive Focus Layout memory" /><div className="mt-3 grid gap-2 md:grid-cols-2">{savedLayouts.filter((layout) => !layout.archived).map((layout) => <SavedLayoutRow key={layout.id} layout={layout} onLoad={() => loadFocusLayout(layout.id)} onDuplicate={() => duplicateFocusLayout(layout.id)} onArchive={() => archiveFocusLayout(layout.id)} />)}{!savedLayouts.filter((layout) => !layout.archived).length && <p className="text-sm text-white/45">No saved layouts yet. Build a Focus Page, then save it from TileSpace or this Desk surface.</p>}</div></section><section className="rounded border border-cyan-300/15 bg-black/25 p-4"><SectionTitle label="Standard App Desk Sections" detail="Consistent management surface for every app" /><div className="mt-3 grid gap-2 md:grid-cols-4">{(app.deskSections || standardDeskSections).map((section) => <div key={section} className="rounded border border-white/10 bg-white/[0.03] px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-white/45">{sectionLabels[section] || section}</div>)}</div></section></div>;
+}
+
+function TileManagementRow({ tile, onFocus, onClose, onDuplicate }: { tile: TileInstance; onFocus: () => void; onClose: () => void; onDuplicate: () => void }) { return <div className="flex flex-wrap items-center justify-between gap-2 border border-white/10 bg-white/[0.03] p-2"><div><div className="font-bold text-white">{tile.title}</div><div className="text-[9px] uppercase tracking-[0.12em] text-white/35">{tile.scope} · {tile.subAppId || tile.appId} · {tile.state}</div></div><div className="flex gap-2 text-[9px] uppercase tracking-[0.12em]"><button type="button" onClick={onFocus} className="border border-cyan-300/25 px-2 py-1 text-cyan-200 hover:bg-cyan-300/10">Focus</button><button type="button" onClick={onDuplicate} className="border border-white/10 px-2 py-1 text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Duplicate</button><button type="button" onClick={onClose} className="border border-white/10 px-2 py-1 text-white/45 hover:border-amber-300/40 hover:text-amber-200">Close Tile</button></div></div>; }
+function SavedLayoutRow({ layout, onLoad, onDuplicate, onArchive }: { layout: FocusLayout; onLoad: () => void; onDuplicate: () => void; onArchive: () => void }) { return <article className="border border-white/10 bg-white/[0.03] p-3"><div className="font-bold text-white">{layout.name}</div><div className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/35">{layout.tiles.length} tiles · {layout.groups.length} groups · {layout.widgets.length} widgets</div><div className="mt-3 flex flex-wrap gap-2 text-[9px] uppercase tracking-[0.12em]"><button type="button" onClick={onLoad} className="border border-cyan-300/25 px-2 py-1 text-cyan-200 hover:bg-cyan-300/10">Load</button><button type="button" onClick={onDuplicate} className="border border-white/10 px-2 py-1 text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Duplicate</button><button type="button" onClick={onArchive} className="border border-white/10 px-2 py-1 text-white/45 hover:border-amber-300/40 hover:text-amber-200">Archive</button></div></article>; }
+function SectionTitle({ label, detail }: { label: string; detail: string }) { return <div><div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">{label}</div><p className="mt-1 text-xs text-white/45">{detail}</p></div>; }
+function CoreView() { return <Panel title="Core System" text="Olympus Core controls the Debian/GNOME shell layer, Focus Pages, Desk, Dock, Ollama AI, TileSpace, and operational apps." />; }
+function FilesView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Files Surface</h3><p className="mt-3 text-sm text-white/60">Files is assigned to the Olympus Core OS file surface for approved storage areas.</p><div className="mt-4 grid gap-3 md:grid-cols-2"><StatusCard title="Shell File Browser" value="GNOME Files / Nautilus" status="installed package dependency" /><StatusCard title="Desktop Command" value="nautilus" status="GNOME shell launcher" /><StatusCard title="System Desktop Entry" value="org.gnome.Nautilus.desktop" status="expected GNOME app id" /><StatusCard title="Olympus Role" value="Files Dock app opens the OS file surface" status="active" /></div><div className="mt-4 rounded border border-cyan-300/15 bg-black/35 p-3 text-xs leading-relaxed text-white/50"><div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-cyan-300">Olympus file areas</div><div className="grid gap-2 md:grid-cols-2"><code>/opt/dennco/olympus-command</code><code>/usr/share/dennco-olympus-command</code><code>/var/lib/dennco</code><code>/etc/dennco</code></div></div></div>; }
 function OllamaView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Ollama OS AI App</h3><p className="mt-3 text-sm text-white/60">Ollama is staged as the local Olympus Core OS AI runtime. It is intended to run as a local service and expose models to future Desk widgets, command tools, and intelligence synthesis surfaces.</p><div className="mt-4 grid gap-3 md:grid-cols-2"><StatusCard title="Runtime" value="Ollama" status="OS AI app" /><StatusCard title="Local API" value="127.0.0.1:11434" status="expected service endpoint" /><StatusCard title="Service" value="ollama.service" status="systemd managed" /><StatusCard title="Olympus Role" value="Local AI runtime for Desk and map intelligence surfaces" status="active" /></div></div>; }
 function TerminalView() { return <Panel title="Olympus Terminal" text="Controlled backend command actions will be wired later." />; }
 function ServicesView() { return <Panel title="Debian / Olympus Services" text="Service status placeholders for the OS Desk." />; }
 function PackagesView() { return <Panel title="Debian Package Controls" text="Package and workflow placeholders for apt publish and reinstall verification." />; }
-function SettingsView({ dock, setDock, height, setHeight }: { dock: DockPlacement; setDock: (dock: DockPlacement) => void; height: number; setHeight: (height: number) => void }) { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Desk / Dock Settings</h3><div className="mt-4 grid gap-3 md:grid-cols-2"><StatusCard title="Dock Placement" value={dock} status="saved locally" /><StatusCard title="Desk Height" value={`${height}px`} status="saved locally" /><StatusCard title="Dock Widgets" value="registry-driven, drag to reorder" status="active" /><StatusCard title="GNOME Integration" value="desktop file, autostart, icon package, kiosk mode" status="planned" /></div><div className="mt-4 flex gap-2 text-[10px] uppercase tracking-[0.14em]"><button onClick={() => setDock('left')} className="border border-white/10 px-2 py-1 text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Dock Left</button><button onClick={() => setDock('center')} className="border border-white/10 px-2 py-1 text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Dock Center</button><button onClick={() => setDock('right')} className="border border-white/10 px-2 py-1 text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Dock Right</button><button onClick={() => setHeight(DEFAULT_HEIGHT)} className="border border-white/10 px-2 py-1 text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Reset Height</button></div></div>; }
-function AppsView({ setView }: { setView: (view: DeskView) => void }) { const groups = Array.from(new Set(deskItems.map((item) => item.group || 'Other'))); return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Apps Browser</h3>{groups.map((group) => <section key={group} className="mt-4"><div className="text-[10px] uppercase tracking-[0.18em] text-white/35">{group}</div><div className="mt-2 grid grid-cols-2 gap-3 xl:grid-cols-3">{deskItems.filter((item) => item.group === group).map((item) => <article key={item.id} className="border border-white/10 bg-white/[0.03] p-3 hover:border-cyan-300/35"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><span className="text-xl text-cyan-200">{item.icon}</span><span className="font-bold text-white">{item.label}</span></div><span className={`text-[9px] uppercase tracking-[0.12em] ${item.status === 'active' ? 'text-emerald-300' : item.status === 'protected' ? 'text-amber-300' : 'text-white/35'}`}>{item.status}</span></div><p className="mt-2 text-xs text-white/45">{item.description}</p><button onClick={() => setView(item.view)} className="mt-3 border border-cyan-300/25 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-cyan-200 hover:bg-cyan-300/10">Open</button></article>)}</div></section>)}</div>; }
+function SettingsView({ dock, setDock, height, setHeight }: { dock: DockPlacement; setDock: (dock: DockPlacement) => void; height: number; setHeight: (height: number) => void }) { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Desk / Dock Settings</h3><div className="mt-4 grid gap-3 md:grid-cols-2"><StatusCard title="Dock Placement" value={dock} status="saved locally" /><StatusCard title="Desk Height" value={`${height}px`} status="saved locally" /><StatusCard title="Dock Apps" value="registry-driven, drag to reorder" status="active" /><StatusCard title="GNOME Integration" value="desktop file, autostart, icon package, kiosk mode" status="planned" /></div><div className="mt-4 flex gap-2 text-[10px] uppercase tracking-[0.14em]"><button onClick={() => setDock('left')} className="border border-white/10 px-2 py-1 text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Dock Left</button><button onClick={() => setDock('center')} className="border border-white/10 px-2 py-1 text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Dock Center</button><button onClick={() => setDock('right')} className="border border-white/10 px-2 py-1 text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Dock Right</button><button onClick={() => setHeight(DEFAULT_HEIGHT)} className="border border-white/10 px-2 py-1 text-white/55 hover:border-cyan-300/40 hover:text-cyan-200">Reset Height</button></div></div>; }
+function AppsView({ setView }: { setView: (view: DeskView) => void }) { const groups = Array.from(new Set(deskItems.map((item) => item.group || 'Other'))); return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Apps Browser</h3>{groups.map((group) => <section key={group} className="mt-4"><div className="text-[10px] uppercase tracking-[0.18em] text-white/35">{group}</div><div className="mt-2 grid grid-cols-2 gap-3 xl:grid-cols-3">{deskItems.filter((item) => item.group === group).map((item) => <article key={item.id} className="border border-white/10 bg-white/[0.03] p-3 hover:border-cyan-300/35"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><span className="text-xl text-cyan-200">{item.icon}</span><span className="font-bold text-white">{item.label}</span></div><span className={`text-[9px] uppercase tracking-[0.12em] ${item.status === 'active' ? 'text-emerald-300' : item.status === 'protected' ? 'text-amber-300' : 'text-white/35'}`}>{item.status}</span></div><p className="mt-2 text-xs text-white/45">{item.description}</p><button onClick={() => setView(item.view)} className="mt-3 border border-cyan-300/25 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-cyan-200 hover:bg-cyan-300/10">Open Desk Surface</button></article>)}</div></section>)}</div>; }
 function ArchitectureView() { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">Architecture Viewer</h3><div className="mt-4 grid gap-2">{architectureNodes.map(([label, detail], index) => <div key={label} className="flex items-center gap-3"><div className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-300/30 text-xs text-cyan-200">{index + 1}</div><div className="flex-1 border border-white/10 bg-white/[0.03] p-3"><div className="text-sm font-bold text-white">{label}</div><div className="text-xs text-white/45">{detail}</div></div></div>)}</div></div>; }
-function ModuleView({ view }: { view: DeskView }) { return <Panel title={`${view} workspace`} text="Desk workspace placeholder. Tile screens and Intel Maps remain unchanged until a widget is intentionally placed onto them." />; }
 function Panel({ title, text }: { title: string; text: string }) { return <div><h3 className="text-cyan-200 uppercase tracking-[0.18em] text-sm">{title}</h3><p className="mt-3 text-sm text-white/60">{text}</p></div>; }
 function StatusCard({ title, value, status }: { title: string; value: string; status: string }) { return <div className="border border-white/10 bg-white/[0.03] p-3"><div className="text-[10px] uppercase tracking-[0.18em] text-white/35">{title}</div><div className="mt-1 break-all font-mono text-white">{value}</div><div className="mt-2 text-[9px] uppercase tracking-[0.14em] text-cyan-300">{status}</div></div>; }
