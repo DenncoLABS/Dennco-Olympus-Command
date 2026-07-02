@@ -6,11 +6,14 @@ export type DeskStatus = 'active' | 'planned' | 'protected' | 'hidden';
 export type DeskAppSurface = 'desk' | 'dock' | 'apps' | 'widget' | 'system';
 export type DeskWidgetScope = 'system' | 'app' | 'app-group' | 'sub-app' | 'tile';
 export type DeskTileLayout = 'single' | 'split' | 'tri' | 'quad' | 'custom';
+export type DeskSectionId = 'overview' | 'status' | 'tools' | 'deploy' | 'layouts' | 'widgets' | 'global-widgets' | 'sub-app-widgets' | 'collaboration' | 'notes' | 'automations' | 'integrations' | 'related-apps' | 'settings' | 'permissions' | 'activity' | string;
 
 export type SubAppDefinition = {
   id: string;
   label: string;
   description: string;
+  icon?: string;
+  status?: DeskStatus;
 };
 
 export type DeskTileDefinition = {
@@ -20,6 +23,8 @@ export type DeskTileDefinition = {
   scope: DeskWidgetScope;
   defaultLayout?: DeskTileLayout;
   subAppId?: string;
+  deployAsGroup?: boolean;
+  groupTileIds?: string[];
 };
 
 export type DeskWidgetDefinition = {
@@ -28,6 +33,7 @@ export type DeskWidgetDefinition = {
   description: string;
   scope: DeskWidgetScope;
   subAppId?: string;
+  tileId?: string;
 };
 
 export type DeskFocusTemplateDefinition = {
@@ -35,6 +41,8 @@ export type DeskFocusTemplateDefinition = {
   label: string;
   description: string;
   layout: DeskTileLayout;
+  tileIds?: string[];
+  widgetIds?: string[];
 };
 
 export type DeskAppDefinition = {
@@ -49,11 +57,12 @@ export type DeskAppDefinition = {
   surfaces: DeskAppSurface[];
   order: number;
   protected?: boolean;
-  deskSections?: string[];
+  deskSections?: DeskSectionId[];
   subApps?: SubAppDefinition[];
   tiles?: DeskTileDefinition[];
   widgets?: DeskWidgetDefinition[];
   focusTemplates?: DeskFocusTemplateDefinition[];
+  relatedAppIds?: string[];
 };
 
 export type DockActionDefinition = {
