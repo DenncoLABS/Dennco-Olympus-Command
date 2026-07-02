@@ -2,12 +2,15 @@
 
 Dennco Olympus Command is a private command-and-control style situational-awareness platform operated by Dennco Information Systems. It provides a unified operational picture for aviation, maritime, DOT traffic, public-source intelligence, cyber monitoring, weather awareness, CAD dispatch, global notifications, mirrors, extensions, deployable command apps, and the emerging Olympus Core OS-style Desk.
 
+Olympus Command should be understood as the **master operational intelligence platform** in the Dennco ecosystem. The core platform stays broad; industry versions, partner deployments, regional mirrors, and specialized products are assembled from the master copy through extensions, mirrors, apps, source packs, and deployment profiles.
+
 Olympus Command is maintained as a Dennco-controlled platform. It should not carry upstream demo branding, starter project icons, or third-party product identity in the deployed user interface.
 
 ## Documentation index
 
 The project is now documented across these continuation files:
 
+- [`docs/MASTER_PLATFORM_STRATEGY.md`](docs/MASTER_PLATFORM_STRATEGY.md) — master platform doctrine, expansion lanes, industry-product model, source posture, and AI posture.
 - [`docs/PROJECT_CONTINUITY.md`](docs/PROJECT_CONTINUITY.md) — current repo state, module status, package baseline, workflow notes, and next tasks.
 - [`docs/OLYMPUS_DESK_AND_OS.md`](docs/OLYMPUS_DESK_AND_OS.md) — Olympus Desk, Dock, Earth screen, Debian/GNOME shell direction, and OS app plan.
 - [`docs/MODULE_STATUS.md`](docs/MODULE_STATUS.md) — Flight, Maritime, Monitor, DOT, CAD, Admin, branding, and global notifications status.
@@ -35,6 +38,20 @@ Olympus Command is designed as a Dennco operational-intelligence platform. It su
 - `apps/` for deployable applications built from the platform.
 - `platform/` for shared schemas and module standards.
 - `docs/` for implementation and continuation documentation.
+
+The intended product model is:
+
+```text
+Master platform
+  -> shared core
+  -> selected extensions
+  -> selected source packs
+  -> mirror deployment profile
+  -> optional standalone app
+  -> industry-specific dashboard and reports
+```
+
+Core changes should improve the shared Olympus platform. New capabilities should be placed in extensions, mirrors, or apps unless they clearly belong in the shared command core.
 
 ## Quick install
 
@@ -218,20 +235,4 @@ extensions/  Extension manifests and modules
 mirrors/     Mirror deployment manifests
 apps/        Deployable app manifests
 platform/    Shared platform schema/docs
-tools/       Platform validation/listing utilities
-docs/        Project documentation and continuation notes
 ```
-
-## Security notes
-
-- Do not expose Olympus Command without setting an admin access code.
-- Keep API keys server-side only.
-- Do not commit production environment files.
-- Put public deployments behind HTTPS and a reverse proxy.
-- Use NethServer 8 directory integration for centralized access once LDAP auth is wired fully.
-- Keep uploaded branding assets under Dennco/Olympus control.
-- Do not reintroduce starter project branding, third-party favicons, or upstream demo labels into the deployed UI.
-
-## License
-
-This repository is maintained for Dennco Olympus Command. Review included license files before redistribution or external publication.
