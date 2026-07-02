@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { TileSpacePreviewPanel } from '../intelmaps/TileSpacePreviewPanel';
 
 const TILE_SCREEN_COUNT_KEY = 'olympus.tiles.screenCount';
 const TILE_SCREEN_INDEX_KEY = 'olympus.tiles.activeIndex';
@@ -82,13 +83,21 @@ export const TileScreens: React.FC = () => {
               <div className="text-cyan-300">Tile Screen {screen + 1}</div>
               <div>Independent tile workspace · app windows can deploy here</div>
             </div>
-            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center">
-              <div className="text-[11px] uppercase tracking-[0.42em] text-cyan-300/80">Tile Workspace {screen + 1}</div>
-              <div className="mt-3 text-xl uppercase tracking-[0.18em] text-white/35">No Tile Window Open</div>
-              <div className="mt-3 text-[11px] uppercase tracking-[0.16em] text-white/25">
-                Open apps from the Dock or Intel Maps bar. Windows will be staged on the active Tile screen.
+
+            {screen === 0 ? (
+              <div className="absolute inset-x-6 bottom-20 top-20 overflow-hidden rounded-2xl border border-cyan-300/20 bg-black/35 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur">
+                <TileSpacePreviewPanel />
               </div>
-            </div>
+            ) : (
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center">
+                <div className="text-[11px] uppercase tracking-[0.42em] text-cyan-300/80">Tile Workspace {screen + 1}</div>
+                <div className="mt-3 text-xl uppercase tracking-[0.18em] text-white/35">No Tile Window Open</div>
+                <div className="mt-3 text-[11px] uppercase tracking-[0.16em] text-white/25">
+                  Open apps from the Dock or Intel Maps bar. Windows will be staged on the active Tile screen.
+                </div>
+              </div>
+            )}
+
             <div className="absolute bottom-4 left-1/2 flex h-12 -translate-x-1/2 items-center gap-2 rounded border border-cyan-300/20 bg-black/65 px-2 text-[9px] uppercase tracking-[0.16em] text-white/40 shadow-[0_14px_36px_rgba(0,0,0,0.55)] backdrop-blur">
               <button
                 type="button"
