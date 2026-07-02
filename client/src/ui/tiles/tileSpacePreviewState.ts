@@ -1,6 +1,7 @@
 export const TILESPACE_PREVIEW_SELECTED_TILE_KEY = 'olympus.tilespace.preview.selectedTile';
 export const TILESPACE_PREVIEW_QUAD_KEY = 'olympus.tilespace.preview.quad';
 export const TILESPACE_PREVIEW_FOCUS_KEY = 'olympus.tilespace.preview.focus';
+export const TILESPACE_PREVIEW_ACTIVE_TAB_KEY = 'olympus.tilespace.preview.activeTab';
 
 export function readTileSpacePreviewString(key: string, fallback: string) {
   try {
