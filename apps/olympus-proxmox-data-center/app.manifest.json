@@ -1,0 +1,20 @@
+{
+  "id": "olympus-proxmox-data-center",
+  "name": "Olympus Proxmox Data Center",
+  "version": "0.1.0",
+  "kind": "app",
+  "type": "dashboard",
+  "status": "draft",
+  "description": "Proxmox data center management app pack for authorized cluster visibility, VM and container inventory, lab cloning, live sandbox repair workspaces, AI-assisted file review, and production change planning.",
+  "entrypoints": {},
+  "dependsOn": [],
+  "enabledCoreModules": ["desk", "admin", "notifications", "reports", "source-registry"],
+  "plannedExtensions": ["proxmox-connector", "support-lab-workflow", "live-sandbox-workspace", "ai-workspace-manager", "customer-impact-map"],
+  "sourcePosture": "organization-approved-authorized",
+  "guardrails": [
+    "production-clusters-remain-external-services",
+    "lab-workflows-are-clone-only-by-default",
+    "ai-edits-lab-workspace-files-only",
+    "production-changes-require-reviewed-apply-plan"
+  ]
+}
