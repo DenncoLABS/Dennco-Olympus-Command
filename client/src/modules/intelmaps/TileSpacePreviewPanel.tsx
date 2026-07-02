@@ -17,6 +17,7 @@ const QUAD_TILE_IDS = ['intelmaps-flight', 'intelmaps-maritime', 'intelmaps-dot'
 const FOCUS_PAGES = ['Operations', 'Planning', 'Monitoring'];
 const APP_TABS = ['Quad', 'Selected Tile', 'Assistant Context'];
 const DEFAULT_LAYOUT = 'Intel Maps Quad';
+const FOCUS_LAYOUT = 'Selected Tile Focus';
 
 function readFocusPageIndex() {
   const savedFocus = readTileSpacePreviewString(TILESPACE_PREVIEW_FOCUS_KEY, FOCUS_PAGES[0]);
@@ -38,6 +39,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
   const selectedTile = useMemo(() => getTileRegistryItem(selectedTileId), [selectedTileId]);
   const focusPage = FOCUS_PAGES[focusPageIndex] || FOCUS_PAGES[0];
   const assistantContext = `${focusPage} · ${selectedTile?.label || 'No tile'} · ${quadDeployed ? 'Quad deployed' : 'Quad cleared'}`;
+  const focusLayoutActive = layoutName === FOCUS_LAYOUT;
 
   useEffect(() => {
     writeTileSpacePreviewString(TILESPACE_PREVIEW_SELECTED_TILE_KEY, selectedTileId);
@@ -89,6 +91,12 @@ export const TileSpacePreviewPanel: React.FC = () => {
       <div className="flex items-center gap-2 rounded border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-white/45">
         <span className="text-cyan-300">Layout</span>
         <span className="rounded border border-white/10 px-2 py-1 text-white/60">{layoutName}</span>
+        <button type="button" onClick={() => setLayoutName(DEFAULT_LAYOUT)} className={`rounded px-2 py-1 transition ${!focusLayoutActive ? 'border border-cyan-300/40 bg-cyan-300/15 text-cyan-100' : 'border border-white/10 text-white/45 hover:border-cyan-300/30 hover:text-cyan-100'}`}>
+          Quad Layout
+        </button>
+        <button type="button" onClick={() => setLayoutName(FOCUS_LAYOUT)} className={`rounded px-2 py-1 transition ${focusLayoutActive ? 'border border-cyan-300/40 bg-cyan-300/15 text-cyan-100' : 'border border-white/10 text-white/45 hover:border-cyan-300/30 hover:text-cyan-100'}`}>
+          Focus Layout
+        </button>
         <span className="rounded border border-white/10 px-2 py-1 text-white/35">Saved locally</span>
         <button type="button" onClick={resetLayout} className="ml-auto rounded border border-amber-300/30 px-3 py-1 text-amber-100 hover:bg-amber-300/10">
           Reset Layout
@@ -136,11 +144,19 @@ export const TileSpacePreviewPanel: React.FC = () => {
         </aside>
       </div>
 
-      {activeTab === 'Quad' && quadDeployed ? (
+      {activeTab === 'Quad' && quadDeployed && !focusLayoutActive ? (
         <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-2 overflow-hidden">
           {QUAD_TILE_IDS.map((tileId) => (
             <TileRuntimeCard key={tileId} tileId={tileId} selected={selectedTileId === tileId} onSelect={() => setSelectedTileId(tileId)} />
           ))}
+        </div>
+      ) : activeTab === 'Quad' && quadDeployed ? (
+        <div className="flex min-h-0 items-center justify-center rounded border border-cyan-300/20 bg-black/35 p-6 text-center">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-300">Focused Tile Layout</div>
+            <div className="mt-2 text-2xl font-bold uppercase tracking-[0.18em] text-white">{selectedTile?.label || 'No Tile Selected'}</div>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/45">{selectedTile?.description || 'Select a tile from the quad.'}</p>
+          </div>
         </div>
       ) : activeTab === 'Quad' ? (
         <div className="flex min-h-0 items-center justify-center rounded border border-dashed border-cyan-300/25 bg-black/35 text-center">
