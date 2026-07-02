@@ -1,12 +1,29 @@
-import React, { useMemo, useState } from 'react';
-import { TileRuntimeCard, getTileRegistryItem } from '../../ui/tiles';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  TILESPACE_PREVIEW_QUAD_KEY,
+  TILESPACE_PREVIEW_SELECTED_TILE_KEY,
+  TileRuntimeCard,
+  getTileRegistryItem,
+  readTileSpacePreviewBoolean,
+  readTileSpacePreviewString,
+  writeTileSpacePreviewBoolean,
+  writeTileSpacePreviewString,
+} from '../../ui/tiles';
 
 const QUAD_TILE_IDS = ['intelmaps-flight', 'intelmaps-maritime', 'intelmaps-dot', 'intelmaps-monitor'];
 
 export const TileSpacePreviewPanel: React.FC = () => {
-  const [selectedTileId, setSelectedTileId] = useState('intelmaps-flight');
-  const [quadDeployed, setQuadDeployed] = useState(true);
+  const [selectedTileId, setSelectedTileId] = useState(() => readTileSpacePreviewString(TILESPACE_PREVIEW_SELECTED_TILE_KEY, 'intelmaps-flight'));
+  const [quadDeployed, setQuadDeployed] = useState(() => readTileSpacePreviewBoolean(TILESPACE_PREVIEW_QUAD_KEY, true));
   const selectedTile = useMemo(() => getTileRegistryItem(selectedTileId), [selectedTileId]);
+
+  useEffect(() => {
+    writeTileSpacePreviewString(TILESPACE_PREVIEW_SELECTED_TILE_KEY, selectedTileId);
+  }, [selectedTileId]);
+
+  useEffect(() => {
+    writeTileSpacePreviewBoolean(TILESPACE_PREVIEW_QUAD_KEY, quadDeployed);
+  }, [quadDeployed]);
 
   return (
     <section className="grid h-full min-h-0 grid-rows-[auto_auto_1fr] gap-3 rounded border border-cyan-300/20 bg-black/55 p-3 text-white">
@@ -34,7 +51,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
         <div className="rounded border border-white/10 bg-black/35 p-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-300">Focus Page</div>
           <div className="mt-1 text-sm font-bold uppercase tracking-[0.12em] text-white">Operations</div>
-          <p className="mt-2 text-white/45">Focus pages are navigated by the Tile Screen arrows. This panel is the first active tile group.</p>
+          <p className="mt-2 text-white/45">Selected tile and quad state now survive reloads and app switching.</p>
         </div>
       </div>
 
