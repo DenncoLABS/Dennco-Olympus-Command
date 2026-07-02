@@ -5,9 +5,10 @@ type TileRuntimeCardProps = {
   tileId: string;
   selected?: boolean;
   onSelect?: () => void;
+  onFocusTile?: () => void;
 };
 
-export const TileRuntimeCard: React.FC<TileRuntimeCardProps> = ({ tileId, selected = false, onSelect }) => {
+export const TileRuntimeCard: React.FC<TileRuntimeCardProps> = ({ tileId, selected = false, onSelect, onFocusTile }) => {
   const tile = getTileRegistryItem(tileId);
   if (!tile) return <div className="rounded border border-red-400/30 bg-red-500/10 p-3 text-xs text-red-100">Unknown Tile: {tileId}</div>;
 
@@ -15,7 +16,9 @@ export const TileRuntimeCard: React.FC<TileRuntimeCardProps> = ({ tileId, select
     <button
       type="button"
       onClick={onSelect}
+      onDoubleClick={onFocusTile}
       aria-pressed={selected}
+      title="Click to select. Double-click to focus."
       className={`group flex min-h-[160px] cursor-pointer flex-col overflow-hidden rounded-xl border bg-black/55 p-3 text-left transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-300/50 ${selected ? 'border-cyan-300/70 shadow-[0_0_18px_rgba(34,211,238,0.22)]' : 'border-white/10 hover:border-cyan-300/45'}`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -30,7 +33,7 @@ export const TileRuntimeCard: React.FC<TileRuntimeCardProps> = ({ tileId, select
         <div className="relative px-4">
           <div className="text-[10px] uppercase tracking-[0.18em] text-white/70">Embeddable App Tile</div>
           <p className="mt-2 max-w-xs text-xs leading-5 text-white/45">{tile.description}</p>
-          {selected ? <div className="mt-3 text-[9px] uppercase tracking-[0.16em] text-cyan-200">Selected</div> : null}
+          {selected ? <div className="mt-3 text-[9px] uppercase tracking-[0.16em] text-cyan-200">Selected · Double-click to focus</div> : null}
         </div>
       </div>
     </button>
