@@ -12,11 +12,48 @@ export interface AircraftDetails {
   built?: string;
 }
 
+export interface AircraftAsset {
+  assetId: string;
+  assetType: 'aircraft';
+  folderPath: string;
+  databasePath: string;
+  label: string;
+  details: AircraftDetails;
+  data: {
+    identity: AircraftDetails;
+    telemetry: Record<string, unknown> | null;
+    history: unknown[];
+    documents: unknown[];
+    notes: unknown[];
+  };
+}
+
 const PARQUET_PATH = path.resolve(
   __dirname,
   '../../src/Data/aircraft-database-complete-2025-08.parquet',
 );
 const JSON_CACHE_PATH = `${PARQUET_PATH}.cache.json`;
+const ASSET_ROOT = '/var/lib/dennco/olympus-command/assets/aircraft';
+
+function normalizeIcao24(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function sanitizeAssetName(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'unknown';
+}
+
+function assetIdFor(icao24: string): string {
+  return `aircraft-${sanitizeAssetName(icao24)}`;
+}
+
+function folderPathFor(icao24: string): string {
+  return `${ASSET_ROOT}/${sanitizeAssetName(icao24)}`;
+}
+
+function labelFor(details: AircraftDetails): string {
+  return details.registration || details.icao24.toUpperCase();
+}
 
 class AircraftDatabase {
   private isLoaded = false;
@@ -99,20 +136,40 @@ class AircraftDatabase {
   }
 
   public getDetails(icao24: string): AircraftDetails | undefined {
-    return this.db.get(icao24.toLowerCase());
+    return this.db.get(normalizeIcao24(icao24));
+  }
+
+  public getAsset(icao24: string, telemetry: Record<string, unknown> | null = null): AircraftAsset {
+    const key = normalizeIcao24(icao24);
+    const details = this.getDetails(key) || { icao24: key };
+    return {
+      assetId: assetIdFor(key),
+      assetType: 'aircraft',
+      folderPath: folderPathFor(key),
+      databasePath: `aircraft/${sanitizeAssetName(key)}`,
+      label: labelFor(details),
+      details,
+      data: {
+        identity: details,
+        telemetry,
+        history: [],
+        documents: [],
+        notes: [],
+      },
+    };
   }
 
   public getInfo() {
-    return { records: this.db.size, source: PARQUET_PATH, cache: JSON_CACHE_PATH, loaded: this.isLoaded };
+    return { records: this.db.size, source: PARQUET_PATH, cache: JSON_CACHE_PATH, assetRoot: ASSET_ROOT, loaded: this.isLoaded };
   }
 
-  public search(query: string, limit = 50): AircraftDetails[] {
+  public search(query: string, limit = 50): AircraftAsset[] {
     const q = query.trim().toLowerCase();
     const max = Math.max(1, Math.min(limit, 200));
-    const results: AircraftDetails[] = [];
+    const results: AircraftAsset[] = [];
     for (const item of this.db.values()) {
       if (!q || item.icao24.includes(q) || item.registration?.toLowerCase().includes(q) || item.manufacturerName?.toLowerCase().includes(q) || item.model?.toLowerCase().includes(q) || item.operator?.toLowerCase().includes(q) || item.typecode?.toLowerCase().includes(q)) {
-        results.push(item);
+        results.push(this.getAsset(item.icao24));
         if (results.length >= max) break;
       }
     }
