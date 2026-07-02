@@ -103,17 +103,33 @@ export const TileSpacePreviewPanel: React.FC = () => {
         </aside>
       </div>
 
-      {quadDeployed ? (
+      {activeTab === 'Quad' && quadDeployed ? (
         <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-2 overflow-hidden">
           {QUAD_TILE_IDS.map((tileId) => (
             <TileRuntimeCard key={tileId} tileId={tileId} selected={selectedTileId === tileId} onSelect={() => setSelectedTileId(tileId)} />
           ))}
         </div>
-      ) : (
+      ) : activeTab === 'Quad' ? (
         <div className="flex min-h-0 items-center justify-center rounded border border-dashed border-cyan-300/25 bg-black/35 text-center">
           <div>
             <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-300">TileSpace Empty</div>
             <div className="mt-2 text-lg uppercase tracking-[0.16em] text-white/55">Click Deploy Quad</div>
+          </div>
+        </div>
+      ) : activeTab === 'Selected Tile' ? (
+        <div className="flex min-h-0 items-center justify-center rounded border border-cyan-300/20 bg-black/35 p-6 text-center">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-300">Selected Tile Surface</div>
+            <div className="mt-2 text-2xl font-bold uppercase tracking-[0.18em] text-white">{selectedTile?.label || 'No Tile Selected'}</div>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/45">{selectedTile?.description || 'Select a tile from the Quad tab to inspect it here.'}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex min-h-0 items-center justify-center rounded border border-cyan-300/20 bg-cyan-300/10 p-6 text-center">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-300">Assistant Context Surface</div>
+            <div className="mt-2 text-2xl font-bold uppercase tracking-[0.18em] text-white">TileSpace Context</div>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/55">{assistantContext}</p>
           </div>
         </div>
       )}
