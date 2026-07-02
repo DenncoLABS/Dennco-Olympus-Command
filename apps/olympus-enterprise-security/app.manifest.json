@@ -1,0 +1,14 @@
+{
+  "id": "olympus-enterprise-security",
+  "name": "Olympus Enterprise Security",
+  "version": "0.1.0",
+  "kind": "app",
+  "type": "dashboard",
+  "status": "draft",
+  "description": "Enterprise operations app pack for facilities, vendors, IT systems, incidents, compliance reminders, risk awareness, and executive reporting.",
+  "entrypoints": {},
+  "dependsOn": [],
+  "enabledCoreModules": ["earth", "desk", "admin", "notifications", "reports"],
+  "plannedExtensions": ["facility-status", "vendor-risk", "incident-reports", "compliance", "ai-briefing"],
+  "sourcePosture": "organization-approved-authorized"
+}
