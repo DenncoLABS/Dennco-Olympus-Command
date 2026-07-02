@@ -13,6 +13,7 @@ import {
 
 const QUAD_TILE_IDS = ['intelmaps-flight', 'intelmaps-maritime', 'intelmaps-dot', 'intelmaps-monitor'];
 const FOCUS_PAGES = ['Operations', 'Planning', 'Monitoring'];
+const APP_TABS = ['Quad', 'Selected Tile', 'Assistant Context'];
 
 function readFocusPageIndex() {
   const savedFocus = readTileSpacePreviewString(TILESPACE_PREVIEW_FOCUS_KEY, FOCUS_PAGES[0]);
@@ -24,6 +25,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
   const [selectedTileId, setSelectedTileId] = useState(() => readTileSpacePreviewString(TILESPACE_PREVIEW_SELECTED_TILE_KEY, 'intelmaps-flight'));
   const [quadDeployed, setQuadDeployed] = useState(() => readTileSpacePreviewBoolean(TILESPACE_PREVIEW_QUAD_KEY, true));
   const [focusPageIndex, setFocusPageIndex] = useState(readFocusPageIndex);
+  const [activeTab, setActiveTab] = useState('Quad');
   const selectedTile = useMemo(() => getTileRegistryItem(selectedTileId), [selectedTileId]);
   const focusPage = FOCUS_PAGES[focusPageIndex] || FOCUS_PAGES[0];
   const assistantContext = `${focusPage} · ${selectedTile?.label || 'No tile'} · ${quadDeployed ? 'Quad deployed' : 'Quad cleared'}`;
@@ -44,7 +46,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
   const nextFocusPage = () => setFocusPageIndex((current) => Math.min(FOCUS_PAGES.length - 1, current + 1));
 
   return (
-    <section className="grid h-full min-h-0 grid-rows-[auto_auto_1fr] gap-3 rounded border border-cyan-300/20 bg-black/55 p-3 text-white">
+    <section className="grid h-full min-h-0 grid-rows-[auto_auto_auto_1fr] gap-3 rounded border border-cyan-300/20 bg-black/55 p-3 text-white">
       <header className="flex items-center justify-between gap-3 rounded border border-cyan-300/20 bg-cyan-300/10 px-3 py-2">
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">TileSpace MVP</div>
@@ -59,6 +61,20 @@ export const TileSpacePreviewPanel: React.FC = () => {
           </button>
         </div>
       </header>
+
+      <nav className="flex items-center gap-2 rounded border border-white/10 bg-black/35 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-white/45">
+        {APP_TABS.map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`rounded px-3 py-1 transition ${activeTab === tab ? 'border border-cyan-300/40 bg-cyan-300/15 text-cyan-100' : 'border border-transparent hover:border-cyan-300/20 hover:text-cyan-100'}`}
+          >
+            {tab}
+          </button>
+        ))}
+        <span className="ml-auto rounded border border-white/10 px-2 py-1 text-white/35">Center Surface: {activeTab}</span>
+      </nav>
 
       <div className="grid grid-cols-[1fr_260px_280px] gap-3 text-xs">
         <div className="rounded border border-white/10 bg-black/35 p-3">
