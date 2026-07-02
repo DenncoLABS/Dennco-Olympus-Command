@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { mapAssetStore, type MapAssetRecord } from './map_assets';
 const duckdb = require('duckdb');
 
 export interface AircraftDetails {
@@ -13,21 +12,11 @@ export interface AircraftDetails {
   built?: string;
 }
 
-export type AircraftAsset = MapAssetRecord;
-
 const PARQUET_PATH = path.resolve(
   __dirname,
   '../../src/Data/aircraft-database-complete-2025-08.parquet',
 );
 const JSON_CACHE_PATH = `${PARQUET_PATH}.cache.json`;
-
-function normalizeIcao24(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-function labelFor(details: AircraftDetails): string {
-  return details.registration || details.icao24.toUpperCase();
-}
 
 class AircraftDatabase {
   private isLoaded = false;
@@ -110,43 +99,20 @@ class AircraftDatabase {
   }
 
   public getDetails(icao24: string): AircraftDetails | undefined {
-    return this.db.get(normalizeIcao24(icao24));
-  }
-
-  public getAsset(icao24: string, telemetry: Record<string, unknown> | null = null): AircraftAsset {
-    const key = normalizeIcao24(icao24);
-    const details = this.getDetails(key) || { icao24: key };
-    const tracking = telemetry
-      ? {
-          enabled: true,
-          source: 'dennco-flightmesh',
-          status: 'online' as const,
-          lastSeen: Date.now(),
-          lat: typeof telemetry.lat === 'number' ? telemetry.lat : null,
-          lon: typeof telemetry.lon === 'number' ? telemetry.lon : null,
-          telemetry,
-        }
-      : undefined;
-    return mapAssetStore.upsert({
-      assetType: 'aircraft',
-      uniqueId: key,
-      label: labelFor(details),
-      details,
-      tracking,
-    });
+    return this.db.get(icao24.toLowerCase());
   }
 
   public getInfo() {
-    return { records: this.db.size, source: PARQUET_PATH, cache: JSON_CACHE_PATH, assetRoot: '/var/lib/dennco/olympus-command/assets', loaded: this.isLoaded };
+    return { records: this.db.size, source: PARQUET_PATH, cache: JSON_CACHE_PATH, loaded: this.isLoaded };
   }
 
-  public search(query: string, limit = 50): AircraftAsset[] {
+  public search(query: string, limit = 50): AircraftDetails[] {
     const q = query.trim().toLowerCase();
     const max = Math.max(1, Math.min(limit, 200));
-    const results: AircraftAsset[] = [];
+    const results: AircraftDetails[] = [];
     for (const item of this.db.values()) {
       if (!q || item.icao24.includes(q) || item.registration?.toLowerCase().includes(q) || item.manufacturerName?.toLowerCase().includes(q) || item.model?.toLowerCase().includes(q) || item.operator?.toLowerCase().includes(q) || item.typecode?.toLowerCase().includes(q)) {
-        results.push(this.getAsset(item.icao24));
+        results.push(item);
         if (results.length >= max) break;
       }
     }
