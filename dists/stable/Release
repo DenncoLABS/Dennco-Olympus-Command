@@ -1,0 +1,24 @@
+Architectures: amd64
+Codename: stable
+Components: main
+Date: Thu, 02 Jul 2026 17:29:16 +0000
+Description: Dennco Olympus Command apt repository
+Label: Dennco Olympus Command
+Origin: DenncoLABS
+Suite: stable
+MD5Sum:
+ 04d2fc8c6fe72eeda87515c6beef1dd2              207 Release
+ 643fb8306e7463aae26ad4e6c8d059a1              730 main/binary-amd64/Packages
+ 8275d8e807a5933422ca1b3bd766115a              479 main/binary-amd64/Packages.gz
+SHA1:
+ 5d2a2e76deb24356728d006b17308075890b5d42              207 Release
+ 8ab198421dde8a84d58170a52e6c9b3e9639bbf3              730 main/binary-amd64/Packages
+ 11305081eb566bef0510b8e48fc9ba54cef07b62              479 main/binary-amd64/Packages.gz
+SHA256:
+ 8551decaaa1ee218ad85dff4d85dc95556db450b39ccbba91ea3953fbc623986              207 Release
+ 50977cdd7a950788df3bc2e216ad44c54261a2db45186d4a4a6c7d291e4b9e5a              730 main/binary-amd64/Packages
+ 2b1bf578f6d556f11f041e9414ac946e031b9d05f329dc3b91e038daa767ec85              479 main/binary-amd64/Packages.gz
+SHA512:
+ b2e8f55f13109f2d15e548078b6712893e441013327f03d594f49185a3bb2bd72e3a6dd96b748087cf7f3364f34deb4ef4b00d5579a1d162e29727c3963066d7              207 Release
+ e0cae79faede5372197bde0e1c12b21323432118c6c6519114b7e0b7e20b59d3695ff8851be2723882382c6c74713373712f3efc25d5996eca8879e55c6ca19e              730 main/binary-amd64/Packages
+ 7dfcca1e933315465da99fcba08ba434b508e774bc4403833522c281e4623de1d3130c0f7c46cf8a91268198604cbaa2b290ca90091da6d87107fad3c9c9e659              479 main/binary-amd64/Packages.gz

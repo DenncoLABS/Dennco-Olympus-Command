@@ -1,0 +1,17 @@
+Package: dennco-olympus-command
+Version: 1.0.5-971
+Architecture: amd64
+Maintainer: DenncoLABS <support@denncolabs.com>
+Depends: nodejs (>= 20), adduser, nautilus, xdg-utils, desktop-file-utils
+Filename: pool/main/d/dennco-olympus-command/dennco-olympus-command_1.0.5-971_amd64.deb
+Size: 65909992
+MD5sum: 9bc57836dad67c186dfe1acbc50fee7b
+SHA1: ce424280600e30b204efa68a45320e45ce220381
+SHA256: a45de5f7c6ac16e3db034979805038e652718d8cec0026015869af048da367af
+Section: web
+Priority: optional
+Description: Dennco Olympus Command geospatial intelligence platform
+ Dennco Olympus Command is an extensible geospatial intelligence command
+ platform with live situational awareness, mirrors, extensions, apps,
+ and deployable dashboards.
+
