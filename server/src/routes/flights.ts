@@ -35,38 +35,6 @@ function shouldUseLastGood(nextCount: number, now: number, regionKey: string): b
   return nextCount < Math.floor(goodCount * SHRINK_RATIO);
 }
 
-function attachAssets(states: AircraftState[]): AircraftState[] {
-  return states.map((state) => {
-    const asset = aircraftDb.getAsset(state.icao24, {
-      icao24: state.icao24,
-      callsign: state.callsign,
-      lat: state.lat,
-      lon: state.lon,
-      baroAltitude: state.baroAltitude,
-      geoAltitude: state.geoAltitude,
-      velocity: state.velocity,
-      heading: state.heading,
-      onGround: state.onGround,
-      lastContact: state.lastContact,
-      originCountry: state.originCountry,
-      verticalRate: state.verticalRate,
-      squawk: state.squawk,
-      emergency: state.emergency || 'none',
-      source: PROVIDER_LABEL,
-    });
-    return {
-      ...state,
-      registration: state.registration || asset.details.registration,
-      manufacturerName: state.manufacturerName || asset.details.manufacturerName,
-      model: state.model || asset.details.model,
-      operator: state.operator || asset.details.operator,
-      typecode: state.typecode || asset.details.typecode,
-      built: state.built || asset.details.built,
-      asset,
-    } as AircraftState;
-  });
-}
-
 router.get('/aircraft-db', async (req, res) => {
   try {
     await aircraftDb.load();
@@ -81,8 +49,12 @@ router.get('/aircraft-db', async (req, res) => {
 router.get('/aircraft-db/:icao24', async (req, res) => {
   try {
     await aircraftDb.load();
-    const asset = aircraftDb.getAsset(req.params.icao24);
-    res.json({ asset, aircraft: asset.details, info: aircraftDb.getInfo() });
+    const details = aircraftDb.getDetails(req.params.icao24);
+    if (!details) {
+      res.status(404).json({ error: 'Aircraft not found' });
+      return;
+    }
+    res.json({ aircraft: details, info: aircraftDb.getInfo() });
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }
@@ -93,8 +65,6 @@ router.get('/snapshot', async (req, res) => {
   const regionIds = parseRegionIds(req.query.regions);
   const regionKey = regionIds.slice().sort().join(',');
   const providerLabel = regionIds.length ? `${PROVIDER_LABEL}-regional` : `${PROVIDER_LABEL}-no-active-radar`;
-
-  await aircraftDb.load();
 
   if (!regionIds.length) {
     const payload = { states: [], timestamp: now, provider: providerLabel, live: true, radarRegions: [], scanActive: false, details: 'No radar region selected. Activate one or more radar pins, or use ALL.' };
@@ -109,7 +79,7 @@ router.get('/snapshot', async (req, res) => {
   }
 
   try {
-    const states = attachAssets(await fetchDenncoFlightMeshStates(regionIds));
+    const states = await fetchDenncoFlightMeshStates(regionIds);
     if (shouldUseLastGood(states.length, now, regionKey)) {
       const payload = { states: lastGoodCombined!.states, timestamp: now, provider: `${providerLabel}-last-good`, live: true, radarRegions: regionIds, scanActive: true, staleGuard: true, rejectedCount: states.length };
       snapshotCache = { data: payload, ts: now, provider: providerLabel, regionKey };
