@@ -47,6 +47,24 @@ Current Dock buttons:
 - Admin
 - Settings
 
+## Desk-first app model
+
+Olympus apps should follow this opening model:
+
+```text
+Dock = launcher
+Desk = first approach workspace
+Window = focused working surface
+```
+
+All apps should first open in the Desk. The Desk approach screen helps the operator understand the service, review status, choose a workflow, and decide how to proceed.
+
+Deep work opens from the Desk into windows, workspaces, object panels, editors, consoles, or focused maps.
+
+The Dock should not launch destructive or deep production actions directly. The Dock opens or focuses the app approach screen.
+
+See `docs/CORE_APP_DEPLOYMENT_MODEL.md` for the full doctrine.
+
 ## Desk apps
 
 The current Desk apps are hard-coded placeholders intended to become real OS-style panels.
@@ -70,6 +88,9 @@ Planned function:
 - Installed Olympus modules
 - Future Olympus apps
 - App state and permissions
+- App approach screens
+- App window/workspace launcher
+- Manifest-driven app registry
 
 ### Files
 
@@ -124,6 +145,23 @@ Saved widgets:
 - AI Synthesis
 - Live Intel Feed
 
+## App window/workspace direction
+
+Windows and workspaces are focused working surfaces opened from Desk app approach screens.
+
+They should be used for:
+
+- object detail panels
+- editors
+- live sandbox workspaces
+- report builders
+- configuration workflows
+- consoles
+- AI repair sessions
+- app-specific maps that need focus
+
+App windows should preserve app context and should not hide guardrails, source status, or production safety warnings.
+
 ## GNOME integration plan
 
 The web Desk is Phase 1. Later phases should package Olympus as a GNOME/Debian appliance shell.
@@ -149,6 +187,9 @@ Planned behavior:
 - Keep Earth and Desk separated.
 - Dock buttons should not switch the main map unless explicitly designed to.
 - Desk apps open inside the Desk.
+- Apps open in Desk first through an approach screen.
+- Deep app work opens in windows, workspaces, or object panels.
+- Dock should never launch destructive or guarded actions directly.
 - Widgets can later be dragged from the Desk to the Earth screen.
 - Preserve local storage keys or provide migrations when changing saved Desk behavior.
 - Keep file access safe and explicit.
