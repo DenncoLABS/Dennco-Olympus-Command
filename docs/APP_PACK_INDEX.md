@@ -31,6 +31,7 @@ See [`docs/DEVELOPMENT_GUARDRAILS.md`](DEVELOPMENT_GUARDRAILS.md).
 | Olympus Infrastructure | `apps/olympus-infrastructure/` | draft | Roads, bridges, water, power, telecom, facilities, inspections, maintenance, and infrastructure risk. |
 | Olympus Data Center Ops | `apps/olympus-data-center-ops/` | draft | Data center operations, uptime, facilities, power, cooling, network status, physical security, and incident reporting. |
 | Olympus Enterprise Security | `apps/olympus-enterprise-security/` | draft | Enterprise facilities, vendors, IT systems, incidents, security alerts, compliance, and executive reporting. |
+| Olympus Proxmox Data Center | `apps/olympus-proxmox-data-center/` | draft | Proxmox cluster visibility, VM/container inventory, clone-only support lab workflows, live sandbox repair spaces, AI-assisted file review, and production apply planning. |
 
 ## App pack contents
 
