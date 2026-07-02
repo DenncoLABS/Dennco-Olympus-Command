@@ -6,6 +6,7 @@ export {
   TILESPACE_PREVIEW_QUAD_KEY,
   TILESPACE_PREVIEW_FOCUS_KEY,
   TILESPACE_PREVIEW_ACTIVE_TAB_KEY,
+  TILESPACE_PREVIEW_LAYOUT_KEY,
   readTileSpacePreviewString,
   readTileSpacePreviewBoolean,
   writeTileSpacePreviewString,
