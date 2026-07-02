@@ -22,6 +22,15 @@ router.get('/:assetId', (req, res) => {
   res.json({ asset });
 });
 
+router.get('/:assetId/movement', (req, res) => {
+  const asset = mapAssetStore.get(req.params.assetId);
+  if (!asset) {
+    res.status(404).json({ error: 'Asset not found' });
+    return;
+  }
+  res.json({ assetId: asset.assetId, movement: mapAssetStore.getMovement(asset.assetId) });
+});
+
 router.post('/', (req, res) => {
   const assetType = normalizeType(req.body.assetType);
   const uniqueId = typeof req.body.uniqueId === 'string' ? req.body.uniqueId : '';
