@@ -1,27 +1,3 @@
-export interface AircraftAsset {
-  assetId: string;
-  assetType: 'aircraft';
-  folderPath: string;
-  databasePath: string;
-  label: string;
-  details: {
-    icao24: string;
-    registration?: string;
-    manufacturerName?: string;
-    model?: string;
-    operator?: string;
-    typecode?: string;
-    built?: string;
-  };
-  data: {
-    identity: Record<string, unknown>;
-    telemetry: Record<string, unknown> | null;
-    history: unknown[];
-    documents: unknown[];
-    notes: unknown[];
-  };
-}
-
 export interface AircraftState {
   icao24: string;
   callsign: string | null;
@@ -45,7 +21,6 @@ export interface AircraftState {
   operator?: string;
   typecode?: string;
   built?: string;
-  asset?: AircraftAsset;
 
   // Extended telemetry from ADSB.lol
   mach?: number;
