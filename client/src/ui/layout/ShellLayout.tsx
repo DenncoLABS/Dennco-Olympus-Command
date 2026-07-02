@@ -5,6 +5,7 @@ import { useThemeStore } from '../theme/theme.store';
 import { clsx } from 'clsx';
 import { Shield } from 'lucide-react';
 import { useRuntimeSettings } from '../../admin/runtimeSettings';
+import { TileSpace } from '../tiles/TileSpace';
 import '../../widgets/map-widgets/widgetReset.css';
 import '../theme/crt.css';
 import '../theme/flir.css';
@@ -21,7 +22,10 @@ export const ShellLayout: React.FC<ShellLayoutProps> = ({ children }) => {
   return (
     <div className={clsx('olympus-shell-root flex flex-col h-screen w-screen overflow-hidden', `theme-${mode}`)}>
       <TopNav />
-      <main className="olympus-shell-main flex-1 min-h-0 relative bg-intel-bg overflow-hidden">{children}</main>
+      <main className="olympus-shell-main flex-1 min-h-0 relative bg-intel-bg overflow-hidden">
+        {children}
+        <TileSpace />
+      </main>
       <OlympusDeskV2 />
       <footer className="olympus-shell-footer flex items-center justify-center gap-4 px-4 py-1.5 bg-black/70 border-t border-white/10 text-[10px] text-white/40 shrink-0">
         <span className="font-bold tracking-[0.2em] text-white/70 uppercase text-[11px]">
