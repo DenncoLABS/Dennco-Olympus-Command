@@ -14,6 +14,10 @@ function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }
 
+function plainObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
 router.get('/folder', (_req, res) => {
   res.json({ path: MAPS_DIR });
 });
@@ -38,6 +42,8 @@ router.post('/custom-maps', async (req, res) => {
   const now = new Date().toISOString();
   const fileName = `${name}-${Date.now()}.json`;
   const filePath = path.join(MAPS_DIR, fileName);
+  const assetFilters = plainObject(req.body?.assetFilters);
+  const movement = plainObject(req.body?.movement);
   const payload = {
     id: req.body?.id || name,
     name,
@@ -46,6 +52,7 @@ router.post('/custom-maps', async (req, res) => {
     updatedAt: now,
     folder: MAPS_DIR,
     appId: req.body?.appId || 'custom',
+    description: typeof req.body?.description === 'string' ? req.body.description : '',
     baseLayer: req.body?.baseLayer || req.body?.tools?.baseLayer || 'dark',
     projection: req.body?.projection || 'mercator',
     viewport: req.body?.viewport || null,
@@ -54,6 +61,20 @@ router.post('/custom-maps', async (req, res) => {
     widgets: stringArray(req.body?.widgets),
     workflows: stringArray(req.body?.workflows),
     integrations: stringArray(req.body?.integrations),
+    assetFilters: {
+      assetTypes: stringArray(assetFilters.assetTypes),
+      assetIds: stringArray(assetFilters.assetIds),
+      statuses: stringArray(assetFilters.statuses),
+      sources: stringArray(assetFilters.sources),
+      tags: stringArray(assetFilters.tags),
+      query: typeof assetFilters.query === 'string' ? assetFilters.query : '',
+    },
+    trackedAssetIds: stringArray(req.body?.trackedAssetIds),
+    movement: {
+      showTrails: typeof movement.showTrails === 'boolean' ? movement.showTrails : true,
+      trailHours: typeof movement.trailHours === 'number' ? movement.trailHours : 24,
+      followSelectedAsset: typeof movement.followSelectedAsset === 'boolean' ? movement.followSelectedAsset : false,
+    },
     tools: req.body?.tools || {},
     notes: typeof req.body?.notes === 'string' ? req.body.notes : '',
   };
