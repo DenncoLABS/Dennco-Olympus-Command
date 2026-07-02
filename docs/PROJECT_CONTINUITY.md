@@ -17,6 +17,8 @@ This document records the current working state of Dennco Olympus Command so dev
 
 Olympus Command is moving from a map-only web app toward a Debian/GNOME-backed operational shell.
 
+Olympus Command should also be treated as the Dennco master operational intelligence platform. The core platform stays broad; specialized products, partner deployments, regional deployments, and industry versions should be assembled through extensions, mirrors, apps, source packs, and deployment profiles.
+
 The intended conceptual stack is:
 
 ```text
@@ -30,6 +32,23 @@ Debian
         ├── Widget workspace
         └── Module apps
 ```
+
+The intended product stack is:
+
+```text
+Master platform
+  ├── Shared command core
+  ├── Core Earth/map screen
+  ├── Olympus Desk and Dock
+  ├── Shared data/source standards
+  ├── Extensions for capability modules
+  ├── Mirrors for deployment profiles
+  └── Apps for standalone products and industry versions
+```
+
+Development should not flatten Olympus into a single market-specific dashboard. The repo already has a master-platform direction; new work should keep all vectors pointed toward that same architecture.
+
+See `docs/MASTER_PLATFORM_STRATEGY.md` for the broader doctrine.
 
 ## Earth, Desk, and Dock model
 
@@ -271,6 +290,8 @@ If apt still shows the older package candidate, the GitHub workflow did not publ
 - Do not reintroduce Vite starter icons or third-party demo branding.
 - Avoid upstream OSIRIS/other repo branding in the visible Olympus UI.
 - Use Dennco/Olympus naming in user-facing documentation and interface text.
+- Keep the core platform broad and reusable.
+- Put specialized capabilities into extensions, mirrors, apps, and source packs unless they clearly belong in core.
 
 ## Immediate next development tasks
 
@@ -282,3 +303,4 @@ If apt still shows the older package candidate, the GitHub workflow did not publ
 6. Improve DOT traffic/camera data reliability.
 7. Expand CAD persistent modules.
 8. Expand data-source ingestion for GDELT, NASA FIRMS, USGS, Yahoo Finance, Polymarket, and CCTV feeds.
+9. Begin defining first industry app-pack manifests after the master platform doctrine is approved.
