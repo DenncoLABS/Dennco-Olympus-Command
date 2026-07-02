@@ -1,0 +1,14 @@
+{
+  "id": "olympus-cyber",
+  "name": "Olympus Cyber",
+  "version": "0.1.0",
+  "kind": "app",
+  "type": "dashboard",
+  "status": "draft",
+  "description": "Cybersecurity operations app pack for vulnerability awareness, public advisories, vendor alerts, asset risk, incident notes, and executive cyber briefs.",
+  "entrypoints": {},
+  "dependsOn": [],
+  "enabledCoreModules": ["earth", "desk", "admin", "notifications", "reports", "source-registry"],
+  "plannedExtensions": ["nvd", "cisa-kev", "vendor-advisories", "asset-risk", "ai-briefing"],
+  "sourcePosture": "public-authorized-organization-approved"
+}
