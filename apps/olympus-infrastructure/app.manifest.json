@@ -1,0 +1,14 @@
+{
+  "id": "olympus-infrastructure",
+  "name": "Olympus Infrastructure",
+  "version": "0.1.0",
+  "kind": "app",
+  "type": "dashboard",
+  "status": "draft",
+  "description": "Infrastructure operations app pack for roads, bridges, water, power, telecom, facilities, maintenance, inspection, and infrastructure risk awareness.",
+  "entrypoints": {},
+  "dependsOn": [],
+  "enabledCoreModules": ["earth", "desk", "admin", "notifications", "dot", "reports"],
+  "plannedExtensions": ["asset-registry", "inspection-records", "maintenance", "weather", "risk-scoring"],
+  "sourcePosture": "public-authorized-organization-approved"
+}
