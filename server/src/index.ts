@@ -14,6 +14,7 @@ import dotRouter from './routes/dot';
 import intelMapsRouter from './routes/intelmaps';
 import zabbixRouter from './routes/zabbix';
 import filesRouter from './routes/files';
+import assetsRouter from './routes/assets';
 import proxmoxLabRouter from './routes/proxmoxLab';
 import { requireAdminAccess } from './core/accessGate';
 import { aircraftDb } from './core/aircraft_db';
@@ -84,6 +85,7 @@ app.use('/api/dot', dotRouter);
 app.use('/api/intel-maps', intelMapsRouter);
 app.use('/api/zabbix', zabbixRouter);
 app.use('/api/files', filesRouter);
+app.use('/api/assets', assetsRouter);
 app.use('/api/proxmox-lab', proxmoxLabRouter);
 app.use('/cad', cadRouter);
 
