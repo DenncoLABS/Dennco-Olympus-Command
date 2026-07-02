@@ -13,6 +13,14 @@ Mirror = deployment profile or replica.
 App = standalone product or industry version.
 ```
 
+## Foundational guardrail
+
+Developer sessions must follow the foundational notes, scalable platform direction, and app-pack scaffold before making structural changes.
+
+If a request conflicts with the master-platform direction or the app/core split, development must pause until research/planning and the development team resolve the conflict. Once resolved, the settled plan must be written into the notes or scaffold before implementation continues.
+
+See [`docs/DEVELOPMENT_GUARDRAILS.md`](DEVELOPMENT_GUARDRAILS.md).
+
 ## Initial app packs
 
 | App pack | Path | Status | Purpose |
