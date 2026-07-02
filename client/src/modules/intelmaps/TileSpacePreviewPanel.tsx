@@ -40,6 +40,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
   const focusPage = FOCUS_PAGES[focusPageIndex] || FOCUS_PAGES[0];
   const assistantContext = `${focusPage} · ${selectedTile?.label || 'No tile'} · ${quadDeployed ? 'Quad deployed' : 'Quad cleared'}`;
   const focusLayoutActive = layoutName === FOCUS_LAYOUT;
+  const runtimeStatus = `${selectedTile?.label || 'No tile'} / ${layoutName} / ${activeTab} / ${focusPage}`;
 
   useEffect(() => {
     writeTileSpacePreviewString(TILESPACE_PREVIEW_SELECTED_TILE_KEY, selectedTileId);
@@ -90,7 +91,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
   };
 
   return (
-    <section tabIndex={-1} onKeyDown={handlePanelKeyDown} className="grid h-full min-h-0 grid-rows-[auto_auto_auto_auto_auto_1fr] gap-3 rounded border border-cyan-300/20 bg-black/55 p-3 text-white">
+    <section tabIndex={-1} onKeyDown={handlePanelKeyDown} className="grid h-full min-h-0 grid-rows-[auto_auto_auto_auto_auto_auto_1fr] gap-3 rounded border border-cyan-300/20 bg-black/55 p-3 text-white">
       <header className="flex items-center justify-between gap-3 rounded border border-cyan-300/20 bg-cyan-300/10 px-3 py-2">
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">TileSpace MVP</div>
@@ -130,6 +131,12 @@ export const TileSpacePreviewPanel: React.FC = () => {
         <span className="rounded border border-white/10 px-2 py-1">Double-click: Focus</span>
         <span className="rounded border border-white/10 px-2 py-1">F: Focus selected card</span>
         <span className="rounded border border-white/10 px-2 py-1">Esc: Return to Quad</span>
+      </div>
+
+      <div className="flex items-center gap-2 rounded border border-white/10 bg-black/30 px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-white/45">
+        <span className="text-cyan-300">Runtime</span>
+        <span className="truncate rounded border border-white/10 px-2 py-1 text-white/60">{runtimeStatus}</span>
+        <span className="ml-auto rounded border border-white/10 px-2 py-1 text-white/35">{focusLayoutActive ? 'Focus controls active' : 'Quad controls active'}</span>
       </div>
 
       <nav className="flex items-center gap-2 rounded border border-white/10 bg-black/35 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-white/45">
