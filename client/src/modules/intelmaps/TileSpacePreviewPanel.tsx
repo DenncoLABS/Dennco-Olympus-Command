@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   TILESPACE_PREVIEW_ACTIVE_TAB_KEY,
   TILESPACE_PREVIEW_FOCUS_KEY,
+  TILESPACE_PREVIEW_LAYOUT_KEY,
   TILESPACE_PREVIEW_QUAD_KEY,
   TILESPACE_PREVIEW_SELECTED_TILE_KEY,
   TileRuntimeCard,
@@ -15,6 +16,7 @@ import {
 const QUAD_TILE_IDS = ['intelmaps-flight', 'intelmaps-maritime', 'intelmaps-dot', 'intelmaps-monitor'];
 const FOCUS_PAGES = ['Operations', 'Planning', 'Monitoring'];
 const APP_TABS = ['Quad', 'Selected Tile', 'Assistant Context'];
+const DEFAULT_LAYOUT = 'Intel Maps Quad';
 
 function readFocusPageIndex() {
   const savedFocus = readTileSpacePreviewString(TILESPACE_PREVIEW_FOCUS_KEY, FOCUS_PAGES[0]);
@@ -32,6 +34,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
   const [quadDeployed, setQuadDeployed] = useState(() => readTileSpacePreviewBoolean(TILESPACE_PREVIEW_QUAD_KEY, true));
   const [focusPageIndex, setFocusPageIndex] = useState(readFocusPageIndex);
   const [activeTab, setActiveTab] = useState(readActiveTab);
+  const [layoutName, setLayoutName] = useState(() => readTileSpacePreviewString(TILESPACE_PREVIEW_LAYOUT_KEY, DEFAULT_LAYOUT));
   const selectedTile = useMemo(() => getTileRegistryItem(selectedTileId), [selectedTileId]);
   const focusPage = FOCUS_PAGES[focusPageIndex] || FOCUS_PAGES[0];
   const assistantContext = `${focusPage} · ${selectedTile?.label || 'No tile'} · ${quadDeployed ? 'Quad deployed' : 'Quad cleared'}`;
@@ -52,11 +55,22 @@ export const TileSpacePreviewPanel: React.FC = () => {
     writeTileSpacePreviewString(TILESPACE_PREVIEW_ACTIVE_TAB_KEY, activeTab);
   }, [activeTab]);
 
+  useEffect(() => {
+    writeTileSpacePreviewString(TILESPACE_PREVIEW_LAYOUT_KEY, layoutName);
+  }, [layoutName]);
+
   const previousFocusPage = () => setFocusPageIndex((current) => Math.max(0, current - 1));
   const nextFocusPage = () => setFocusPageIndex((current) => Math.min(FOCUS_PAGES.length - 1, current + 1));
+  const resetLayout = () => {
+    setSelectedTileId('intelmaps-flight');
+    setQuadDeployed(true);
+    setFocusPageIndex(0);
+    setActiveTab('Quad');
+    setLayoutName(DEFAULT_LAYOUT);
+  };
 
   return (
-    <section className="grid h-full min-h-0 grid-rows-[auto_auto_auto_1fr] gap-3 rounded border border-cyan-300/20 bg-black/55 p-3 text-white">
+    <section className="grid h-full min-h-0 grid-rows-[auto_auto_auto_auto_1fr] gap-3 rounded border border-cyan-300/20 bg-black/55 p-3 text-white">
       <header className="flex items-center justify-between gap-3 rounded border border-cyan-300/20 bg-cyan-300/10 px-3 py-2">
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">TileSpace MVP</div>
@@ -71,6 +85,15 @@ export const TileSpacePreviewPanel: React.FC = () => {
           </button>
         </div>
       </header>
+
+      <div className="flex items-center gap-2 rounded border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-white/45">
+        <span className="text-cyan-300">Layout</span>
+        <span className="rounded border border-white/10 px-2 py-1 text-white/60">{layoutName}</span>
+        <span className="rounded border border-white/10 px-2 py-1 text-white/35">Saved locally</span>
+        <button type="button" onClick={resetLayout} className="ml-auto rounded border border-amber-300/30 px-3 py-1 text-amber-100 hover:bg-amber-300/10">
+          Reset Layout
+        </button>
+      </div>
 
       <nav className="flex items-center gap-2 rounded border border-white/10 bg-black/35 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-white/45">
         {APP_TABS.map((tab) => (
@@ -103,7 +126,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
               <button type="button" onClick={nextFocusPage} disabled={focusPageIndex === FOCUS_PAGES.length - 1} className="h-8 w-8 rounded border border-white/10 text-cyan-200 disabled:opacity-25 hover:border-cyan-300/50">›</button>
             </div>
           </div>
-          <p className="mt-2 text-white/45">Selected tile, quad state, focus page, and center surface now survive reloads and app switching.</p>
+          <p className="mt-2 text-white/45">Selected tile, quad state, focus page, center surface, and layout now survive reloads and app switching.</p>
         </div>
         <aside className="rounded border border-cyan-300/20 bg-cyan-300/10 p-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-300">App Assistant Context</div>
