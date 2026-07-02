@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { createContext, useContext } from 'react';
 import { useThemeStore, type MapLayer, type MapProjection, type WeatherRadarProduct, type WeatherRadarState } from '../../ui/theme/theme.store';
 
 export type MapAppearance = {
@@ -15,8 +15,12 @@ export type MapAppearance = {
   setWeatherRadarCustomTileUrl: (url: string) => void;
 };
 
-export const MapInstanceProvider: React.FC<{ value: MapAppearance; children: React.ReactNode }> = ({ children }) => <>{children}</>;
+const MapAppearanceContext = createContext<MapAppearance | null>(null);
+
+export const MapInstanceProvider: React.FC<{ value: MapAppearance; children: React.ReactNode }> = ({ value, children }) => (
+  <MapAppearanceContext.Provider value={value}>{children}</MapAppearanceContext.Provider>
+);
 
 export function useMapAppearance(): MapAppearance {
-  return useThemeStore();
+  return useContext(MapAppearanceContext) || useThemeStore();
 }
