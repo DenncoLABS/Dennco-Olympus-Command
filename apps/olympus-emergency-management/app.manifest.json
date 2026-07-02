@@ -1,0 +1,14 @@
+{
+  "id": "olympus-emergency-management",
+  "name": "Olympus Emergency Management",
+  "version": "0.1.0",
+  "kind": "app",
+  "type": "dashboard",
+  "status": "draft",
+  "description": "Emergency management app pack for hazard awareness, weather alerts, incident coordination, shelters, road closures, utilities, public alerts, and recovery status.",
+  "entrypoints": {},
+  "dependsOn": [],
+  "enabledCoreModules": ["earth", "desk", "admin", "notifications", "reports", "cad"],
+  "plannedExtensions": ["weather", "fema", "usgs", "firms", "road-closures", "utility-outages"],
+  "sourcePosture": "public-authorized-organization-approved"
+}
