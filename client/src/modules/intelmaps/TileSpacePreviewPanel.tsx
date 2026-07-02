@@ -74,6 +74,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
     setActiveTab('Quad');
     setLayoutName(FOCUS_LAYOUT);
   };
+  const returnToQuad = () => setLayoutName(DEFAULT_LAYOUT);
   const resetLayout = () => {
     setSelectedTileId('intelmaps-flight');
     setQuadDeployed(true);
@@ -81,9 +82,15 @@ export const TileSpacePreviewPanel: React.FC = () => {
     setActiveTab('Quad');
     setLayoutName(DEFAULT_LAYOUT);
   };
+  const handlePanelKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key === 'Escape' && focusLayoutActive) {
+      event.preventDefault();
+      returnToQuad();
+    }
+  };
 
   return (
-    <section className="grid h-full min-h-0 grid-rows-[auto_auto_auto_auto_1fr] gap-3 rounded border border-cyan-300/20 bg-black/55 p-3 text-white">
+    <section tabIndex={-1} onKeyDown={handlePanelKeyDown} className="grid h-full min-h-0 grid-rows-[auto_auto_auto_auto_auto_1fr] gap-3 rounded border border-cyan-300/20 bg-black/55 p-3 text-white">
       <header className="flex items-center justify-between gap-3 rounded border border-cyan-300/20 bg-cyan-300/10 px-3 py-2">
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-300">TileSpace MVP</div>
@@ -105,7 +112,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
       <div className="flex items-center gap-2 rounded border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-white/45">
         <span className="text-cyan-300">Layout</span>
         <span className="rounded border border-white/10 px-2 py-1 text-white/60">{layoutName}</span>
-        <button type="button" onClick={() => setLayoutName(DEFAULT_LAYOUT)} className={`rounded px-2 py-1 transition ${!focusLayoutActive ? 'border border-cyan-300/40 bg-cyan-300/15 text-cyan-100' : 'border border-white/10 text-white/45 hover:border-cyan-300/30 hover:text-cyan-100'}`}>
+        <button type="button" onClick={returnToQuad} className={`rounded px-2 py-1 transition ${!focusLayoutActive ? 'border border-cyan-300/40 bg-cyan-300/15 text-cyan-100' : 'border border-white/10 text-white/45 hover:border-cyan-300/30 hover:text-cyan-100'}`}>
           Quad Layout
         </button>
         <button type="button" onClick={focusSelectedTile} className={`rounded px-2 py-1 transition ${focusLayoutActive ? 'border border-cyan-300/40 bg-cyan-300/15 text-cyan-100' : 'border border-white/10 text-white/45 hover:border-cyan-300/30 hover:text-cyan-100'}`}>
@@ -115,6 +122,14 @@ export const TileSpacePreviewPanel: React.FC = () => {
         <button type="button" onClick={resetLayout} className="ml-auto rounded border border-amber-300/30 px-3 py-1 text-amber-100 hover:bg-amber-300/10">
           Reset Layout
         </button>
+      </div>
+
+      <div className="flex items-center gap-2 rounded border border-cyan-300/10 bg-cyan-300/5 px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-white/45">
+        <span className="text-cyan-300">Shortcuts</span>
+        <span className="rounded border border-white/10 px-2 py-1">Click: Select</span>
+        <span className="rounded border border-white/10 px-2 py-1">Double-click: Focus</span>
+        <span className="rounded border border-white/10 px-2 py-1">F: Focus selected card</span>
+        <span className="rounded border border-white/10 px-2 py-1">Esc: Return to Quad</span>
       </div>
 
       <nav className="flex items-center gap-2 rounded border border-white/10 bg-black/35 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-white/45">
@@ -151,7 +166,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
               <button type="button" onClick={nextFocusPage} disabled={focusPageIndex === FOCUS_PAGES.length - 1} className="h-8 w-8 rounded border border-white/10 text-cyan-200 disabled:opacity-25 hover:border-cyan-300/50">›</button>
             </div>
           </div>
-          <p className="mt-2 text-white/45">Select any tile, then use Focus Tile or double-click a tile to promote it into the main surface.</p>
+          <p className="mt-2 text-white/45">Select any tile, then use Focus Tile, double-click, or F to promote it into the main surface.</p>
         </div>
         <aside className="rounded border border-cyan-300/20 bg-cyan-300/10 p-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-300">App Assistant Context</div>
@@ -173,7 +188,7 @@ export const TileSpacePreviewPanel: React.FC = () => {
             <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-300">Focused Tile Layout</div>
             <div className="mt-2 text-2xl font-bold uppercase tracking-[0.18em] text-white">{selectedTile?.label || 'No Tile Selected'}</div>
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/45">{selectedTile?.description || 'Select a tile from the quad.'}</p>
-            <button type="button" onClick={() => setLayoutName(DEFAULT_LAYOUT)} className="mt-5 rounded border border-cyan-300/30 px-4 py-2 text-[10px] uppercase tracking-[0.14em] text-cyan-100 hover:bg-cyan-300/10">
+            <button type="button" onClick={returnToQuad} className="mt-5 rounded border border-cyan-300/30 px-4 py-2 text-[10px] uppercase tracking-[0.14em] text-cyan-100 hover:bg-cyan-300/10">
               Return to Quad
             </button>
           </div>
